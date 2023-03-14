@@ -3,6 +3,8 @@ library(plyr)
 library(dplyr)
 library(purrr)
 library(readr)
+library(readxl)
+library(tidyverse)
 #Downloaded data from https://fluxnet.org/data/download-data/
 # sites selected based on those present in "tower sheet major" on the ABCflux google drive
 #load in all the files
@@ -11,7 +13,7 @@ path <- "/Users/iwargowsky/Desktop/Fluxnet2015"
 files <- list.files(path = path,pattern = '*_DD_',all.files = T,recursive = T)
 fluxnetdf <- files %>%
   setNames(nm = .) %>% 
-  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")         
+  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")   
 #clean up site id column
 fluxnetdf$site_id <- substr(fluxnetdf$site_id, 5,10)
 #select columns to keep
@@ -41,7 +43,7 @@ fluxnet.permonth<-  group_by(fluxnetdf, year, month, site_id) %>% dplyr::summari
                                                                             GPP_DT_VUT_REF = sum(GPP_DT_VUT_REF),
                                                                             RECO_NT_VUT_REF = sum(RECO_NT_VUT_REF),
                                                                             GPP_NT_VUT_REF = sum(GPP_NT_VUT_REF))
-write_csv(fluxnet.permonth, "fluxnetpermonth.csv")
+#write_csv(fluxnet.permonth, "fluxnetpermonth.csv")
 
 ####extract list of sites and dates covered###
 fluxnet.permonth$ts <- paste(fluxnet.permonth$year, fluxnet.permonth$month)
@@ -50,4 +52,29 @@ sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_dat
                                                                          end_date = max(ts))
 #double checking that function above worked
 checkdates <- sites %>% arrange(site_id, ts)
+
+#Adding in some metadata####
+setwd("/Users/iwargowsky/Desktop/Fluxnet2015/FLX_AA-Flx_BIF_ALL_20200501")
+meta <- read_xlsx("FLX_AA-Flx_BIFMM_20200501.xlsx")
+#filter for sites of interest
+names <- unique(fluxnet.permonth$site_id)
+meta <- meta %>% filter(SITE_ID %in% names)
+#more to better format and group by site
+meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
+meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
+                                             citation = na.omit(DOI),
+                                             site_name= na.omit(SITE_NAME),
+                                             latitude= na.omit(LOCATION_LAT),
+                                             longitude= na.omit(LOCATION_LONG))
+
+#RU-Sam site has moved over the years so there are multiple lat-long coords
+#for now we'll just take the first set of coords 
+RU.Sam <- meta.bysite %>% filter(SITE_ID== "RU-Sam") %>% summarise_all(first)
+meta.bysite <- meta.bysite %>% filter(!SITE_ID== "RU-Sam")
+meta.bysite <- rbind(meta.bysite, RU.Sam)
+
+#merge flux df and meta data
+meta.bysite<- meta.bysite %>% rename(site_id= SITE_ID)
+fluxnetALL <- left_join(fluxnet.permonth, meta.bysite)
+
 

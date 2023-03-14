@@ -127,3 +127,5 @@ sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_dat
                                                                        end_date = max(ts))
 #double checking that function above worked
 checkdates <- sites %>% arrange(site_id, ts)
+
+
