@@ -38,7 +38,7 @@ ICOSdat$QC <- ICOSdat$NEE_CUT_REF_QC
 
 #quick plot of all sites
 ggplot(ICOSdat)+
-  geom_point(aes(ts,NEE_VUT_REF))+
+  geom_point(aes(ts,NEE_CUT_REF))+
   facet_wrap(~site_id)
 
 ```
@@ -141,6 +141,7 @@ ggplot(data = subset(ICOSdat,ICOSdat$site_id=='SE-Nor'))+theme_bw()+ggtitle('SE-
   geom_point(aes(ts,yvar, color= QC))+
   scale_color_gradient(low="blue", high="green")
 ```
+
 ```{r, label= SE-Ros, echo=FALSE}
 ggplot(data = subset(ICOSdat,ICOSdat$site_id=='SE-Ros'))+theme_bw()+ggtitle('SE-Ros')+
   geom_hline(yintercept = 0)+
