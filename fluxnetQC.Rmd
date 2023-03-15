@@ -24,12 +24,13 @@ library(plyr)
 library(dplyr)
 library(svMisc)
 library(plotrix)
+library(zoo)
 #load files
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
 fluxnetdat <- read.csv("fluxnetpermonth.csv")
 
 #create timestamp variable for x axis
-fluxnetdat$ts = paste(fluxnetdat$year,fluxnetdat$month,sep = '-')
+fluxnetdat$ts = as.yearmon(paste(fluxnetdat$year,fluxnetdat$month,sep = '-'))
 #assign variable for y axis
 #ADJUST based on what variable you want to look at (ex: GPP, NEE, etc)
 fluxnetdat$yvar <- fluxnetdat$NEE_VUT_REF
