@@ -22,9 +22,9 @@ fluxnetdf <- fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1, TS_F_MD
                                          SWC_F_MDS_1, SWC_F_MDS_1_QC, 
                                          TA_F, TA_F_QC, 
                                          P_F,P_F_QC,
-                                         NEE_VUT_REF,NEE_VUT_REF_QC,
-                                         RECO_DT_VUT_REF, GPP_DT_VUT_REF,
-                                         RECO_NT_VUT_REF, GPP_NT_VUT_REF)
+                                         NEE_CUT_REF,NEE_CUT_REF_QC,
+                                         RECO_DT_CUT_REF, GPP_DT_CUT_REF,
+                                         RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #add month and year columns
 fluxnetdf$year <- substr(fluxnetdf$TIMESTAMP,1,4)
 fluxnetdf$month <- substr(fluxnetdf$TIMESTAMP,5,6)
@@ -37,12 +37,12 @@ fluxnet.permonth<-  group_by(fluxnetdf, year, month, site_id) %>% dplyr::summari
                                                                             TA_F_QC = mean(TA_F_QC),
                                                                             P_F =sum(P_F),
                                                                             P_F_QC = mean(P_F_QC),
-                                                                            NEE_VUT_REF = sum(NEE_VUT_REF),
-                                                                            NEE_VUT_REF_QC = mean(NEE_VUT_REF_QC),
-                                                                            RECO_DT_VUT_REF = sum(RECO_DT_VUT_REF),
-                                                                            GPP_DT_VUT_REF = sum(GPP_DT_VUT_REF),
-                                                                            RECO_NT_VUT_REF = sum(RECO_NT_VUT_REF),
-                                                                            GPP_NT_VUT_REF = sum(GPP_NT_VUT_REF))
+                                                                            NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                            NEE_CUT_REF_QC = mean(NEE_CUT_REF_QC),
+                                                                            RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
+                                                                            GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
+                                                                            RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
+                                                                            GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
 #write_csv(fluxnet.permonth, "fluxnetpermonth.csv")
 
 ####extract list of sites and dates covered###
