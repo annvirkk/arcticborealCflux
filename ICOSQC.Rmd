@@ -32,9 +32,9 @@ ICOSdat <- read.csv("ICOSdatapermonth.csv")
 ICOSdat$ts = paste(ICOSdat$year,ICOSdat$month,sep = '-')
 #assign variable for y axis
 #ADJUST based on what variable you want to look at (ex: GPP, NEE, etc)
-ICOSdat$yvar <- ICOSdat$NEE_VUT_REF
+ICOSdat$yvar <- ICOSdat$NEE_CUT_REF
 #assign quality check variable in relation to yvar 
-ICOSdat$QC <- ICOSdat$NEE_VUT_REF_QC
+ICOSdat$QC <- ICOSdat$NEE_CUT_REF_QC
 
 #quick plot of all sites
 ggplot(ICOSdat)+

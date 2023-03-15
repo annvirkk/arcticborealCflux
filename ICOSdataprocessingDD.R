@@ -23,9 +23,9 @@ wwdat <- wwicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1, TS_F_MDS_1_
                                      SWC_F_MDS_1, SWC_F_MDS_1_QC, 
                                      TA_F, TA_F_QC, 
                                      P_F,P_F_QC,
-                                     NEE_VUT_REF,NEE_VUT_REF_QC,
-                                     RECO_DT_VUT_REF, GPP_DT_VUT_REF,
-                                     RECO_NT_VUT_REF, GPP_NT_VUT_REF)
+                                     NEE_CUT_REF,NEE_CUT_REF_QC,
+                                     RECO_DT_CUT_REF, GPP_DT_CUT_REF,
+                                     RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #turn -9999 to NA
 wwdat[wwdat == -9999] <- NA
 #clean up site id column
@@ -43,12 +43,12 @@ wwdat.permonth<- group_by(wwdat, year, month, site_id) %>% dplyr::summarise(TS_F
                                                                             TA_F_QC = mean(TA_F_QC),
                                                                             P_F =sum(P_F),
                                                                             P_F_QC = mean(P_F_QC),
-                                                                            NEE_VUT_REF = sum(NEE_VUT_REF),
-                                                                            NEE_VUT_REF_QC = mean(NEE_VUT_REF_QC),
-                                                                            RECO_DT_VUT_REF = sum(RECO_DT_VUT_REF),
-                                                                            GPP_DT_VUT_REF = sum(GPP_DT_VUT_REF),
-                                                                            RECO_NT_VUT_REF = sum(RECO_NT_VUT_REF),
-                                                                            GPP_NT_VUT_REF = sum(GPP_NT_VUT_REF))
+                                                                            NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                            NEE_CUT_REF_QC = mean(NEE_CUT_REF_QC),
+                                                                            RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
+                                                                            GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
+                                                                            RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
+                                                                            GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
 
 ################################
 ###ICOS archive data####
@@ -67,9 +67,9 @@ icosdat <- allicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1, TS_F_MDS
                                         SWC_F_MDS_1, SWC_F_MDS_1_QC, 
                                         TA_F, TA_F_QC, 
                                         P_F,P_F_QC,
-                                        NEE_VUT_REF,NEE_VUT_REF_QC,
-                                        RECO_DT_VUT_REF, GPP_DT_VUT_REF,
-                                        RECO_NT_VUT_REF, GPP_NT_VUT_REF)
+                                        NEE_CUT_REF,NEE_CUT_REF_QC,
+                                        RECO_DT_CUT_REF, GPP_DT_CUT_REF,
+                                        RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #turn -9999 to NA
 icosdat[icosdat == -9999] <- NA
 #clean up site id column
@@ -87,12 +87,12 @@ icosdat.permonth<- group_by(icosdat, year, month, site_id) %>% dplyr::summarise(
                                                                                 TA_F_QC = mean(TA_F_QC),
                                                                                 P_F =sum(P_F),
                                                                                 P_F_QC = mean(P_F_QC),
-                                                                                NEE_VUT_REF = sum(NEE_VUT_REF),
-                                                                                NEE_VUT_REF_QC = mean(NEE_VUT_REF_QC),
-                                                                                RECO_DT_VUT_REF = sum(RECO_DT_VUT_REF),
-                                                                                GPP_DT_VUT_REF = sum(GPP_DT_VUT_REF),
-                                                                                RECO_NT_VUT_REF = sum(RECO_NT_VUT_REF),
-                                                                                GPP_NT_VUT_REF = sum(GPP_NT_VUT_REF))
+                                                                                NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                                NEE_CUT_REF_QC = mean(NEE_CUT_REF_QC),
+                                                                                RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
+                                                                                GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
+                                                                                RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
+                                                                                GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
 #########Merging warm winters and icosdat #######
 #combine all data
 alldat.wdupes <- gdata::combine(wwdat.permonth, icosdat.permonth)
@@ -112,12 +112,12 @@ write_csv(alldatpermonth, "ICOSdatapermonth.csv")
 #examine duplicate differences
 wwdupes$timestamp <- paste(wwdupes$year, wwdupes$month)
 icosdupes$timestamp <- paste(icosdupes$year, icosdupes$month)
-ggplot()+geom_line(wwdupes, mapping= aes(x=timestamp, y=NEE_VUT_REF, group=site_id, color=site_id))+
-  geom_line(icosdupes, mapping= aes(x=timestamp, y=NEE_VUT_REF, group=site_id, color=site_id),linetype="dashed")
+ggplot()+geom_line(wwdupes, mapping= aes(x=timestamp, y=NEE_CUT_REF, group=site_id, color=site_id))+
+  geom_line(icosdupes, mapping= aes(x=timestamp, y=NEE_CUT_REF, group=site_id, color=site_id),linetype="dashed")
 #look at individual sites
 Nor <- dupes %>% filter(site_id == "SE-Nor")
 Nor$timestamp <- paste(Nor$year, Nor$month)
-ggplot()+geom_line(Nor, mapping= aes(x=timestamp, y=NEE_VUT_REF, group=source, color=source))
+ggplot()+geom_line(Nor, mapping= aes(x=timestamp, y=NEE_CUT_REF, group=source, color=source))
 
 
 ####extract list of sites and dates covered###
