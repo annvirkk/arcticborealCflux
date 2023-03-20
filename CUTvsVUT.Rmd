@@ -1,0 +1,284 @@
+---
+title: "CUT vs VUT in Fluxnet Data"
+author: "Isabel Wargowsky"
+date: "2023-03-06"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(svMisc)
+library(plotrix)
+library(zoo)
+#load files
+setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
+flux.CUT <- read.csv("CUTfluxnetpermonth.csv")
+flux.VUT <- read.csv("VUTfluxnetpermonth.csv")
+
+allflux<- merge(flux.CUT,flux.VUT)
+
+#create timestamp variable for x axis
+allflux$ts = as.yearmon(paste(allflux$year,allflux$month,sep = '-'))
+
+```
+
+```{r, label=CA-Gro, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-Gro'))+theme_bw()+ggtitle('CA-Gro')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label=CA-Man, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-Man'))+theme_bw()+ggtitle('CA-Man')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-NS1, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS1'))+theme_bw()+ggtitle('CA-NS1')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-NS2, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS2'))+theme_bw()+ggtitle('CA-NS2')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r,label= CA-NS3, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS3'))+theme_bw()+ggtitle('CA-NS3')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-NS4, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS4'))+theme_bw()+ggtitle('CA-NS4')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r,label= CA-NS5,echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS5'))+theme_bw()+ggtitle('CA-NS5')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-NS6,cho=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS6'))+theme_bw()+ggtitle('CA-NS6')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-NS7,echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-NS7'))+theme_bw()+ggtitle('CA-NS7')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-Oas,echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-Oas'))+theme_bw()+ggtitle('CA-Oas')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-Obs,echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-Obs'))+theme_bw()+ggtitle('CA-Obs')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-Qfo,echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-Qfo'))+theme_bw()+ggtitle('CA-Qfo')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-SF1,echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-SF1'))+theme_bw()+ggtitle('CA-SF1')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-SF2, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-SF2'))+theme_bw()+ggtitle('CA-SF2')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= CA-SF3, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='CA-SF3'))+theme_bw()+ggtitle('CA-SF3')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= FI-Hyy, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='FI-Hyy'))+theme_bw()+ggtitle('FI-Hyy')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= FI-Jok, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='FI-Jok'))+theme_bw()+ggtitle('FI-Jok')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= FI-Let, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='FI-Let'))+theme_bw()+ggtitle('FI-Let')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= FI-Lom, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='FI-Lom'))+theme_bw()+ggtitle('FI-Lom')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= FI-Sod, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='FI-Sod'))+theme_bw()+ggtitle('FI-Sod')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= GL-NuF, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='GL-NuF'))+theme_bw()+ggtitle('GL-NuF')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r,label= GL-ZaF, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='GL-ZaF'))+theme_bw()+ggtitle('GL-ZaF')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= GL-ZaH, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='GL-ZaH'))+theme_bw()+ggtitle('GL-ZaH')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Che, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Che'))+theme_bw()+ggtitle('RU-Che')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Cok, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Cok'))+theme_bw()+ggtitle('RU-Cok')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Fyo, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Fyo'))+theme_bw()+ggtitle('RU-Fyo')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Ha1, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Ha1'))+theme_bw()+ggtitle('RU-Ha1')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Sam, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Sam'))+theme_bw()+ggtitle('RU-Sam')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-SkP, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-SkP'))+theme_bw()+ggtitle('RU-SkP')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Tks, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Tks'))+theme_bw()+ggtitle('RU-Tks')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= RU-Vrk, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='RU-Vrk'))+theme_bw()+ggtitle('RU-Vrk')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= SE-St1, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='SE-St1'))+theme_bw()+ggtitle('SE-St1')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= SJ-Adv, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='SJ-Adv'))+theme_bw()+ggtitle('SJ-Adv')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= US-Atq, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='US-Atq'))+theme_bw()+ggtitle('US-Atq')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```
+
+```{r, label= US-Ivo, echo=FALSE}
+ggplot(data = subset(allflux,allflux$site_id=='US-Ivo'))+theme_bw()+ggtitle('US-Ivo')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,NEE_VUT_REF, group= site_id, color="VUT"))+
+  geom_line(aes(ts,NEE_CUT_REF, group= site_id, color="CUT"))
+```

@@ -1,0 +1,99 @@
+---
+title: "monthlyVSdaily"
+author: "Isabel"
+date: "2023-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(plyr)
+library(dplyr)
+library(purrr)
+library(readr)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+#Downloaded data from https://fluxnet.org/data/download-data/
+# sites selected based on those present in "tower sheet major" on the ABCflux google drive
+#load in all the files
+setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
+path <- "/Users/iwargowsky/Desktop/Fluxnet2015"
+files <- list.files(path = path,pattern = '*FULLSET_DD_',all.files = T,recursive = T)
+fluxnetdf <- files %>%
+  setNames(nm = .) %>% 
+  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")   
+#clean up site id column
+fluxnetdf$site_id <- substr(fluxnetdf$site_id, 5,10)
+#select column 
+fluxnetdf <- fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, NEE_CUT_REF,NEE_CUT_REF_QC,
+                                         NEE_VUT_REF,NEE_VUT_REF_QC)
+#add month and year columns
+fluxnetdf$year <- substr(fluxnetdf$TIMESTAMP,1,4)
+fluxnetdf$month <- substr(fluxnetdf$TIMESTAMP,5,6)
+#get cumulative NEE, GPP, and RECO for each month
+fluxnet.permonth<-  group_by(fluxnetdf, year, month, site_id)%>%
+  dplyr::summarise(NEE_CUT_REF = sum(NEE_CUT_REF),
+                   NEE_CUT_REF_QC = mean(NEE_CUT_REF_QC),
+                   NEE_VUT_REF = sum(NEE_VUT_REF),
+                   NEE_VUT_REF_QC = mean(NEE_VUT_REF_QC))
+
+#create timestamp variable for x axis
+fluxnet.permonth$ts = as.yearmon(paste(fluxnet.permonth$year,fluxnet.permonth$month,sep = '-'))
+
+##monthly
+files <- list.files(path = path,pattern = '*FULLSET_MM_',all.files = T,recursive = T)
+MMfluxnetdf <- files %>%
+  setNames(nm = .) %>% 
+  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")   
+#clean up site id column
+MMfluxnetdf$site_id <- substr(MMfluxnetdf$site_id, 5,10)
+#select columns to keep
+MMfluxnetdf <- MMfluxnetdf %>% dplyr::select(site_id, TIMESTAMP, NEE_CUT_REF,NEE_CUT_REF_QC,
+                                             NEE_VUT_REF,NEE_VUT_REF_QC)
+
+#add month and year columns
+MMfluxnetdf$year <- substr(MMfluxnetdf$TIMESTAMP,1,4)
+MMfluxnetdf$month <- substr(MMfluxnetdf$TIMESTAMP,5,6)
+
+#create timestamp variable for x axis
+MMfluxnetdf$ts = as.yearmon(paste(MMfluxnetdf$year,MMfluxnetdf$month,sep = '-'))
+
+#convert units from gC m-2 d-1 to gC m-2 month-1
+MMfluxnetdf$NEE_CUT_REF <- MMfluxnetdf$NEE_CUT_REF *lubridate::days_in_month(MMfluxnetdf$ts)
+```
+
+## Including Plots
+
+```{r, label=CA-Gro, echo=FALSE}
+ggplot()+theme_bw()+ggtitle('CA-Gro')+
+  geom_hline(yintercept = 0)+
+    geom_line(data = subset(MMfluxnetdf,MMfluxnetdf$site_id=='CA-Gro'), linetype= 1,
+            aes(ts,NEE_CUT_REF, group= site_id, color= "monthlyavg"))+
+  geom_line(data = subset(fluxnet.permonth,fluxnet.permonth$site_id=='CA-Gro'), linetype= 4,
+            aes(ts,NEE_CUT_REF, group= site_id, color= "monthlyfromdaily"))
+```
+
+
+```{r, label=CA-Man, echo=FALSE}
+ggplot()+theme_bw()+ggtitle('CA-Man')+
+  geom_hline(yintercept = 0)+
+    geom_line(data = subset(MMfluxnetdf,MMfluxnetdf$site_id=='CA-Man'), linetype= 1, 
+            aes(ts,NEE_CUT_REF, group= site_id, color= "monthlyavg"))+
+  geom_line(data = subset(fluxnet.permonth,fluxnet.permonth$site_id=='CA-Man'), linetype= 4,
+            aes(ts,NEE_CUT_REF, group= site_id, color= "monthlyfromdaily"))
+```
+
+```{r, label=CA-NS1, echo=FALSE}
+ggplot()+theme_bw()+ggtitle('CA-NS1')+
+  geom_hline(yintercept = 0)+
+  geom_line(data = subset(MMfluxnetdf,MMfluxnetdf$site_id=='CA-NS1'),linetype= 1,
+            aes(ts,NEE_CUT_REF, group= site_id, color= "monthlyavg"))+
+  geom_line(data = subset(fluxnet.permonth,fluxnet.permonth$site_id=='CA-NS1'),linetype= 4,
+            aes(ts,NEE_CUT_REF, group= site_id, color= "monthlyfromdaily"))
+  
+```
