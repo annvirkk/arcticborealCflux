@@ -10,7 +10,7 @@ library(tidyverse)
 #load in all the files
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
 path <- "/Users/iwargowsky/Desktop/Fluxnet2015"
-files <- list.files(path = path,pattern = '*_DD_',all.files = T,recursive = T)
+files <- list.files(path = path,pattern = '*FULLSET_DD_',all.files = T,recursive = T)
 fluxnetdf <- files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")   

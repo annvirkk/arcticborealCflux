@@ -51,23 +51,24 @@ ameriflux.permonth<-  group_by(amerifluxdf, year, month, site_id) %>% dplyr::sum
 #These ameriflux files all have a bunch of different column names and 
 #are at half-hourly resolution so there's LOTS of data to get through
 #We'll first cycle through the folder and get daily averages for each file in the folder
-newFolder <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD"
-dir.create(newFolder)
-path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE"
-files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
-setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE")
-for(f in files) {
-  temp <- fread(f, na=c("NA", "-9999"))
-  temp$year <- substr(temp$TIMESTAMP_START, 1,4)
-  temp$month <- substr(temp$TIMESTAMP_START, 5,6)
-  temp$day <- substr(temp$TIMESTAMP_START, 7,8)
+#ONLY DO THIS ONE TIME (takes ~30 minutes)
+#newFolder <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD"
+#dir.create(newFolder)
+#path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE"
+#files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
+#setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE")
+#for(f in files) {
+  #temp <- fread(f, na=c("NA", "-9999"))
+  #temp$year <- substr(temp$TIMESTAMP_START, 1,4)
+  #temp$month <- substr(temp$TIMESTAMP_START, 5,6)
+  #temp$day <- substr(temp$TIMESTAMP_START, 7,8)
   #aggregate to half-hourly to daily
-  temp <- group_by(temp, year, month, day) %>% summarise(across(everything(), mean, na.rm = TRUE))
-  
-  fwrite(temp, file.path(newFolder, paste0('DD_', basename(f))))
-}
-
-
+  #temp <- temp %>% mutate_if(is.character, as.numeric)
+  #temp <- group_by(temp, year, month, day) %>% 
+    #dplyr::summarise(across(everything(), .fns= list(mean=mean, sum=sum), na.rm = TRUE))
+  #took both the mean the sum for all variables because some variables like precipitation need to be summed
+  #fwrite(temp, file.path(newFolder, paste0('DD_', basename(f))))
+#}
 
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD")
 path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD"
@@ -78,12 +79,18 @@ base.amerifluxdf <- files %>%
          .id = "site_id")     
 #clean up site id column
 base.amerifluxdf$site_id <- substr(base.amerifluxdf$site_id, 8,13)
+colnames(base.amerifluxdf)
+#remove all extra sum columns except for the variables that need to be summed
+base.ameriflux <- base.amerifluxdf %>% select(site_id, month, year, day, P_sum, ends_with("_mean") )
+#remove "_mean"from column names
+colnames(base.ameriflux)<-gsub("_mean","",colnames(base.ameriflux))
 #remove TIMESTAMP columns as they are means and we have month, year, day columns now
-base.amerifluxdf <- base.amerifluxdf %>% select(-c(TIMESTAMP_START,TIMESTAMP_END))
+base.ameriflux <- base.ameriflux %>% select(-c(TIMESTAMP_START,TIMESTAMP_END))
+colnames(base.ameriflux)
 #convert units umol m-2 s-1 to g C m-2 d-1
-base.amerifluxdf$FC <- base.amerifluxdf$FC*1.0368
+base.ameriflux$FC <- base.ameriflux$FC*1.0368
 #get cumulative NEE, GPP, and RECO for each month
-basedf.permonth<- group_by(base.amerifluxdf, year, month, site_id) %>% dplyr::summarise(VPD = mean(VPD_PI), 
+basedf.permonth<- group_by(base.ameriflux, year, month, site_id) %>% dplyr::summarise(VPD = mean(VPD_PI), 
                                                                                    TS_1_1_1 = mean(TS_1_1_1),
                                                                                    SWC_1_1_1 = mean(SWC_1_1_1),
                                                                                    D_SNOW = sum(D_SNOW),
