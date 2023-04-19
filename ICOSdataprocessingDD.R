@@ -2,12 +2,13 @@
 ###Combining ICOS data ####
 library(dplyr)
 library(ggplot2)
-library(gdata)
 library(janitor)
 library(tidyverse)
-
 library(stringr)
 library(naniar)
+library(readr)
+library(gdata)
+library(DataCombine)
 #start with Warm Winters data
 # Identify file names
 setwd("/Users/iwargowsky/Desktop/ICOS/Warm Winters")
@@ -17,15 +18,14 @@ wwlist_of_files <- list.files(path = path,pattern = '*_FULLSET_DD_',all.files = 
 wwicosdat <- wwlist_of_files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE), .id = "site_id")          
-wwcol<-colnames(wwicosdat)
+colnames(wwicosdat)
 #subset for only our variables of interest
-wwdat <- wwicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1, TS_F_MDS_1_QC,
-                                     SWC_F_MDS_1, SWC_F_MDS_1_QC, 
-                                     TA_F, TA_F_QC, 
-                                     P_F,P_F_QC,
-                                     NEE_CUT_REF,NEE_CUT_REF_QC,
+wwdat <- wwicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
+                                     SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
+                                     NEE_CUT_REF, NEE_CUT_REF_QC,
                                      RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                      RECO_NT_CUT_REF, GPP_NT_CUT_REF)
+
 #turn -9999 to NA
 wwdat[wwdat == -9999] <- NA
 #clean up site id column
@@ -36,19 +36,28 @@ wwdat$month <- substr(wwdat$TIMESTAMP, 5,6)
 colnames(wwdat)
 #get cumulative NEE, GPP, and RECO for each month
 wwdat.permonth<- group_by(wwdat, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
-                                                                            TS_F_MDS_1_QC = mean(TS_F_MDS_1_QC),
                                                                             SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                            SWC_F_MDS_1_QC = mean(SWC_F_MDS_1_QC),
                                                                             TA_F = mean(TA_F),
-                                                                            TA_F_QC = mean(TA_F_QC),
                                                                             P_F =sum(P_F),
-                                                                            P_F_QC = mean(P_F_QC),
+                                                                            PPFD_IN = mean(PPFD_IN),
                                                                             NEE_CUT_REF = sum(NEE_CUT_REF),
-                                                                            NEE_CUT_REF_QC = mean(NEE_CUT_REF_QC),
+                                                                            NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
                                                                             RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
                                                                             GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
                                                                             RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
                                                                             GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+#separate DT and NT approaches
+wwdat.permonthDT <- wwdat.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+wwdat.permonthDT$partition_method <- "DT"
+wwdat.permonthDT <- wwdat.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_DT_CUT_REF")
+wwdat.permonthNT <- wwdat.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+wwdat.permonthNT$partition_method <- "NT"
+wwdat.permonthNT <- wwdat.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_NT_CUT_REF")
+#merge back together with new column "partition method"
+wwdat.permonth <- bind_rows(wwdat.permonthNT, wwdat.permonthDT) 
+
 
 ################################
 ###ICOS archive data####
@@ -63,11 +72,9 @@ allicosdat <- icoslist_of_files %>%
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE), .id = "site_id")          
 icoscol <-colnames(allicosdat) #This dataset also partitions NEE by day and night if we want to include that
 #subset for only our variables of interest
-icosdat <- allicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1, TS_F_MDS_1_QC,
-                                        SWC_F_MDS_1, SWC_F_MDS_1_QC, 
-                                        TA_F, TA_F_QC, 
-                                        P_F,P_F_QC,
-                                        NEE_CUT_REF,NEE_CUT_REF_QC,
+icosdat <- allicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
+                                        SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
+                                        NEE_CUT_REF, NEE_CUT_REF_QC,
                                         RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                         RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #turn -9999 to NA
@@ -80,36 +87,47 @@ icosdat$month <- substr(icosdat$TIMESTAMP, 5,6)
 colnames(icosdat)
 #get cumulative NEE, GPP, and RECO for each month
 icosdat.permonth<- group_by(icosdat, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
-                                                                                TS_F_MDS_1_QC = mean(TS_F_MDS_1_QC),
                                                                                 SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                                SWC_F_MDS_1_QC = mean(SWC_F_MDS_1_QC),
                                                                                 TA_F = mean(TA_F),
-                                                                                TA_F_QC = mean(TA_F_QC),
                                                                                 P_F =sum(P_F),
-                                                                                P_F_QC = mean(P_F_QC),
+                                                                                PPFD_IN = mean(PPFD_IN),
                                                                                 NEE_CUT_REF = sum(NEE_CUT_REF),
-                                                                                NEE_CUT_REF_QC = mean(NEE_CUT_REF_QC),
+                                                                                NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
                                                                                 RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
                                                                                 GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
                                                                                 RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
                                                                                 GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+#separate DT and NT approaches
+icosdat.permonthDT <- icosdat.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+icosdat.permonthDT$partition_method <- "DT"
+icosdat.permonthDT <- icosdat.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_DT_CUT_REF")
+icosdat.permonthNT <- icosdat.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+icosdat.permonthNT$partition_method <- "NT"
+icosdat.permonthNT <- icosdat.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_NT_CUT_REF")
+#merge back together with new column "partition method"
+icosdat.permonth <- bind_rows(icosdat.permonthNT, icosdat.permonthDT) 
+
 #########Merging warm winters and icosdat #######
 #combine all data
 alldat.wdupes <- gdata::combine(wwdat.permonth, icosdat.permonth)
 #find duplicates
-dupes<- alldat.wdupes %>% get_dupes(site_id, year, month)  
-#separate dupes by source
-wwdupes <- dupes %>% filter(source=="wwdat.permonth")
-icosdupes <- dupes %>% filter(source=="icosdat.permonth")
-#remove duplicates from icosdat to get final df
-alldatpermonth <- anti_join(alldat.wdupes, icosdupes, 
-                            by = c("site_id","month","year", "source")) #final df
+dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)  
+#remove duplicates to get final df
+alldatpermonth <-alldat.wdupes %>% 
+  distinct(site_id, year, month, partition_method, .keep_all = TRUE)
+##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
+
 setwd("/Users/iwargowsky/Desktop/ICOS")
 write_csv(alldatpermonth, "ICOSdatapermonth.csv")
 
 
-
 #examine duplicate differences
+#separate dupes by source
+wwdupes <- dupes %>% filter(source=="wwdat.permonth")
+icosdupes <- dupes %>% filter(source=="icosdat.permonth")
+
 wwdupes$timestamp <- paste(wwdupes$year, wwdupes$month)
 icosdupes$timestamp <- paste(icosdupes$year, icosdupes$month)
 ggplot()+geom_line(wwdupes, mapping= aes(x=timestamp, y=NEE_CUT_REF, group=site_id, color=site_id))+
@@ -127,5 +145,6 @@ sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_dat
                                                                        end_date = max(ts))
 #double checking that function above worked
 checkdates <- sites %>% arrange(site_id, ts)
+
 
 
