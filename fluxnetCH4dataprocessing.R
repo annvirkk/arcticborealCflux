@@ -17,15 +17,17 @@ CH4fluxnetdf <- files %>%
 CH4fluxnetdf$site_id <- substr(CH4fluxnetdf$site_id, 5,10)
 #select columns to keep
 colnames(CH4fluxnetdf) #see all column names
-CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F, TA_F, P_F,
+CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM,
+                                             FCH4_F_ANNOPTLM_QC, TA_F, P_F,
                                              D_SNOW_F, TS_1, SWC_F, GPP_NT, GPP_DT,
-                                             RECO_NT, RECO_DT, PPFD_IN_F)
+                                             RECO_NT, RECO_DT, PPFD_IN_F, NEE_F)
 #add month and year columns
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
 CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>% 
-  dplyr::summarise(FCH4_F = sum(FCH4_F),
+  dplyr::summarise(FCH4_F = sum(FCH4_F_ANNOPTLM),
+                   FCH4_F_QC= mean(FCH4_F_ANNOPTLM_QC),
                    TA_F = mean(TA_F),
                    P_F = sum(P_F),
                    D_SNOW_F = mean(D_SNOW_F),
@@ -33,7 +35,8 @@ CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>%
                    SWC_F= mean(SWC_F),
                    PPFD_IN_F = mean(PPFD_IN_F),
                    GPP_NT= sum(GPP_NT), GPP_DT=sum(GPP_DT),
-                   RECO_NT= sum(RECO_NT), RECO_DT=sum(RECO_DT))
+                   RECO_NT= sum(RECO_NT), RECO_DT=sum(RECO_DT),
+                   NEE_F= sum(NEE_F))
 
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
@@ -80,7 +83,7 @@ write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
 
 
 ####extract list of sites and dates covered###
-CH4fluxnet.permonth$ts <- paste(fluxnet.permonth$year, fluxnet.permonth$month)
+CH4fluxnet.permonth$ts <- paste(CH4fluxnet.permonth$year, CH4fluxnet.permonth$month)
 sites <- subset(CH4fluxnet.permonth, select = c(site_id,ts))
 sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
                                                                        end_date = max(ts))
