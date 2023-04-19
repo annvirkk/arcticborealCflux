@@ -47,6 +47,35 @@ ggplot()+theme_bw()+ggtitle('FI-Hyy')+
   geom_point(data=DDicos, aes(ts,NEE_CUT_REF_QC, color="DD"))+
   geom_point(data=HHtoDD, aes(ts,NEE_CUT_REF_QC, color= "HHtoDD"))
 
-
+#check R-squared
+model <- lm(DDicos$NEE_CUT_REF_QC~HHtoDD$NEE_CUT_REF_QC)
+summary(model)
 
 ####one flux code https://github.com/fluxnet/ONEFlux/blob/main/oneflux/pipeline/site_data_product.py
+
+
+
+
+
+####get % gap fill from HH data ####
+setwd("/Users/iwargowsky/Desktop/ICOS/ICOSETC")
+path <- "/Users/iwargowsky/Desktop/ICOS/ICOSETC"
+files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
+#load in files as a list of df
+icosetc.dat <- lapply(files,function(i){
+  fread(i, na.strings =c("NA","-9999"), header = TRUE)
+})
+names(icosetc.dat)<- files #name each df
+#add year, month, day columns
+icosetc.dat2 <- lapply(icosetc.dat, function(df) df %>%
+                         mutate( year = substr(df$TIMESTAMP_START, 1,4),
+                                 month = substr(df$TIMESTAMP_START, 5,6),
+                                 day = substr(df$TIMESTAMP_START, 7,8) ))
+#replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage
+icosetc.dat3 <- lapply(icosetc.dat2, function(df) df %>%
+                         mutate(gapfill = case_when(
+                           NEE_VUT_REF_QC %in% c(1,2,3) ~ 1))%>% 
+                         group_by(year,month,day) %>% 
+                         summarise(gapfillpercent = (sum(NEE_VUT_REF_QC))/(n())))
+
+
