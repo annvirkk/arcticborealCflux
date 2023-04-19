@@ -7,7 +7,9 @@ library(purrr)
 library(readr)
 library(ggplot2)
 library(vroom)
+library(readxl)
 library(data.table)
+library(tidyr)
 #Downloaded data from https://ameriflux.lbl.gov/data/download-data/
 # sites selected based on those present in "tower sheet major" on the ABCflux google drive
 #load in all FLUXNET files ####
@@ -21,103 +23,116 @@ amerifluxdf <- files %>%
 amerifluxdf$site_id <- substr(amerifluxdf$site_id, 5,10)
 #select columns to keep
 colnames(amerifluxdf) #see all column names
-amerifluxdf <- amerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1, TS_F_MDS_1_QC,
-                                         SWC_F_MDS_1, SWC_F_MDS_1_QC, 
-                                         TA_F, TA_F_QC, 
-                                         P_F,P_F_QC,
-                                         NEE_VUT_REF,NEE_VUT_REF_QC,
-                                         RECO_DT_VUT_REF, GPP_DT_VUT_REF,
-                                         RECO_NT_VUT_REF, GPP_NT_VUT_REF)
+amerifluxdf <- amerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
+                                             SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
+                                             NEE_CUT_REF, NEE_CUT_REF_QC,
+                                             RECO_DT_CUT_REF, GPP_DT_CUT_REF,
+                                             RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #add month and year columns
 amerifluxdf$year <- substr(amerifluxdf$TIMESTAMP,1,4)
 amerifluxdf$month <- substr(amerifluxdf$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
 ameriflux.permonth<-  group_by(amerifluxdf, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
-                                                                                   TS_F_MDS_1_QC = mean(TS_F_MDS_1_QC),
-                                                                                   SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                                   SWC_F_MDS_1_QC = mean(SWC_F_MDS_1_QC),
-                                                                                   TA_F = mean(TA_F),
-                                                                                   TA_F_QC = mean(TA_F_QC),
-                                                                                   P_F =sum(P_F),
-                                                                                   P_F_QC = mean(P_F_QC),
-                                                                                   NEE_VUT_REF = sum(NEE_VUT_REF),
-                                                                                   NEE_VUT_REF_QC = mean(NEE_VUT_REF_QC),
-                                                                                   RECO_DT_VUT_REF = sum(RECO_DT_VUT_REF),
-                                                                                   GPP_DT_VUT_REF = sum(GPP_DT_VUT_REF),
-                                                                                   RECO_NT_VUT_REF = sum(RECO_NT_VUT_REF),
-                                                                                   GPP_NT_VUT_REF = sum(GPP_NT_VUT_REF))
+                                                                                       SWC_F_MDS_1 = mean(SWC_F_MDS_1),
+                                                                                       TA_F = mean(TA_F),
+                                                                                       P_F =sum(P_F),
+                                                                                       PPFD_IN = mean(PPFD_IN),
+                                                                                       NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                                       NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
+                                                                                       RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
+                                                                                       GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
+                                                                                       RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
+                                                                                       GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+#separate DT and NT approaches
+ameriflux.permonthDT <- ameriflux.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+ameriflux.permonthDT$partition_method <- "DT"
+ameriflux.permonthDT <- ameriflux.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_DT_CUT_REF")
+ameriflux.permonthNT <- ameriflux.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+ameriflux.permonthNT$partition_method <- "NT"
+ameriflux.permonthNT <- ameriflux.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_NT_CUT_REF")
+#merge back together with new column "partition method"
+ameriflux.permonth <- bind_rows(ameriflux.permonthNT, ameriflux.permonthDT) 
 
-###load in all ameriflux BASE files #### 
-#These ameriflux files all have a bunch of different column names and 
-#are at half-hourly resolution so there's LOTS of data to get through
-#We'll first cycle through the folder and get daily averages for each file in the folder
-#ONLY DO THIS ONE TIME (takes ~30 minutes)
-#newFolder <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD"
-#dir.create(newFolder)
-#path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE"
-#files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
-#setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE")
-#for(f in files) {
-  #temp <- fread(f, na=c("NA", "-9999"))
-  #temp$year <- substr(temp$TIMESTAMP_START, 1,4)
-  #temp$month <- substr(temp$TIMESTAMP_START, 5,6)
-  #temp$day <- substr(temp$TIMESTAMP_START, 7,8)
-  #aggregate to half-hourly to daily
-  #temp <- temp %>% mutate_if(is.character, as.numeric)
-  #temp <- group_by(temp, year, month, day) %>% 
-    #dplyr::summarise(across(everything(), .fns= list(mean=mean, sum=sum), na.rm = TRUE))
-  #took both the mean the sum for all variables because some variables like precipitation need to be summed
-  #fwrite(temp, file.path(newFolder, paste0('DD_', basename(f))))
-#}
-
-setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD")
-path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE_DD"
-files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
-base.amerifluxdf <- files %>%
+#load in all FLUXNETbeta files ####
+setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta")
+path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta"
+betafiles <- list.files(path = path,pattern = '*FULLSET_DD_',all.files = T,recursive = T)
+betaamerifluxdf <- betafiles %>%
   setNames(nm = .) %>% 
-  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na= c("NA","-9999")), 
-         .id = "site_id")     
+  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")         
 #clean up site id column
-base.amerifluxdf$site_id <- substr(base.amerifluxdf$site_id, 8,13)
-colnames(base.amerifluxdf)
-#remove all extra sum columns except for the variables that need to be summed
-base.ameriflux <- base.amerifluxdf %>% select(site_id, month, year, day, P_sum, ends_with("_mean") )
-#remove "_mean"from column names
-colnames(base.ameriflux)<-gsub("_mean","",colnames(base.ameriflux))
-#remove TIMESTAMP columns as they are means and we have month, year, day columns now
-base.ameriflux <- base.ameriflux %>% select(-c(TIMESTAMP_START,TIMESTAMP_END))
-colnames(base.ameriflux)
-#convert units umol m-2 s-1 to g C m-2 d-1
-base.ameriflux$FC <- base.ameriflux$FC*1.0368
+betaamerifluxdf$site_id <- substr(betaamerifluxdf$site_id, 5,10)
+#select columns to keep
+colnames(betaamerifluxdf) #see all column names
+betaamerifluxdf <- betaamerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
+                                             SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
+                                             NEE_CUT_REF,NEE_CUT_REF_QC,
+                                             RECO_DT_CUT_REF, GPP_DT_CUT_REF,
+                                             RECO_NT_CUT_REF, GPP_NT_CUT_REF)
+#add month and year columns
+betaamerifluxdf$year <- substr(betaamerifluxdf$TIMESTAMP,1,4)
+betaamerifluxdf$month <- substr(betaamerifluxdf$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
-basedf.permonth<- group_by(base.ameriflux, year, month, site_id) %>% dplyr::summarise(VPD = mean(VPD_PI), 
-                                                                                   TS_1_1_1 = mean(TS_1_1_1),
-                                                                                   SWC_1_1_1 = mean(SWC_1_1_1),
-                                                                                   D_SNOW = sum(D_SNOW),
-                                                                                   FC = sum(FC))
+betaameriflux.permonth<-  group_by(betaamerifluxdf, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
+                                                                                       SWC_F_MDS_1 = mean(SWC_F_MDS_1),
+                                                                                       TA_F = mean(TA_F),
+                                                                                       P_F =sum(P_F),
+                                                                                       PPFD_IN = mean(PPFD_IN),
+                                                                                       NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                                       NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
+                                                                                       RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
+                                                                                       GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
+                                                                                       RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
+                                                                                       GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+#separate DT and NT approaches
+betaameriflux.permonthDT <- betaameriflux.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+betaameriflux.permonthDT$partition_method <- "DT"
+betaameriflux.permonthDT <- betaameriflux.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_DT_CUT_REF")
+betaameriflux.permonthNT <- betaameriflux.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+betaameriflux.permonthNT$partition_method <- "NT"
+betaameriflux.permonthNT <- betaameriflux.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+                                                    "RECO_CUT_REF"= "RECO_NT_CUT_REF")
+#merge back together with new column "partition method"
+betaameriflux.permonth <- bind_rows(betaameriflux.permonthNT, betaameriflux.permonthDT) 
+
+#########Merging amerifluxx fluxnet and ameriflux fluxnet beta #######
+#combine all data
+alldat.wdupes <- gdata::combine(betaameriflux.permonth, ameriflux.permonth) 
+#find duplicates
+dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)  
+#Not duplicates OK to combine
+ameriflux.fluxnetall <- gdata::combine(betaameriflux.permonth, ameriflux.permonth) 
 
 
-###############################
-#Examine fluxnet processing vs PI data
-unique(basedf.perday$site_id)
-unique(ameriflux.permonth$site_id)
-
-FLUXNET <- ameriflux.permonth %>% filter(site_id == "CA-ARF")
-FLUXNET$ts <- paste(FLUXNET$year, FLUXNET$month)
-BASE <- basedf.permonth %>% filter(site_id == "CA-ARF")
-BASE$ts <- paste(BASE$year, BASE$month)
-
-ggplot()+geom_line(data= FLUXNET, aes(x= ts, y= NEE_VUT_REF, group=site_id, color="blue"))+
-ggplot()+geom_line(data = BASE, aes(x=ts, y=FC, color="red"))
+####extract list of sites and dates covered###
+ameriflux.fluxnetall$ts <- paste(ameriflux.fluxnetall$year, ameriflux.fluxnetall$month)
+sites <- subset(ameriflux.fluxnetall, select = c(site_id,ts))
+sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
+                                                                       end_date = max(ts))
+#double checking that function above worked
+checkdates <- sites %>% arrange(site_id, ts)
 
 
-
-
-reg <- read_csv(skip=2,"/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE/AMF_CA-ARB_BASE-BADM_1-5/AMF_CA-ARB_BASE_HH_1-5.csv",  na=c("NA", "-9999"))
-mean <- read_csv("/Users/iwargowsky/Desktop/TEST/new_AMF_CA-ARB_BASE_HH_1-5.csv",  na=c("NA", "-9999"))
-reg$year <- substr(reg$TIMESTAMP_START,1,4)
-reg$month <- substr(reg$TIMESTAMP_START,5,6)
-reg$day <- substr(reg$TIMESTAMP_START,7,8)
-regdaily <- group_by(reg, year, month, day) %>% dplyr::summarise(FC= mean(FC))
-
-
+### Adding in other variables
+setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET")
+meta <- read_xlsx("AMF_AA-Net_BIF_LEGACY_20230331.xlsx")
+#filter for sites of interest
+names <- unique(ameriflux.fluxnetall$site_id)
+meta <- meta %>% filter(SITE_ID %in% names)
+#move to better format and group by site
+meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
+meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
+                                                           citation = na.omit(DOI),
+                                                           site_name= na.omit(SITE_NAME),
+                                                           latitude= na.omit(LOCATION_LAT),
+                                                           longitude= na.omit(LOCATION_LONG),
+                                                           flux_method= na.omit(FLUX_MEASUREMENTS_METHOD))
+#merge flux df and meta data
+meta.bysite<- meta.bysite %>% rename(site_id= SITE_ID)
+ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
+#save
+setwd("/Users/iwargowsky/Desktop/Ameriflux")
+write_csv(ameriflux.fluxnetall, "ameriflux.fluxnetALL.csv")
