@@ -20,7 +20,7 @@ fluxnetdf$site_id <- substr(fluxnetdf$site_id, 5,10)
 colnames(fluxnetdf) #see all column names
 fluxnetdf <- fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
                                          SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
-                                         NEE_CUT_REF,
+                                         NEE_CUT_REF, NEE_CUT_REF_QC, 
                                          RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                          RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #add month and year columns
@@ -33,6 +33,7 @@ fluxnet.permonth<-  group_by(fluxnetdf, year, month, site_id) %>% dplyr::summari
                                                                                    P_F =sum(P_F),
                                                                                    PPFD_IN = mean(PPFD_IN),
                                                                                    NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                                   NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
                                                                                    RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
                                                                                    GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
                                                                                    RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
