@@ -1,6 +1,4 @@
 #ICOS data processing starting with daily# 
-###Combining ICOS data ####
-library(dplyr)
 library(ggplot2)
 library(janitor)
 library(tidyverse)
@@ -9,6 +7,7 @@ library(naniar)
 library(readr)
 library(gdata)
 library(DataCombine)
+library(dplyr)
 #start with Warm Winters data
 # Identify file names
 setwd("/Users/iwargowsky/Desktop/ICOS/Warm Winters")
@@ -38,26 +37,30 @@ colnames(wwdat)
 wwdat.permonth<- group_by(wwdat, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
                                                                             SWC_F_MDS_1 = mean(SWC_F_MDS_1),
                                                                             TA_F = mean(TA_F),
-                                                                            P_F =sum(P_F),
+                                                                            P_F =sum(P_F, na.rm = FALSE),
                                                                             PPFD_IN = mean(PPFD_IN),
-                                                                            NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                            NEE_CUT_REF = sum(NEE_CUT_REF, na.rm = FALSE),
                                                                             NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
-                                                                            RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
-                                                                            GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
-                                                                            RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
-                                                                            GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+                                                                            RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF, na.rm = FALSE),
+                                                                            GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF, na.rm = FALSE),
+                                                                            RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF, na.rm = FALSE),
+                                                                            GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF, na.rm = FALSE))
+
 #separate DT and NT approaches
-wwdat.permonthDT <- wwdat.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+wwdat.permonthDT <- wwdat.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF)) 
 wwdat.permonthDT$partition_method <- "DT"
-wwdat.permonthDT <- wwdat.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+wwdat.permonthDT <- wwdat.permonthDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
-wwdat.permonthNT <- wwdat.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+wwdat.permonthNT <- wwdat.permonth %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
 wwdat.permonthNT$partition_method <- "NT"
-wwdat.permonthNT <- wwdat.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+wwdat.permonthNT <- wwdat.permonthNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
 wwdat.permonth <- bind_rows(wwdat.permonthNT, wwdat.permonthDT) 
 
+#Adding in DOIs
+wwdoi <- read_csv("warmwintersDOI.csv")
+wwdat.permonth <- merge(wwdat.permonth, wwdoi)
 
 ################################
 ###ICOS archive data####
@@ -89,25 +92,30 @@ colnames(icosdat)
 icosdat.permonth<- group_by(icosdat, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
                                                                                 SWC_F_MDS_1 = mean(SWC_F_MDS_1),
                                                                                 TA_F = mean(TA_F),
-                                                                                P_F =sum(P_F),
+                                                                                P_F =sum(P_F, na.rm = FALSE),
                                                                                 PPFD_IN = mean(PPFD_IN),
-                                                                                NEE_CUT_REF = sum(NEE_CUT_REF),
+                                                                                NEE_CUT_REF = sum(NEE_CUT_REF, na.rm = FALSE),
                                                                                 NEE_CUT_REF_QC= mean(NEE_CUT_REF_QC),
-                                                                                RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
-                                                                                GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
-                                                                                RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
-                                                                                GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+                                                                                RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF, na.rm = FALSE),
+                                                                                GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF, na.rm = FALSE),
+                                                                                RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF, na.rm = FALSE),
+                                                                                GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF, na.rm = FALSE))
 #separate DT and NT approaches
-icosdat.permonthDT <- icosdat.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+icosdat.permonthDT <- icosdat.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
 icosdat.permonthDT$partition_method <- "DT"
-icosdat.permonthDT <- icosdat.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+icosdat.permonthDT <- icosdat.permonthDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
-icosdat.permonthNT <- icosdat.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+icosdat.permonthNT <- icosdat.permonth %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
 icosdat.permonthNT$partition_method <- "NT"
-icosdat.permonthNT <- icosdat.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+icosdat.permonthNT <- icosdat.permonthNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
 icosdat.permonth <- bind_rows(icosdat.permonthNT, icosdat.permonthDT) 
+
+#Adding in DOIs
+etcdoi <- read_csv("ICOSETCDOI.csv")
+icosdat.permonth <- merge(icosdat.permonth, etcdoi)
+
 
 #########Merging warm winters and icosdat #######
 #combine all data
