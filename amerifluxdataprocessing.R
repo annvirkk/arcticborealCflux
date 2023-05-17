@@ -107,15 +107,6 @@ dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)
 ameriflux.fluxnetall <- gdata::combine(betaameriflux.permonth, ameriflux.permonth) 
 
 
-####extract list of sites and dates covered###
-ameriflux.fluxnetall$ts <- paste(ameriflux.fluxnetall$year, ameriflux.fluxnetall$month)
-sites <- subset(ameriflux.fluxnetall, select = c(site_id,ts))
-sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
-                                                                       end_date = max(ts))
-#double checking that function above worked
-checkdates <- sites %>% arrange(site_id, ts)
-
-
 ### Adding in other variables
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET")
 meta <- read_xlsx("AMF_AA-Net_BIF_LEGACY_20230331.xlsx")
@@ -133,6 +124,18 @@ meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUN
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% rename(site_id= SITE_ID)
 ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
+#noting what U-star filtering was used 
+ameriflux.ALL$tower_corrections <- "CUT"
 #save
 setwd("/Users/iwargowsky/Desktop/Ameriflux")
 write_csv(ameriflux.fluxnetall, "ameriflux.fluxnetALL.csv")
+
+
+
+####extract list of sites and dates covered###
+ameriflux.fluxnetall$ts <- paste(ameriflux.fluxnetall$year, ameriflux.fluxnetall$month)
+sites <- subset(ameriflux.fluxnetall, select = c(site_id,ts))
+sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
+                                                                       end_date = max(ts))
+#double checking that function above worked
+checkdates <- sites %>% arrange(site_id, ts)
