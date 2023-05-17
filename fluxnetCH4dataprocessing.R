@@ -17,17 +17,15 @@ CH4fluxnetdf <- files %>%
 CH4fluxnetdf$site_id <- substr(CH4fluxnetdf$site_id, 5,10)
 #select columns to keep
 colnames(CH4fluxnetdf) #see all column names
-CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM,
-                                             FCH4_F_ANNOPTLM_QC, TA_F, P_F,
+CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F, TA_F, P_F,
                                              D_SNOW_F, TS_1, SWC_F, GPP_NT, GPP_DT,
                                              RECO_NT, RECO_DT, PPFD_IN_F, NEE_F)
 #add month and year columns
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
-CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>% 
-  dplyr::summarise(FCH4_F = sum(FCH4_F_ANNOPTLM),
-                   FCH4_F_QC= mean(FCH4_F_ANNOPTLM_QC),
+CH4fluxnet.permonth2<-  group_by(CH4fluxnet, year, month, site_id) %>% 
+  dplyr::summarise(FCH4_F = sum(FCH4_F, na.rm = ),
                    TA_F = mean(TA_F),
                    P_F = sum(P_F),
                    D_SNOW_F = mean(D_SNOW_F),
@@ -41,16 +39,14 @@ CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>%
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
 CH4fluxnet.permonthDT$partition_method <- "DT"
-CH4fluxnet.permonthDT <- CH4fluxnet.permonthDT %>% rename("GPP"= "GPP_DT",
+CH4fluxnet.permonthDT <- CH4fluxnet.permonthDT %>% dplyr::rename("GPP"= "GPP_DT",
                                                     "RECO"= "RECO_DT")
 CH4fluxnet.permonthNT <- CH4fluxnet.permonth %>% select(-c(GPP_DT, RECO_DT))
 CH4fluxnet.permonthNT$partition_method <- "NT"
-CH4fluxnet.permonthNT <- CH4fluxnet.permonthNT %>% rename("GPP"= "GPP_NT",
+CH4fluxnet.permonthNT <- CH4fluxnet.permonthNT %>% dplyr::rename("GPP"= "GPP_NT",
                                                     "RECO"= "RECO_NT")
 #merge back together with new column "partition method"
 CH4fluxnet.permonth <- bind_rows(CH4fluxnet.permonthNT, CH4fluxnet.permonthDT) 
-
-#write_csv(CH4fluxnet.permonth, "CH4fluxnetpermonth.csv")
 
 
 #Adding in some metadata####
@@ -75,11 +71,10 @@ meta.3 <- meta.2 %>% select(SITE_NAME, SITE_ID, COUNTRY, LAT, LON,
                             sphagnum_cover, other_moss_cover, "FLUXNET-CH4_DATA_POLICY")
 
 #merge flux df and meta data
-meta.3<- meta.3 %>% rename(site_id= SITE_ID)
+meta.3<- meta.3 %>% dplyr::rename(site_id= SITE_ID)
 CH4fluxnetALL <- left_join(CH4fluxnet.permonth, meta.3)
 
 write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
-
 
 
 ####extract list of sites and dates covered###
