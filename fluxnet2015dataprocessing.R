@@ -40,13 +40,13 @@ fluxnet.permonth<-  group_by(fluxnetdf, year, month, site_id) %>% dplyr::summari
                                                                                    GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
 
 #separate DT and NT approaches
-fluxnet.permonthDT <- fluxnet.permonth %>% select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+fluxnet.permonthDT <- fluxnet.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
 fluxnet.permonthDT$partition_method <- "DT"
-fluxnet.permonthDT <- fluxnet.permonthDT %>% rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+fluxnet.permonthDT <- fluxnet.permonthDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
-fluxnet.permonthNT <- fluxnet.permonth %>% select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+fluxnet.permonthNT <- fluxnet.permonth %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
 fluxnet.permonthNT$partition_method <- "NT"
-fluxnet.permonthNT <- fluxnet.permonthNT %>% rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+fluxnet.permonthNT <- fluxnet.permonthNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
 fluxnet.permonth <- bind_rows(fluxnet.permonthNT, fluxnet.permonthDT) 
@@ -76,8 +76,10 @@ meta.bysite <- meta.bysite %>% filter(!SITE_ID== "RU-Sam")
 meta.bysite <- rbind(meta.bysite, RU.Sam)
 
 #merge flux df and meta data
-meta.bysite<- meta.bysite %>% rename(site_id= SITE_ID)
+meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 fluxnetALL <- left_join(fluxnet.permonth, meta.bysite)
+#noting what U-star filtering was used 
+fluxnetALL$tower_corrections <- "CUT"
 #save
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
 write_csv(fluxnetALL, "fluxnetALL.csv")
