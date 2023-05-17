@@ -8,25 +8,22 @@ library(readr)
 library(gdata)
 library(DataCombine)
 library(dplyr)
-#start with Warm Winters data
-# Identify file names
+###Warm Winters data#####
+## Identify file names
 setwd("/Users/iwargowsky/Desktop/ICOS/Warm Winters")
 path <- "/Users/iwargowsky/Desktop/ICOS/Warm Winters"
 wwlist_of_files <- list.files(path = path,pattern = '*_FULLSET_DD_',all.files = T,recursive = T)
 #cycle through folders
 wwicosdat <- wwlist_of_files %>%
   setNames(nm = .) %>% 
-  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE), .id = "site_id")          
+  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")          
 colnames(wwicosdat)
 #subset for only our variables of interest
 wwdat <- wwicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
-                                     SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
+                                     SWC_F_MDS_1, TA_F_MDS, P_F, PPFD_IN,
                                      NEE_CUT_REF, NEE_CUT_REF_QC,
                                      RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                      RECO_NT_CUT_REF, GPP_NT_CUT_REF)
-
-#turn -9999 to NA
-wwdat[wwdat == -9999] <- NA
 #clean up site id column
 wwdat$site_id <- substr(wwdat$site_id, 5,10)
 #add year,month, day columns
@@ -36,7 +33,7 @@ colnames(wwdat)
 #get cumulative NEE, GPP, and RECO for each month
 wwdat.permonth<- group_by(wwdat, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
                                                                             SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                            TA_F = mean(TA_F),
+                                                                            TA_F_MDS = mean(TA_F_MDS),
                                                                             P_F =sum(P_F, na.rm = FALSE),
                                                                             PPFD_IN = mean(PPFD_IN),
                                                                             NEE_CUT_REF = sum(NEE_CUT_REF, na.rm = FALSE),
@@ -44,8 +41,8 @@ wwdat.permonth<- group_by(wwdat, year, month, site_id) %>% dplyr::summarise(TS_F
                                                                             RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF, na.rm = FALSE),
                                                                             GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF, na.rm = FALSE),
                                                                             RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF, na.rm = FALSE),
-                                                                            GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF, na.rm = FALSE))
-
+                                                                            GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF, na.rm = FALSE),
+                                                                            percent_na = (sum(is.na(NEE_CUT_REF))/48)*100)
 #separate DT and NT approaches
 wwdat.permonthDT <- wwdat.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF)) 
 wwdat.permonthDT$partition_method <- "DT"
@@ -62,8 +59,7 @@ wwdat.permonth <- bind_rows(wwdat.permonthNT, wwdat.permonthDT)
 wwdoi <- read_csv("warmwintersDOI.csv")
 wwdat.permonth <- merge(wwdat.permonth, wwdoi)
 
-################################
-###ICOS archive data####
+###ICOS ETC archive data####-------------------------------------------------------
 # Identify file names
 setwd("/Users/iwargowsky/Desktop/ICOS/ICOSETC")
 path <- "/Users/iwargowsky/Desktop/ICOS/ICOSETC"
@@ -72,16 +68,14 @@ icoslist_of_files <- list.files(path = path,pattern = '*_FLUXNET_DD_',all.files 
 #cycle through all folders
 allicosdat <- icoslist_of_files %>%
   setNames(nm = .) %>% 
-  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE), .id = "site_id")          
+  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")          
 icoscol <-colnames(allicosdat) #This dataset also partitions NEE by day and night if we want to include that
 #subset for only our variables of interest
 icosdat <- allicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
-                                        SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
+                                        SWC_F_MDS_1, TA_F_MDS, P_F, PPFD_IN,
                                         NEE_CUT_REF, NEE_CUT_REF_QC,
                                         RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                         RECO_NT_CUT_REF, GPP_NT_CUT_REF)
-#turn -9999 to NA
-icosdat[icosdat == -9999] <- NA
 #clean up site id column
 icosdat$site_id <- substr(icosdat$site_id, 9,14)
 #add year,month, day columns
@@ -91,7 +85,7 @@ colnames(icosdat)
 #get cumulative NEE, GPP, and RECO for each month
 icosdat.permonth<- group_by(icosdat, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
                                                                                 SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                                TA_F = mean(TA_F),
+                                                                                TA_F_MDS = mean(TA_F_MDS),
                                                                                 P_F =sum(P_F, na.rm = FALSE),
                                                                                 PPFD_IN = mean(PPFD_IN),
                                                                                 NEE_CUT_REF = sum(NEE_CUT_REF, na.rm = FALSE),
@@ -99,7 +93,8 @@ icosdat.permonth<- group_by(icosdat, year, month, site_id) %>% dplyr::summarise(
                                                                                 RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF, na.rm = FALSE),
                                                                                 GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF, na.rm = FALSE),
                                                                                 RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF, na.rm = FALSE),
-                                                                                GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF, na.rm = FALSE))
+                                                                                GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF, na.rm = FALSE),
+                                                                                percent_na = (sum(is.na(NEE_CUT_REF))/48)*100)
 #separate DT and NT approaches
 icosdat.permonthDT <- icosdat.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
 icosdat.permonthDT$partition_method <- "DT"
@@ -126,9 +121,61 @@ dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)
 alldatpermonth <-alldat.wdupes %>% 
   distinct(site_id, year, month, partition_method, .keep_all = TRUE)
 ##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
+#remove rows that do not contain flux data
+alldatpermonth <- alldatpermonth %>%
+  filter(if_all(c("NEE_CUT_REF", "GPP_CUT_REF", "RECO_CUT_REF"), ~ !is.na(.)))
+#noting what U-star filtering was used 
+alldatpermonth$tower_corrections <- "CUT"
+
+#Adding in GL-Dsk again since it doesnt have CUT
+setwd("/Users/iwargowsky/Desktop/ICOS/ICOSETC/ICOSETC_GL-Dsk_ARCHIVE_L2")
+dsk <- read_csv("ICOSETC_GL-Dsk_FLUXNET_DD_L2.csv")
+#add year,month, day columns
+dsk <- dsk %>% mutate(year= substr(dsk$TIMESTAMP, 1,4),
+                      month= substr(dsk$TIMESTAMP, 5,6))
+#add site id
+dsk$site_id <- "GL-Dsk"
+#get cumulative NEE, GPP, and RECO for each month
+dsk.permonth<- group_by(dsk, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
+                                                                            SWC_F_MDS_1 = mean(SWC_F_MDS_1),
+                                                                            TA_F_MDS = mean(TA_F_MDS),
+                                                                            P_F =sum(P_F, na.rm = FALSE),
+                                                                            PPFD_IN = mean(PPFD_IN),
+                                                                            NEE_VUT_REF = sum(NEE_VUT_REF, na.rm = FALSE),
+                                                                            NEE_VUT_REF_QC= mean(NEE_VUT_REF_QC),
+                                                                            RECO_DT_VUT_REF = sum(RECO_DT_VUT_REF, na.rm = FALSE),
+                                                                            GPP_DT_VUT_REF = sum(GPP_DT_VUT_REF, na.rm = FALSE),
+                                                                            RECO_NT_VUT_REF = sum(RECO_NT_VUT_REF, na.rm = FALSE),
+                                                                            GPP_NT_VUT_REF = sum(GPP_NT_VUT_REF, na.rm = FALSE),
+                                                                            percent_na = (sum(is.na(NEE_VUT_REF))/48)*100)
+#separate DT and NT approaches
+dsk.permonthDT <- dsk.permonth %>% dplyr::select(-c(GPP_NT_VUT_REF, RECO_NT_VUT_REF))
+dsk.permonthDT$partition_method <- "DT"
+dsk.permonthDT <- dsk.permonthDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_VUT_REF",
+                                                           "RECO_CUT_REF"= "RECO_DT_VUT_REF")
+dsk.permonthNT <- dsk.permonth %>% dplyr::select(-c(GPP_DT_VUT_REF, RECO_DT_VUT_REF))
+dsk.permonthNT$partition_method <- "NT"
+dsk.permonthNT <- dsk.permonthNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_VUT_REF", 
+                                                           "RECO_CUT_REF"= "RECO_NT_VUT_REF") 
+#intentionally renamed as CUT not VUT for merging purposes
+#merge back together with new column "partition method"
+dsk.permonth <- bind_rows(dsk.permonthNT, dsk.permonthDT) 
+
+#Adding in DOIs
+setwd("/Users/iwargowsky/Desktop/ICOS/ICOSETC")
+etcdoi <- read_csv("ICOSETCDOI.csv")
+dsk.permonth <- merge(dsk.permonth, etcdoi)
+#noting what U-star filtering was used 
+dsk.permonth$tower_corrections <- "VUT"
+
+#final df
+allICOSpermonth <- bind_rows(alldatpermonth, dsk.permonth)
+
+
+#_____________________________________________________________________________
 
 setwd("/Users/iwargowsky/Desktop/ICOS")
-write_csv(alldatpermonth, "ICOSdatapermonth.csv")
+write_csv(allICOSpermonth, "ICOSdatapermonth.csv")
 
 
 #examine duplicate differences
