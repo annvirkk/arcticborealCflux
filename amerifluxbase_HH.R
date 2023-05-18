@@ -34,23 +34,6 @@ base[[4]] <- base[[4]] %>% group_by(year, month, day) %>%
                    P= sum(P_RAIN, na.rm= TRUE),
                    TS= mean(c(TS_1_1_1, TS_2_1_1, TS_3_1_1), na.rm= TRUE),
                    FCH4= mean(FCH4, na.rm= TRUE))
-x <- base[[4]] %>% mutate(week = week(as.Date(paste(year, month, day, sep = '-'))))
-
-
-  group_by(year, month, day) %>%
-  
-  
-
-  
-  dplyr::summarise(percent_na = (sum(is.na(FCH4))/n()*100),
-                   TA= mean(TA, na.rm= TRUE),
-                   PPFD= mean(PPFD_IN, na.rm= TRUE),
-                   P= sum(P_RAIN, na.rm= TRUE),
-                   TS= mean(c(TS_1_1_1, TS_2_1_1, TS_3_1_1), na.rm= TRUE),
-                   FCH4= mean(FCH4, na.rm= TRUE))
-
-
-
 
 #CH4 not gapfilled
 ###CA-Gro####---------------------------------------------------------------------------
