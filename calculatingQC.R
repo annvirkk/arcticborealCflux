@@ -71,11 +71,18 @@ icosetc.dat2 <- lapply(icosetc.dat, function(df) df %>%
                          mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                  month = substr(df$TIMESTAMP_START, 5,6),
                                  day = substr(df$TIMESTAMP_START, 7,8) ))
-#replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage
+#replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 icosetc.dat3 <- lapply(icosetc.dat2, function(df) df %>%
-                         mutate(gapfill = case_when(
-                           NEE_VUT_REF_QC %in% c(1,2,3) ~ 1))%>% 
+                         mutate( year = substr(df$TIMESTAMP_START, 1,4),
+                                 month = substr(df$TIMESTAMP_START, 5,6),
+                                 day = substr(df$TIMESTAMP_START, 7,8) ) %>%
+                         mutate(gapfill = case_when(NEE_VUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                         dplyr::select(year, month, day, gapfill, NEE_VUT_REF_QC) %>%
                          group_by(year,month,day) %>% 
-                         summarise(gapfillpercent = (sum(NEE_VUT_REF_QC))/(n())))
-
-
+                         dplyr::summarise(gapfillpercent = sum(gapfill, na.rm=TRUE)/n()))
+                         
+                         
+                         
+                         
+                         
+                     
