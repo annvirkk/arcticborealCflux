@@ -58,7 +58,7 @@ ww.dat2.gf <- lapply(ww.dat2, function(df) df %>%
                          mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                  month = substr(df$TIMESTAMP_START, 5,6) ) %>%
                          mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3) ~ 1))%>%
-                         dplyr::select(year, month, gapfill, NEE_VUT_REF_QC) %>%
+                         dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                          group_by(year,month) %>% 
                          dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
 
@@ -202,6 +202,4 @@ allICOSpermonth <-allICOSpermonth.wdupes  %>%
 
 setwd("/Users/iwargowsky/Desktop/ICOS")
 write_csv(allICOSpermonth, "ICOSdatapermonth.csv")
-
-
 
