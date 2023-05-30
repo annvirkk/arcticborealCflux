@@ -24,8 +24,8 @@ CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F, TA_F, P
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
-CH4fluxnet.permonth2<-  group_by(CH4fluxnet, year, month, site_id) %>% 
-  dplyr::summarise(FCH4_F = sum(FCH4_F, na.rm = ),
+CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>% 
+  dplyr::summarise(FCH4_F = sum(FCH4_F, na.rm= FALSE),
                    TA_F = mean(TA_F),
                    P_F = sum(P_F),
                    D_SNOW_F = mean(D_SNOW_F),
