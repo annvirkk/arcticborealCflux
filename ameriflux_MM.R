@@ -162,13 +162,13 @@ ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
 ameriflux.ALL$tower_corrections <- "CUT"
 #save
 setwd("/Users/iwargowsky/Desktop/Ameriflux")
-write_csv(ameriflux.fluxnetall, "ameriflux.fluxnetALL.csv")
+write_csv(ameriflux.ALL, "ameriflux.fluxnetALL.csv")
 
 
 
 ####extract list of sites and dates covered###
-ameriflux.fluxnetall$ts <- paste(ameriflux.fluxnetall$year, ameriflux.fluxnetall$month)
-sites <- subset(ameriflux.fluxnetall, select = c(site_id,ts))
+ameriflux.ALL$ts <- paste(ameriflux.ALL$year, ameriflux.ALL$month)
+sites <- subset(ameriflux.ALL, select = c(site_id,ts))
 sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
                                                                        end_date = max(ts))
 #double checking that function above worked
