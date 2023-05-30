@@ -144,9 +144,7 @@ setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
 write_csv(fluxnetALL, "fluxnetpermonth.csv")
 
 ####extract list of sites and dates covered###
-fluxnetdf$ts <- paste(fluxnetdf$year, fluxnetdf$month)
-sites <- subset(fluxnetdf, select = c(site_id,ts))
+fluxnetALL$ts <- paste(fluxnetALL$year, fluxnetALL$month)
+sites <- subset(fluxnetALL, select = c(site_id,ts))
 sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
                                                                        end_date = max(ts))
-#double checking that function above worked
-checkdates <- sites %>% arrange(site_id, ts)
