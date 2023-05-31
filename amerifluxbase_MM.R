@@ -49,7 +49,6 @@ base[[6]] <- base[[6]] %>% group_by(year, month) %>%
                    P= sum(P, na.rm= FALSE),
                    D_SNOW= mean(D_SNOW, na.rm= FALSE),
                    FCH4= mean(FCH4_PI_F, na.rm= FALSE),
-                   SCH4= mean(SCH4, na.rm= FALSE),
                    NEE = mean(NEE_PI_F, na.rm= FALSE),
                    GPP= mean(GPP_PI_F, na.rm= FALSE),
                    RECO= mean(RECO_PI_F, na.rm= FALSE))
@@ -139,7 +138,6 @@ base[[21]] <- base[[21]] %>% group_by(year, month) %>%
                    P= sum(P_RAIN, na.rm=FALSE),
                    D_SNOW= mean(D_SNOW, na.rm=FALSE),
                    FCH4= mean(FCH4_PI_F, na.rm=FALSE),
-                   SCH4= mean(SCH4, na.rm=FALSE),
                    NEE= mean(NEE_PI_F, na.rm=FALSE),
                    GPP= mean(GPP_PI, na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE))
@@ -186,7 +184,6 @@ base[[29]] <- base[[29]] %>% group_by(year, month) %>%
                    TS= mean(TS_1_1_1, na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
                    FCH4= mean(FCH4_PI_F, na.rm=FALSE),
-                   SCH4= mean(SCH4, na.rm=FALSE),
                    NEE= mean(NEE_PI_F, na.rm=FALSE),
                    GPP= mean(GPP_PI, na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE))
@@ -200,7 +197,6 @@ base[[30]] <- base[[30]] %>% group_by(year, month) %>%
                    P= sum(P, na.rm=FALSE),
                    D_SNOW= mean(D_SNOW, na.rm=FALSE),
                    FCH4= mean(FCH4_PI_F, na.rm=FALSE),
-                   SCH4= mean(SCH4, na.rm=FALSE),
                    NEE= mean(NEE_PI_F, na.rm=FALSE),
                    GPP= mean(GPP_PI, na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE))
@@ -535,7 +531,6 @@ base[[59]] <- base[[59]] %>% group_by(year, month) %>%
                    P= sum(P_RAIN_PI_F, na.rm=FALSE),
                    SWC= mean(c(SWC_PI_F_1_1_1, SWC_PI_F_2_1_1), na.rm=FALSE),
                    FCH4= mean(FCH4, na.rm=FALSE),
-                   SCH4= mean(SCH4, na.rm=FALSE),
                    SC= mean(SC_PI_F, na.rm=FALSE),
                    D_SNOW= mean(D_SNOW, na.rm=FALSE),
                    TS= mean(c(TS_PI_F_1_1_1, TS_PI_F_2_1_1, TS_PI_F_3_1_1), na.rm=FALSE),
@@ -628,8 +623,7 @@ base.monthly$ts = as.yearmon(paste(base.monthly$year, base.monthly$month,sep = '
 base.monthly$NEE <- base.monthly$NEE*1.0368 * days_in_month(base.monthly$ts)#micromole per sec to gC per day
 base.monthly$GPP <- base.monthly$GPP*1.0368 * days_in_month(base.monthly$ts)
 base.monthly$RECO <- base.monthly$RECO*1.0368 * days_in_month(base.monthly$ts)
-base.monthly$SCH4 <- base.monthly$SCH4*0.0010368* days_in_month(base.monthly$ts) #nanomole per sec to gC per day
-base.monthly$SC <- base.monthly$SC*0.0010368 * days_in_month(base.monthly$ts)
+base.monthly$SC <- base.monthly$SC*0.0010368 * days_in_month(base.monthly$ts)#nanomole per sec to gC per day
 base.monthly$FCH4 <- base.monthly$FCH4*0.0010368 * days_in_month(base.monthly$ts)
 base.monthly$ts <- NULL
 #turn NaNs into NAs

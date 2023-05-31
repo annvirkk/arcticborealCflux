@@ -49,7 +49,6 @@ base[[6]] <- base[[6]] %>% group_by(year, month, day) %>%
             P= sum(P, na.rm= TRUE),
             D_SNOW= mean(D_SNOW, na.rm= TRUE),
             FCH4= mean(FCH4_PI_F, na.rm= TRUE),
-            SCH4= mean(SCH4, na.rm= TRUE),
             NEE = mean(NEE_PI_F, na.rm= TRUE),
             GPP= mean(GPP_PI_F, na.rm= TRUE),
             RECO= mean(RECO_PI_F, na.rm= TRUE))
@@ -125,7 +124,6 @@ base[[21]] <- base[[21]] %>% group_by(year, month, day) %>%
                    P= sum(P_RAIN, na.rm=TRUE),
                    D_SNOW= mean(D_SNOW, na.rm=TRUE),
                    FCH4= mean(FCH4_PI_F, na.rm=TRUE),
-                   SCH4= mean(SCH4, na.rm=TRUE),
                    NEE= mean(NEE_PI_F, na.rm=TRUE),
                    GPP= mean(GPP_PI, na.rm=TRUE),
                    RECO= mean(RECO_PI, na.rm=TRUE))
@@ -170,7 +168,6 @@ base[[29]] <- base[[29]] %>% group_by(year, month, day) %>%
                    TS= mean(TS_1_1_1, na.rm=TRUE),
                    PPFD= mean(PPFD_IN, na.rm=TRUE),
                    FCH4= mean(FCH4_PI_F, na.rm=TRUE),
-                   SCH4= mean(SCH4, na.rm=TRUE),
                    NEE= mean(NEE_PI_F, na.rm=TRUE),
                    GPP= mean(GPP_PI, na.rm=TRUE),
                    RECO= mean(RECO_PI, na.rm=TRUE))
@@ -183,7 +180,6 @@ base[[30]] <- base[[30]] %>% group_by(year, month, day) %>%
                    P= sum(P, na.rm=TRUE),
                    D_SNOW= mean(D_SNOW, na.rm=TRUE),
                    FCH4= mean(FCH4_PI_F, na.rm=TRUE),
-                   SCH4= mean(SCH4, na.rm=TRUE),
                    NEE= mean(NEE_PI_F, na.rm=TRUE),
                    GPP= mean(GPP_PI, na.rm=TRUE),
                    RECO= mean(RECO_PI, na.rm=TRUE))
@@ -490,7 +486,6 @@ base[[59]] <- base[[59]] %>% group_by(year, month, day) %>%
                    P= sum(P_RAIN_PI_F, na.rm=TRUE),
                    SWC= mean(c(SWC_PI_F_1_1_1, SWC_PI_F_2_1_1), na.rm=TRUE),
                    FCH4= mean(FCH4, na.rm=TRUE),
-                   SCH4= mean(SCH4, na.rm=TRUE),
                    SC= mean(SC_PI_F, na.rm=TRUE),
                    D_SNOW= mean(D_SNOW, na.rm=TRUE),
                    TS= mean(c(TS_PI_F_1_1_1, TS_PI_F_2_1_1, TS_PI_F_3_1_1), na.rm=TRUE),
@@ -575,9 +570,8 @@ base.daily <- bind_rows(base2, .id = "site_id")
 #Convert units to match ABCflux v2
 base.daily$NEE <- base.daily$NEE*1.0368 #micromole per sec to gC per day
 base.daily$GPP <- base.daily$GPP*1.0368
-base.daily$RECO <- base.daily$RECO*1.0368
-base.daily$SCH4 <- base.daily$SCH4*0.0010368  #nanomole per sec to gC per day
-base.daily$SC <- base.daily$SC*0.0010368
+base.daily$RECO <- base.daily$RECO*1.0368 
+base.daily$SC <- base.daily$SC*0.0010368#nanomole per sec to gC per day
 base.daily$FCH4 <- base.daily$FCH4*0.0010368
 #get monthly values
 base.monthly <-  group_by(base.daily, year, month, site_id) %>% 
@@ -590,7 +584,6 @@ base.monthly <-  group_by(base.daily, year, month, site_id) %>%
                    NEE= sum(NEE, na.omit=FALSE),
                    SC= sum(SC, na.omit=FALSE),
                    RECO= sum(RECO, na.omit=FALSE),
-                   SCH4= sum(SCH4, na.omit=FALSE),
                    GPP= sum(GPP, na.omit=FALSE),
                    P= sum(P, na.omit=FALSE))
 #turn NaNs into NAs
