@@ -4,9 +4,11 @@ library(tidyverse)
 library(stringr)
 library(naniar)
 library(readr)
+library(data.table)
 library(gdata)
 library(DataCombine)
 library(dplyr)
+library(zoo)
 library(lubridate)
 ###Warm Winters data#####
 ## Identify file names
@@ -32,11 +34,11 @@ wwdat$month <- substr(wwdat$TIMESTAMP, 5,6)
 wwdat$TIMESTAMP <- NULL
 #separate DT and NT approaches
 wwdatDT <- wwdat %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF)) 
-wwdatDT$partition_method <- "DT"
+wwdatDT$partition_method <- "Lasslop"
 wwdatDT <- wwdatDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
 wwdatNT <- wwdat %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
-wwdatNT$partition_method <- "NT"
+wwdatNT$partition_method <- "Reichstein"
 wwdatNT <- wwdatNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
@@ -89,11 +91,11 @@ icosdat$month <- substr(icosdat$TIMESTAMP, 5,6)
 icosdat$TIMESTAMP <- NULL
 #separate DT and NT approaches
 icosdatDT <- icosdat %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
-icosdatDT$partition_method <- "DT"
+icosdatDT$partition_method <- "Lasslop"
 icosdatDT <- icosdatDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
 icosdatNT <- icosdat %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
-icosdatNT$partition_method <- "NT"
+icosdatNT$partition_method <- "Reichstein"
 icosdatNT <- icosdatNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
@@ -133,14 +135,16 @@ alldatpermonth <-alldat.wdupes %>%
 alldatpermonth$tower_corrections <- "CUT" #noting what U-star filtering was used 
 
 ###VUT sites#####----------------------------------------------------------
-#Adding in GL-Dsk and FI-Ken again since they doesnt have CUT, only VUT
+#Adding in GL-Dsk SE-Sto,and FI-Ken again since they don't have CUT, only VUT
 setwd("/Users/iwargowsky/Desktop/ICOS/VUT sites")
 dsk <- read_csv("ICOSETC_GL-Dsk_ARCHIVE_L2/ICOSETC_GL-Dsk_FLUXNET_MM_L2.csv")
 dsk$site_id <- "GL-Dsk"
 ken <- read_csv("ICOSETC_FI-Ken_ARCHIVE_L2/ICOSETC_FI-Ken_FLUXNET_MM_L2.csv")
 ken$site_id <- "FI-Ken"
+sto <- read_csv("ICOSETC_SE-Sto_ARCHIVE_L2/ICOSETC_SE-Sto_FLUXNET_MM_L2.csv")
+sto$site_id <- "SE-Sto"
 #merge vut sites together
-VUTsites <- bind_rows(ken, dsk)
+VUTsites <- bind_rows(list(ken, dsk, sto))
 VUTsites$source <- "icosdat"
 #add year,month, day columns
 VUTsites <- VUTsites %>% mutate(year= substr(VUTsites$TIMESTAMP, 1,4),
@@ -153,12 +157,12 @@ VUTsites  <- VUTsites  %>% dplyr::select(site_id, year, month, source, TS_F_MDS_
                                         RECO_NT_VUT_REF, GPP_NT_VUT_REF)
 #separate DT and NT approaches
 VUTsitesDT <- VUTsites %>% dplyr::select(-c(GPP_NT_VUT_REF, RECO_NT_VUT_REF))
-VUTsitesDT$partition_method <- "DT"
+VUTsitesDT$partition_method <- "Lasslop"
 VUTsitesDT <- VUTsitesDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_VUT_REF",
                                  "RECO_CUT_REF"= "RECO_DT_VUT_REF",
                                  "NEE_CUT_REF"= "NEE_VUT_REF")
 VUTsitesNT <- VUTsites %>% dplyr::select(-c(GPP_DT_VUT_REF, RECO_DT_VUT_REF))
-VUTsitesNT$partition_method <- "NT"
+VUTsitesNT$partition_method <- "Reichstein"
 VUTsitesNT <- VUTsitesNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_VUT_REF", 
                                 "RECO_CUT_REF"= "RECO_NT_VUT_REF",
                                 "NEE_CUT_REF"= "NEE_VUT_REF") 
@@ -178,8 +182,10 @@ dsk.gf <- read_csv("ICOSETC_GL-Dsk_ARCHIVE_L2/ICOSETC_GL-Dsk_FLUXNET_HH_L2.csv")
 dsk.gf$site_id <- "GL-Dsk"
 ken.gf <- read_csv("ICOSETC_FI-Ken_ARCHIVE_L2/ICOSETC_FI-Ken_FLUXNET_HH_L2.csv")
 ken.gf$site_id <- "FI-Ken"
+sto.gf <- read_csv("ICOSETC_SE-Sto_ARCHIVE_L2/ICOSETC_SE-Sto_FLUXNET_HH_L2.csv")
+sto.gf$site_id <- "SE-Sto"
 #merge vut sites together
-VUTsites.gf <- bind_rows(ken.gf, dsk.gf)
+VUTsites.gf <- bind_rows(list(ken.gf, dsk.gf, sto.gf))
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 VUT.dat2.gf <- VUTsites.gf %>%
                         mutate( year = substr(TIMESTAMP_START, 1,4),
@@ -200,6 +206,14 @@ allICOSpermonth <-allICOSpermonth.wdupes  %>%
   distinct(site_id, year, month, partition_method, .keep_all = TRUE)
 ##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
 
+##change units from per day to per month
+allICOSpermonth$NEE_CUT_REF <- allICOSpermonth$NEE_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
+allICOSpermonth$RECO_CUT_REF <- allICOSpermonth$RECO_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
+allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
+
+
 setwd("/Users/iwargowsky/Desktop/ICOS")
 write_csv(allICOSpermonth, "ICOSdatapermonth.csv")
+
+
 

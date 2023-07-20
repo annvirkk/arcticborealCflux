@@ -6,6 +6,7 @@ library(readr)
 library(readxl)
 library(tidyverse)
 library(data.table)
+library(lubridate)
 #Downloaded data from https://fluxnet.org/data/download-data/
 ####load in files######-----------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015/Fluxnet2015")
@@ -29,11 +30,11 @@ fluxnetdf$month <- substr(fluxnetdf$TIMESTAMP,5,6)
 fluxnetdf$TIMESTAMP <- NULL
 #separate DT and NT approaches
 fluxnetdfDT <- fluxnetdf %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
-fluxnetdfDT$partition_method <- "DT"
+fluxnetdfDT$partition_method <- "Lasslop"
 fluxnetdfDT <- fluxnetdfDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
 fluxnetdfNT <- fluxnetdf %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
-fluxnetdfNT$partition_method <- "NT"
+fluxnetdfNT$partition_method <- "Reichstein"
 fluxnetdfNT <- fluxnetdfNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
@@ -80,12 +81,12 @@ VUTsites  <- VUTsites  %>% dplyr::select(site_id, year, month, TS_F_MDS_1,
                                          RECO_NT_VUT_REF, GPP_NT_VUT_REF)
 #separate DT and NT approaches
 VUTsitesDT <- VUTsites %>% dplyr::select(-c(GPP_NT_VUT_REF, RECO_NT_VUT_REF))
-VUTsitesDT$partition_method <- "DT"
+VUTsitesDT$partition_method <- "Lasslop"
 VUTsitesDT <- VUTsitesDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_VUT_REF",
                                            "RECO_CUT_REF"= "RECO_DT_VUT_REF",
                                            "NEE_CUT_REF"= "NEE_VUT_REF")
 VUTsitesNT <- VUTsites %>% dplyr::select(-c(GPP_DT_VUT_REF, RECO_DT_VUT_REF))
-VUTsitesNT$partition_method <- "NT"
+VUTsitesNT$partition_method <- "Reichstein"
 VUTsitesNT <- VUTsitesNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_VUT_REF", 
                                            "RECO_CUT_REF"= "RECO_NT_VUT_REF",
                                            "NEE_CUT_REF"= "NEE_VUT_REF") 
@@ -114,7 +115,6 @@ VUTsites <- merge(VUT.dat2.gf, VUTsites) #merge with data
 #####merge CUT and VUT data####---------------------------------------------------
 fluxnetdf<- bind_rows(fluxnetdf, VUTsites)
 
-
 #Adding in some metadata####------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015/FLX_AA-Flx_BIF_ALL_20200501")
 meta <- read_xlsx("FLX_AA-Flx_BIF_MM_20200501.xlsx")
@@ -138,6 +138,11 @@ meta.bysite <- rbind(meta.bysite, RU.Sam)
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 fluxnetALL <- left_join(fluxnetdf, meta.bysite)
+
+##change units from per day to per month
+fluxnetALL$NEE_CUT_REF <- fluxnetALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
+fluxnetALL$RECO_CUT_REF <- fluxnetALL$RECO_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
+fluxnetALL$GPP_CUT_REF <- fluxnetALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 
 #####final df #####--------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")

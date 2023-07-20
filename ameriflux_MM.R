@@ -13,7 +13,7 @@ library(tidyr)
 #load in all FLUXNET files ####
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET")
 path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET"
-files <- list.files(path = path,pattern = '*FULLSET_DD_',all.files = T,recursive = T)
+files <- list.files(path = path,pattern = '*FULLSET_MM_',all.files = T,recursive = T)
 amerifluxdf <- files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")         
@@ -29,28 +29,18 @@ amerifluxdf <- amerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
 #add month and year columns
 amerifluxdf$year <- substr(amerifluxdf$TIMESTAMP,1,4)
 amerifluxdf$month <- substr(amerifluxdf$TIMESTAMP,5,6)
-#get cumulative NEE, GPP, and RECO for each month
-ameriflux.permonth<-  group_by(amerifluxdf, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
-                                                                                       SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                                       TA_F = mean(TA_F),
-                                                                                       P_F =sum(P_F),
-                                                                                       PPFD_IN = mean(PPFD_IN),
-                                                                                       NEE_CUT_REF = sum(NEE_CUT_REF),
-                                                                                       RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
-                                                                                       GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
-                                                                                       RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
-                                                                                       GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+
 #separate DT and NT approaches
-ameriflux.permonthDT <- ameriflux.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
-ameriflux.permonthDT$partition_method <- "DT"
-ameriflux.permonthDT <- ameriflux.permonthDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+amerifluxdfDT <- amerifluxdf %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+amerifluxdfDT$partition_method <- "Lasslop"
+amerifluxdfDT <- amerifluxdfDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
-ameriflux.permonthNT <- ameriflux.permonth %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
-ameriflux.permonthNT$partition_method <- "NT"
-ameriflux.permonthNT <- ameriflux.permonthNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+amerifluxdfNT <- amerifluxdf %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+amerifluxdfNT$partition_method <- "Reichstein"
+amerifluxdfNT <- amerifluxdfNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
-ameriflux.permonth <- bind_rows(ameriflux.permonthNT, ameriflux.permonthDT) 
+amerifluxdf <- bind_rows(amerifluxdfNT, amerifluxdfDT) 
 
 #####GAP FIll % ####--------------------------------------------------
 files <- list.files(path = path,pattern = '*_FULLSET_H',all.files = T,recursive = T)
@@ -69,12 +59,12 @@ ameriflux.dat2.gf <- lapply(ameriflux.dat2, function(df) df %>%
                             dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
 
 ameriflux.dat2.gf  <- bind_rows(ameriflux.dat2.gf , .id = "site_id") #turn list  into one df
-ameriflux.permonth <- merge(ameriflux.dat2.gf, ameriflux.permonth) #merge with data
+amerifluxdf <- merge(ameriflux.dat2.gf, amerifluxdf) #merge with data
 
 #load in all FLUXNETbeta files ####
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta")
 path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta"
-betafiles <- list.files(path = path,pattern = '*FULLSET_DD_',all.files = T,recursive = T)
+betafiles <- list.files(path = path,pattern = '*FULLSET_MM_',all.files = T,recursive = T)
 betaamerifluxdf <- betafiles %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")         
@@ -90,28 +80,18 @@ betaamerifluxdf <- betaamerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MD
 #add month and year columns
 betaamerifluxdf$year <- substr(betaamerifluxdf$TIMESTAMP,1,4)
 betaamerifluxdf$month <- substr(betaamerifluxdf$TIMESTAMP,5,6)
-#get cumulative NEE, GPP, and RECO for each month
-betaameriflux.permonth<-  group_by(betaamerifluxdf, year, month, site_id) %>% dplyr::summarise(TS_F_MDS_1 = mean(TS_F_MDS_1),
-                                                                                       SWC_F_MDS_1 = mean(SWC_F_MDS_1),
-                                                                                       TA_F = mean(TA_F),
-                                                                                       P_F =sum(P_F),
-                                                                                       PPFD_IN = mean(PPFD_IN),
-                                                                                       NEE_CUT_REF = sum(NEE_CUT_REF),
-                                                                                       RECO_DT_CUT_REF = sum(RECO_DT_CUT_REF),
-                                                                                       GPP_DT_CUT_REF = sum(GPP_DT_CUT_REF),
-                                                                                       RECO_NT_CUT_REF = sum(RECO_NT_CUT_REF),
-                                                                                       GPP_NT_CUT_REF = sum(GPP_NT_CUT_REF))
+
 #separate DT and NT approaches
-betaameriflux.permonthDT <- betaameriflux.permonth %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
-betaameriflux.permonthDT$partition_method <- "DT"
-betaameriflux.permonthDT <- betaameriflux.permonthDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
+betaamerifluxdfDT <- betaamerifluxdf %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
+betaamerifluxdfDT$partition_method <- "Lasslop"
+betaamerifluxdfDT <- betaamerifluxdfDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_DT_CUT_REF")
-betaameriflux.permonthNT <- betaameriflux.permonth %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
-betaameriflux.permonthNT$partition_method <- "NT"
-betaameriflux.permonthNT <- betaameriflux.permonthNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
+betaamerifluxdfNT <- betaamerifluxdf %>% dplyr::select(-c(GPP_DT_CUT_REF, RECO_DT_CUT_REF))
+betaamerifluxdfNT$partition_method <- "Reichstein"
+betaamerifluxdfNT <- betaamerifluxdfNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF",
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
-betaameriflux.permonth <- bind_rows(betaameriflux.permonthNT, betaameriflux.permonthDT) 
+betaamerifluxdf <- bind_rows(betaamerifluxdfNT, betaamerifluxdfDT) 
 
 
 #####GAP FIll % ####--------------------------------------------------
@@ -131,13 +111,13 @@ beta.dat2.gf <- lapply(beta.dat2, function(df) df %>%
                               dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
 
 beta.dat2.gf  <- bind_rows(beta.dat2.gf , .id = "site_id") #turn list  into one df
-betaameriflux.permonth <- merge(beta.dat2.gf, betaameriflux.permonth) #merge with data
+betaamerifluxdf <- merge(beta.dat2.gf, betaamerifluxdf) #merge with data
 #########Merging ameriflux fluxnet and ameriflux fluxnet beta #######
-alldat.wdupes <- gdata::combine(betaameriflux.permonth, ameriflux.permonth) 
+alldat.wdupes <- gdata::combine(betaamerifluxdf, amerifluxdf) 
 #find duplicates
 dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)  
 #No duplicates OK to combine
-ameriflux.fluxnetall <- gdata::combine(betaameriflux.permonth, ameriflux.permonth) 
+ameriflux.fluxnetall <- gdata::combine(betaamerifluxdf, amerifluxdf) 
 
 
 
@@ -161,6 +141,12 @@ ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
 #noting what U-star filtering was used 
 ameriflux.ALL$tower_corrections <- "CUT"
 #save
+
+##change units from per day to per month
+ameriflux.ALL$NEE_CUT_REF <- ameriflux.ALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
+ameriflux.ALL$RECO_CUT_REF <- ameriflux.ALL$RECO_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
+ameriflux.ALL$GPP_CUT_REF <- ameriflux.ALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
+
 setwd("/Users/iwargowsky/Desktop/Ameriflux")
 write_csv(ameriflux.ALL, "ameriflux.fluxnetALL.csv")
 
