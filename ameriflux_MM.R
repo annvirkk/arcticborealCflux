@@ -8,6 +8,7 @@ library(vroom)
 library(readxl)
 library(data.table)
 library(tidyr)
+library(janitor)
 #Downloaded data from https://ameriflux.lbl.gov/data/download-data/
 
 #load in all FLUXNET files ####
