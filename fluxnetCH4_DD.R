@@ -38,18 +38,18 @@ CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>%
 
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
-CH4fluxnet.permonthDT$partition_method <- "DT"
+CH4fluxnet.permonthDT$partition_method <- "Lasslop"
 CH4fluxnet.permonthDT <- CH4fluxnet.permonthDT %>% dplyr::rename("GPP"= "GPP_DT",
                                                     "RECO"= "RECO_DT")
 CH4fluxnet.permonthNT <- CH4fluxnet.permonth %>% select(-c(GPP_DT, RECO_DT))
-CH4fluxnet.permonthNT$partition_method <- "NT"
+CH4fluxnet.permonthNT$partition_method <- "Reichstein"
 CH4fluxnet.permonthNT <- CH4fluxnet.permonthNT %>% dplyr::rename("GPP"= "GPP_NT",
                                                     "RECO"= "RECO_NT")
 #merge back together with new column "partition method"
 CH4fluxnet.permonth <- bind_rows(CH4fluxnet.permonthNT, CH4fluxnet.permonthDT) 
 
 
-#Adding in some metadata####
+#Adding in some metadata####-----------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 meta <- read_csv("FLX_AA-Flx_CH4-META_20201112135337801132.csv")
 #filter for sites of interest
@@ -60,7 +60,6 @@ colnames(meta)
 meta.2 <- meta %>% select(SITE_NAME, SITE_ID, COUNTRY, LAT, LON, SOIL_TEMP_PROBE_DEPTHS,
                           MOSS_BROWN, MOSS_SPHAGNUM, DOM_VEG, "FLUXNET-CH4_DATA_POLICY")
 #convert columns to match variables in ABCflux v2
-meta.2$tsoil_surface_depth <- substr(meta.2$SOIL_TEMP_PROBE_DEPTHS,"TS_1 =", na.omit=TRUE)
 meta.2$sphagnum_cover[meta.2$MOSS_SPHAGNUM == "1"] <- "Present"
 meta.2$other_moss_cover[meta.2$MOSS_BROWN == "1"] <- "Present"
 meta.2$sphagnum_cover[meta.2$DOM_VEG == "moss_sphagnum"] <- "Dominant"
@@ -73,6 +72,10 @@ meta.3 <- meta.2 %>% select(SITE_NAME, SITE_ID, COUNTRY, LAT, LON,
 #merge flux df and meta data
 meta.3<- meta.3 %>% dplyr::rename(site_id= SITE_ID)
 CH4fluxnetALL <- left_join(CH4fluxnet.permonth, meta.3)
+#fix data usage to match ABCFlux v2
+CH4fluxnetALL <- CH4fluxnetALL %>%
+  mutate('FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="CCBY4.0","Tier 1",`FLUXNET-CH4_DATA_POLICY`),
+         'FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="TIER2","Tier 2",`FLUXNET-CH4_DATA_POLICY`))
 
 write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
 
