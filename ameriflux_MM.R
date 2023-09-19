@@ -9,6 +9,8 @@ library(readxl)
 library(data.table)
 library(tidyr)
 library(janitor)
+library(lubridate)
+library(zoo)
 #Downloaded data from https://ameriflux.lbl.gov/data/download-data/
 
 #load in all FLUXNET files ####
@@ -30,7 +32,7 @@ amerifluxdf <- amerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
 #add month and year columns
 amerifluxdf$year <- substr(amerifluxdf$TIMESTAMP,1,4)
 amerifluxdf$month <- substr(amerifluxdf$TIMESTAMP,5,6)
-
+amerifluxdf$TIMESTAMP <- NULL
 #separate DT and NT approaches
 amerifluxdfDT <- amerifluxdf %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
 amerifluxdfDT$partition_method <- "Lasslop"
@@ -54,15 +56,16 @@ names(ameriflux.dat2)<- substr(files, 5,10) #name each df
 ameriflux.dat2.gf <- lapply(ameriflux.dat2, function(df) df %>%
                             mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                     month = substr(df$TIMESTAMP_START, 5,6) ) %>%
-                            mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                            mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3)~1,
+                                                       NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                             dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                             group_by(year,month) %>% 
-                            dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
+                            dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
 
 ameriflux.dat2.gf  <- bind_rows(ameriflux.dat2.gf , .id = "site_id") #turn list  into one df
 amerifluxdf <- merge(ameriflux.dat2.gf, amerifluxdf) #merge with data
 
-#load in all FLUXNETbeta files ####
+#load in all FLUXNETbeta files ####------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta")
 path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta"
 betafiles <- list.files(path = path,pattern = '*FULLSET_MM_',all.files = T,recursive = T)
@@ -81,7 +84,7 @@ betaamerifluxdf <- betaamerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MD
 #add month and year columns
 betaamerifluxdf$year <- substr(betaamerifluxdf$TIMESTAMP,1,4)
 betaamerifluxdf$month <- substr(betaamerifluxdf$TIMESTAMP,5,6)
-
+betaamerifluxdf$TIMESTAMP <- NULL
 #separate DT and NT approaches
 betaamerifluxdfDT <- betaamerifluxdf %>% dplyr::select(-c(GPP_NT_CUT_REF, RECO_NT_CUT_REF))
 betaamerifluxdfDT$partition_method <- "Lasslop"
@@ -106,10 +109,11 @@ names(beta.dat2)<- substr(files, 5,10) #name each df
 beta.dat2.gf <- lapply(beta.dat2, function(df) df %>%
                               mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                       month = substr(df$TIMESTAMP_START, 5,6) ) %>%
-                              mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                              mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3)~1,
+                                                         NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                               dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                               group_by(year,month) %>% 
-                              dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
+                              dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
 
 beta.dat2.gf  <- bind_rows(beta.dat2.gf , .id = "site_id") #turn list  into one df
 betaamerifluxdf <- merge(beta.dat2.gf, betaamerifluxdf) #merge with data
@@ -119,6 +123,13 @@ alldat.wdupes <- gdata::combine(betaamerifluxdf, amerifluxdf)
 dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)  
 #No duplicates OK to combine
 ameriflux.fluxnetall <- gdata::combine(betaamerifluxdf, amerifluxdf) 
+#adding data usage policies
+ameriflux.fluxnetall <- ameriflux.fluxnetall %>% 
+  mutate(data_usage= ifelse(site_id %in% c('CA-HPC',"CA-NS1","CA-NS2","CA-NS3","CA-NS4","CA-NS5","CA-NS6",
+                                           "CA-NS7","CA-NS8","CA-Ojp","CA-Qc2","CA-SCC","CA-SCB","CA-SJ1",
+                                           "CA-SJ2","CA-SJ3","CA-SMC","CA-TVC","CA-WP1","CA-WP2","CA-WP3",
+                                           "US-Atq","US-Beo","US-Bes","US-Bn1","US-Bn2","US-Bn3","US-Brw",
+                                           "US-Cms","US-HVa","US-HVs","US-Ivo","US-Sag","US-Upa"), "Tier 2", "Tier 1"))
 
 
 
@@ -134,8 +145,7 @@ meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUN
                                                            citation = na.omit(DOI),
                                                            site_name= na.omit(SITE_NAME),
                                                            latitude= na.omit(LOCATION_LAT),
-                                                           longitude= na.omit(LOCATION_LONG),
-                                                           flux_method= na.omit(FLUX_MEASUREMENTS_METHOD))
+                                                           longitude= na.omit(LOCATION_LONG))
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
@@ -147,6 +157,7 @@ ameriflux.ALL$tower_corrections <- "CUT"
 ameriflux.ALL$NEE_CUT_REF <- ameriflux.ALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 ameriflux.ALL$RECO_CUT_REF <- ameriflux.ALL$RECO_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 ameriflux.ALL$GPP_CUT_REF <- ameriflux.ALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
+ameriflux.ALL$P_F <- ameriflux.ALL$P_F  *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 
 setwd("/Users/iwargowsky/Desktop/Ameriflux")
 write_csv(ameriflux.ALL, "ameriflux.fluxnetALL.csv")
