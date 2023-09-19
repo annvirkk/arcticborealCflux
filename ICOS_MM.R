@@ -2,7 +2,6 @@
 library(janitor)
 library(tidyverse)
 library(stringr)
-library(naniar)
 library(readr)
 library(data.table)
 library(gdata)
@@ -59,10 +58,11 @@ names(ww.dat2)<- substr(files, 5,10) #name each df
 ww.dat2.gf <- lapply(ww.dat2, function(df) df %>%
                          mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                  month = substr(df$TIMESTAMP_START, 5,6) ) %>%
-                         mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                         mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3)~1,
+                                                    NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                          dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                          group_by(year,month) %>% 
-                         dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
+                         dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
 
 ww.dat2.gf <- bind_rows(ww.dat2.gf, .id = "site_id") #turn list  into one df
 wwdat <- merge(ww.dat2.gf, wwdat) #merge with data
@@ -106,7 +106,7 @@ etcdoi <- read_csv("ICOSETCDOI.csv")
 icosdat <- merge(icosdat, etcdoi)
 
 #####GAP FIll % ####--------------------------------------------------
-files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
+files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T) 
 #load in files as a list of df
 etc.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE, select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
@@ -116,10 +116,11 @@ names(etc.dat2)<- substr(files, 9,14) #name each df
 etc.dat2.gf <- lapply(etc.dat2, function(df) df %>%
                        mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                month = substr(df$TIMESTAMP_START, 5,6) ) %>%
-                       mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                        mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3)~1,
+                                                   NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                        dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                        group_by(year,month) %>% 
-                       dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
+                       dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
 
 etc.dat2.gf  <- bind_rows(etc.dat2.gf , .id = "site_id") #turn list  into one df
 icosdat <- merge(etc.dat2.gf, icosdat) #merge with data
@@ -190,10 +191,11 @@ VUTsites.gf <- bind_rows(list(ken.gf, dsk.gf, sto.gf))
 VUT.dat2.gf <- VUTsites.gf %>%
                         mutate( year = substr(TIMESTAMP_START, 1,4),
                                 month = substr(TIMESTAMP_START, 5,6) ) %>%
-                        mutate(gapfill = case_when(NEE_VUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                        mutate(gapfill = case_when(NEE_VUT_REF_QC %in% c(1,2,3)~1,
+                                                   NEE_VUT_REF_QC %in% 0 ~ 0))%>%
                         dplyr::select(year, month, gapfill, NEE_VUT_REF_QC) %>%
                         group_by(year,month) %>% 
-                        dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100)
+                        dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100)
 VUTsites <- merge(VUT.dat2.gf, VUTsites) #merge with data
 
 
@@ -210,7 +212,9 @@ allICOSpermonth <-allICOSpermonth.wdupes  %>%
 allICOSpermonth$NEE_CUT_REF <- allICOSpermonth$NEE_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 allICOSpermonth$RECO_CUT_REF <- allICOSpermonth$RECO_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
-
+allICOSpermonth$P_F <- allICOSpermonth$P_F *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
+#data usage
+allICOSpermonth$data_usage <- "Tier 1" 
 
 setwd("/Users/iwargowsky/Desktop/ICOS")
 write_csv(allICOSpermonth, "ICOSdatapermonth.csv")
