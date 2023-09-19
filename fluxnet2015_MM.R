@@ -7,6 +7,7 @@ library(readxl)
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(zoo)
 #Downloaded data from https://fluxnet.org/data/download-data/
 ####load in files######-----------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015/Fluxnet2015")
@@ -52,10 +53,11 @@ names(fluxnet.dat2)<- substr(files, 5,10) #name each df
 fluxnet.dat2.gf <- lapply(fluxnet.dat2, function(df) df %>%
                         mutate( year = substr(df$TIMESTAMP_START, 1,4),
                                 month = substr(df$TIMESTAMP_START, 5,6) ) %>%
-                        mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+                        mutate(gapfill = case_when(NEE_CUT_REF_QC %in% c(1,2,3)~1,
+                                                   NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                         dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                         group_by(year,month) %>% 
-                        dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100))
+                        dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
 
 fluxnet.dat2.gf  <- bind_rows(fluxnet.dat2.gf , .id = "site_id") #turn list  into one df
 fluxnetdf <- merge(fluxnet.dat2.gf, fluxnetdf) #merge with data
@@ -106,10 +108,11 @@ VUTsites.gf <- bind_rows(blv.gf, vrk.gf)
 VUT.dat2.gf <- VUTsites.gf %>%
   mutate( year = substr(TIMESTAMP_START, 1,4),
           month = substr(TIMESTAMP_START, 5,6) ) %>%
-  mutate(gapfill = case_when(NEE_VUT_REF_QC %in% c(1,2,3) ~ 1))%>%
+  mutate(gapfill = case_when(NEE_VUT_REF_QC %in% c(1,2,3)~1,
+                             NEE_VUT_REF_QC %in% 0 ~ 0))%>%
   dplyr::select(year, month, gapfill, NEE_VUT_REF_QC) %>%
   group_by(year,month) %>% 
-  dplyr::summarise(gap_fill_perc = sum(gapfill, na.rm=TRUE)/n()*100)
+  dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100)
 VUTsites <- merge(VUT.dat2.gf, VUTsites) #merge with data
 
 #####merge CUT and VUT data####---------------------------------------------------
@@ -125,24 +128,23 @@ meta <- meta %>% filter(SITE_ID %in% names)
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
                                              citation = na.omit(DOI),
-                                             site_name= na.omit(SITE_NAME),
-                                             latitude= na.omit(LOCATION_LAT),
-                                             longitude= na.omit(LOCATION_LONG))
-
-#RU-Sam site has moved over the years so there are multiple lat-long coords
-#for now we'll just take the first set of coords 
-RU.Sam <- meta.bysite %>% filter(SITE_ID== "RU-Sam") %>% summarise_all(first)
-meta.bysite <- meta.bysite %>% filter(!SITE_ID== "RU-Sam")
-meta.bysite <- rbind(meta.bysite, RU.Sam)
-
+                                             site_name= na.omit(SITE_NAME))
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 fluxnetALL <- left_join(fluxnetdf, meta.bysite)
+
 
 ##change units from per day to per month
 fluxnetALL$NEE_CUT_REF <- fluxnetALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 fluxnetALL$RECO_CUT_REF <- fluxnetALL$RECO_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 fluxnetALL$GPP_CUT_REF <- fluxnetALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
+fluxnetALL$P_F <- fluxnetALL$P_F *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
+##adding data usage policies according to https://fluxnet.org/data/data-policy/
+fluxnetALL <- fluxnetALL %>% 
+  mutate(data_usage= ifelse(site_id %in% c('RU-Sam','RU-SkP','RU-Tks','RU-Vrk','SE-St1'), "Tier 2", "Tier 1"))
+
+
+
 
 #####final df #####--------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
