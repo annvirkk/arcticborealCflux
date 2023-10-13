@@ -18,13 +18,15 @@ ABC.ec.wdupes <- rbindlist(list(PIdat.ec ,flux.repository, abcflux.v1.EC), fill 
 #remove rows that do not contain flux data
 ABC.ec.wdupes <- ABC.ec.wdupes %>% filter(!if_all(c("nee", "gpp", "reco","ch4_flux_total"), ~ is.na(.)))
 #reformatting based on partitioning methods
-#ABC.ec.wdupes <- ABC.ec.wdupes %>%
-  #mutate(gpp.dt= case_when(partition_method %in% "Lasslop"~ gpp),
-        # reco.dt= case_when(partition_method %in% "Lasslop"~ reco),
-        # gpp.nt= case_when(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)")~ gpp),
-        # reco.nt= case_when(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)")~ reco))
+ABC.ec.wdupes <- ABC.ec.wdupes %>%
+  mutate(gpp.nt = ifelse(partition_method %in% c("Reichstein", "Reichstein (night time=Reco partitioning)"), gpp, NA),
+         gpp.dt = ifelse(partition_method == "Lasslop", gpp, NA),
+         reco.nt = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)"), reco, NA),
+         reco.dt = ifelse(partition_method == "Lasslop", reco, NA),
+         gpp = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)", "dt"), NA, gpp),
+         reco = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)", "dt"), NA, reco))
 #find number of  duplicates
-dupes<- ABC.ec.wdupes %>% get_dupes(site_reference, year, month, flux_method_detail)  
+dupes<- ABC.ec.wdupes %>% get_dupes(site_reference, year, month, flux_method_detail, partition_method)  
 #remove duplicates
 ABC.ec <- ABC.ec.wdupes  %>% 
   arrange(desc(extraction_source)) %>% #this step ensures "User-contributed" data is kept
