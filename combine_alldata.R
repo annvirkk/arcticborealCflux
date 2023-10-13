@@ -18,13 +18,13 @@ ABC.ec.wdupes <- rbindlist(list(PIdat.ec ,flux.repository, abcflux.v1.EC), fill 
 #remove rows that do not contain flux data
 ABC.ec.wdupes <- ABC.ec.wdupes %>% filter(!if_all(c("nee", "gpp", "reco","ch4_flux_total"), ~ is.na(.)))
 #reformatting based on partitioning methods
-ABC.ec.wdupes <- ABC.ec.wdupes %>%
-  mutate(gpp.nt = ifelse(partition_method %in% c("Reichstein", "Reichstein (night time=Reco partitioning)"), gpp, NA),
-         gpp.dt = ifelse(partition_method == "Lasslop", gpp, NA),
-         reco.nt = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)"), reco, NA),
-         reco.dt = ifelse(partition_method == "Lasslop", reco, NA),
-         gpp = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)", "dt"), NA, gpp),
-         reco = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)", "dt"), NA, reco))
+#ABC.ec.wdupes <- ABC.ec.wdupes %>%
+ # mutate(gpp.nt = ifelse(partition_method %in% c("Reichstein", "Reichstein (night time=Reco partitioning)"), gpp, NA),
+  #       gpp.dt = ifelse(partition_method == "Lasslop", gpp, NA),
+   #      reco.nt = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)"), reco, NA),
+    #     reco.dt = ifelse(partition_method == "Lasslop", reco, NA),
+     #    gpp = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)", "dt"), NA, gpp),
+      #   reco = ifelse(partition_method %in% c("Reichstein","Reichstein (night time=Reco partitioning)", "dt"), NA, reco))
 #find number of  duplicates
 dupes<- ABC.ec.wdupes %>% get_dupes(site_reference, year, month, flux_method_detail, partition_method)  
 #remove duplicates
@@ -44,8 +44,9 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 PIdat.ch <- read_csv("PI.data.ch.csv")
 ADC.ch <- read_csv("ADC.ch.csv")
 Zenodo.ch <- read_csv("Zenodo.ch.csv")
+isabel.bawld <- read_csv("isabel.bawld.data.csv")
 
-ABC.ch.wdupes <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch), fill = TRUE)
+ABC.ch.wdupes <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch, isabel.bawld), fill = TRUE)
 #remove rows that do not contain flux data
 ABC.ch.wdupes <- ABC.ch.wdupes %>%
   filter(!if_all(c("nee", "gpp", "reco", "ch4_flux_total"), ~ is.na(.)))
@@ -53,17 +54,20 @@ ABC.ch.wdupes.ch4 <- ABC.ch.wdupes %>%
   filter(!if_all("ch4_flux_total", ~ is.na(.)))
 #find number of  duplicates
 dupes<- ABC.ch.wdupes %>% get_dupes(site_id, site_name, site_reference, site_id, year, month)  
-#remove duplicates
-repo.PI  <- repo.PI.wdupes  %>% 
-  distinct(site_reference, year, month, partition_method, .keep_all = TRUE)
-
+#dupes are okay for now
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
-#write_csv(ABC.ch.wdupes, "ABCv2.ch.csv")
+write_csv(ABC.ch.wdupes, "ABCv2.ch.csv")
 
-ABC.ch.wdupes <- 
 
+
+  
+####################Combining EC and chamber data ################################
+
+ABC.v2 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+  
+  
 ####extract list of sites and dates covered##
 sites.datescovered <- ABC.ec %>% 
   distinct(site_reference, year, month, .keep_all = TRUE) %>%
