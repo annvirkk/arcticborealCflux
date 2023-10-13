@@ -32,7 +32,7 @@ nykanen.permonth <- nykanen.permonth %>% mutate(latitude= case_when(site_name %i
 nykanen.permonth <- nykanen.permonth %>% mutate(disturbance= case_when(site_reference %in% "Drained" ~ "Drained"),
                                                 disturb_year= case_when(site_reference %in% "Drained" ~ "Drained"))
 nykanen.permonth$data_contributor_or_author <- "Nykänen, Hannu; Alm, Jukka; Martikainen, Pertti; Silvola, Jouko"
-nykanen.permonth$site_id <- paste("Nykanen_", nykanen.permonth$site_name, "_agg_", nykanen.permonth$site_reference, sep= "")
+nykanen.permonth$site_id <- paste("Nykanen_", nykanen.permonth$site_name, nykanen.permonth$site_reference, "agg", sep= "_")
 nykanen.permonth$email <- "hannu.nykanen@uef.fi"
 nykanen.permonth$extraction_source <- "Paper/Zenodo"
 nykanen.permonth$citation <- "Nykänen Hannu, Alm Jukka, Martikainen Pertti, & Silvola Jouko. (2022). Chamber flux data (CH4 , CO2) from Finland (1991 -1993) originally used in Nykänen et al. GBC, 12(1), 53 - 69, 1988, [Data set]. Zenodo. https://doi.org/10.5281/zenodo.6952933"
@@ -67,7 +67,7 @@ magnani.permonth <- magnani %>% group_by(year, month, site_reference) %>%
 #adding other variables
 magnani.permonth$site_name <- "NyÅlesund, Spitzbergen"
 magnani.permonth$data_contributor_or_author <- "Marta Magnani; Ilaria Baneschi;  Mariasilvia Giamberini; Brunella Raco; Antonello Provenzale"
-magnani.permonth$site_id <- paste("Magnani_NyÅlesund_agg_", magnani.permonth$site_reference, sep="")
+magnani.permonth$site_id <- paste("Magnani_NyÅlesund_", magnani.permonth$site_reference, "_agg", sep="")
 magnani.permonth$latitude <- "78.923806"
 magnani.permonth$longitude <- "11.8915"
 magnani.permonth$email <- "marta.magnani@edu.unito.it"

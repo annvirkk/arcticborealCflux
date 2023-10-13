@@ -122,11 +122,20 @@ pleindat.monthly$country <- 'United States'
 pleindat.monthly$latitude <- '71.322527'
 pleindat.monthly$longitude <- '-156.60917'
 pleindat.monthly$flux_method <- 'Chamber'
+pleindat.monthly$flux_method_detail <- 'Manual chamber'
+pleindat.monthly$flux_method_description <- "We built a clear plexiglass acrylic chamber (Davidson et al., 2016; McEwing et al., 2015) and this chamber was placed on a metal frame positioned in the ground outside of the plots and had clear polyvinyl material weighed down by heavy metal chains to produce a seal inside the chamber. These measurements were performed in a closed loop, where tubes connected the chamber to the gas analyzer and then air was circulated back to the chamber. We positioned a small fan inside the chamber to ensure appropriate air mixing."
 pleindat.monthly$instrumentation <- 'Los Gatos Research (LGR) Ultraportable Greenhouse Gas Analyzer (UGGA Model 915-0011)'
 pleindat.monthly$gap_fill <- 'Average'
 pleindat.monthly$veg_detail <- 'The major vegetation type at this site is graminoid-dominated wetlands, consisting of mosses, lichens, graminoids (grasses), and wet sedges'
+pleindat.monthly$sedge <- "Present"
+pleindat.monthly$non_sedge_herbaceous <- "Present"
+pleindat.monthly$sphagnum_cover <- "Present"
+pleindat.monthly$other_moss_cover <- "Present"
 pleindat.monthly$permafrost <- 'Yes'
 pleindat.monthly$biome <- "Tundra"
+pleindat.monthly$land_cover <- "180"
+pleindat.monthly$land_cover_bawld <- "PermWet"
+pleindat.monthly$diurnal_coverage <- "Day"
 #remove the last row that doesn't contain data
 pleindat.monthly <- pleindat.monthly[(!is.na(pleindat.monthly$year)), ]
 
@@ -153,7 +162,7 @@ thule.monthly$extraction_source <- "Arctic Data Center"
 thule.monthly$citation <- "DOI:10.18739/A2KH0F09B"
 thule.monthly$country <-"Greenland"
 thule.monthly$latitude <- '76.55'
-thule.monthly$longitude <- '68.566667'
+thule.monthly$longitude <- '-68.566667'
 thule.monthly$flux_method <- "Chamber"
 thule.monthly$flux_method_detail <- "Automatic chambers"
 thule.monthly$flux_method_description <- "Transparent chambers were attached to 20 cm diameter PVC collars installed in the vegetated part of the experimental plots to 5 cm depth"
@@ -166,7 +175,9 @@ thule.monthly$dec_shrub <- "Present"
 thule.monthly$ev_shrub <- "Present"
 thule.monthly$sedge <- "Present"
 thule.monthly$biome <- "Tundra"
-
+thule.monthly$land_cover <- "120"
+thule.monthly$land_cover_bawld <- "Dry tundra"
+thule.monthly$diurnal_coverage <- "Day and Night"
 dat4 <- thule.monthly
 ###Caribou-Poker Creek chambers (dat5) - Jennifer Watts COMPLETED####-----------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/Caribou-Poker Creek chambers")
@@ -189,14 +200,15 @@ CPC.monthly <- CPCflux %>% group_by(year, month, site_reference)%>%
 #convert units umol m-2 s-1 to g C m-2 month-1
 CPC.monthly$ch4_flux_total <- CPC.monthly$ch4_flux_total*1.0368*days_in_month(as.yearmon(paste(CPC.monthly$year, CPC.monthly$month,sep = '-')))
 #Adding in static vars
-CPC.monthly <- CPC.monthly %>% mutate(ev_needle_tree = case_when(site_reference %in% c('lichen','deep_moss')~ "Dominate"),
-                                      dec_broad_tree= case_when(site_reference %in% 'mosaic'~ "Dominate"),
+CPC.monthly <- CPC.monthly %>% mutate(ev_needle_tree = case_when(site_reference %in% c('lichen','deep_moss')~ "Dominant"),
+                                      dec_broad_tree= case_when(site_reference %in% 'mosaic'~ "Present"),
+                                      dec_needle_tree= case_when(site_reference %in% 'mosaic'~ "Present"),
                                       soil_depth= case_when(site_reference %in% 'lichen'~ "8.5-18.5cm",
                                                             site_reference %in% 'deep_moss'~ "21-35cm",
                                                             site_reference %in% 'mosaic'~ "5.5-15cm"))
 CPC.monthly$site_name <- "Caribou-Poker Creek "
 CPC.monthly$data_contributor_or_author <- "Jennifer Watts and Jonas Noomah"
-CPC.monthly$site_id <- paste("Watts_Caribou-Poker-Creek_agg_",CPC.monthly$site_reference)
+CPC.monthly$site_id <- paste("Watts_Caribou-Poker-Creek_",CPC.monthly$site_reference, "_agg")
 CPC.monthly$email <- "jwatts@woodwellclimate.org"
 CPC.monthly$extraction_source <- "Arctic Data Center"
 CPC.monthly$citation <- "DOI:10.18739/A2P55DJ3K"
@@ -204,16 +216,18 @@ CPC.monthly$country <- "United States"
 CPC.monthly$latitude <- "65.1574753"
 CPC.monthly$longitude <- "-147.4997501"
 CPC.monthly$flux_method <- "Chamber"
-CPC.monthly$flux_method_detail <- "Manual Chamber"
+CPC.monthly$flux_method_detail <- "Manual closed chamber"
 CPC.monthly$flux_method_description <- "The clear chamber is a 50cmx50cmx50cm box with an open bottom made of acrylic sheets connected with corner braces and sealed with silicone and rubber washers. A custom-made gasket consisting of aluminum angle and foam weatherproofing tape runs along the bottom edge of the chamber, allowing it to form a seal with the collar. Inside the chamber are a fan to circulate air, a shielded air temperature sensor (ONSET HOBO® Temperature/Relative Humidity Smart Sensor) at ground level, a photosynthetic light sensor (ONSET HOBO® Photosynthetic light (PAR) Smart Sensor) at the top of the chamber, and a data logger (ONSET HOBO® H21-USB Microstation) attached to the sensors. An open-design pressure valve consisting of 6m of coiled ⅛” tubing allows the chamber pressure to equilibrate with the outside pressure, but minimizes CO2 and CH4 diffusion through the valve"
 CPC.monthly$instrumentation <- "LICOR LI-7810 Gas Analyzer"
 CPC.monthly$gap_fill <- "Average"
-CPC.monthly$veg_detail <- "Ground cover varied along the transect. Plots 1-6 are lichen dominated, while plots 7-13 are completely covered by deep moss. Plots 14-21 are a mosaic of shallow moss and litter-covered bare ground. The woody evergreens Vaccinium vitis-idaea and Rhododendron groenlandicum are common across the entire transect and can grow densely. Small forbs (including Cornus unalaskensis and Geocaulon lividum) and graminoids are common but sparse. Shrubby Salix spp. can be found throughout the transect, while Betula nenana/Betula glandulosa can be found among the black spruce"
+CPC.monthly$veg_detail <- "A black spruce-dominated canopy at the lower elevations (Plots 1-13) and a deciduous-dominated canopy at the higher elevations (Plots 14-21). Ground cover varied along the transect. Plots 1-6 are lichen dominated, while plots 7-13 are completely covered by deep moss. Plots 14-21 are a mosaic of shallow moss and litter-covered bare ground. The woody evergreens Vaccinium vitis-idaea and Rhododendron groenlandicum are common across the entire transect and can grow densely. Small forbs (including Cornus unalaskensis and Geocaulon lividum) and graminoids are common but sparse. Shrubby Salix spp. can be found throughout the transect, while Betula nenana/Betula glandulosa can be found among the black spruce"
 CPC.monthly$dec_shrub <- "Present"
 CPC.monthly$ev_shrub <- "Present"
 CPC.monthly$non_sedge_herbaceous <- "Present"
 CPC.monthly$biome <- "Boreal"
-
+CPC.monthly$diurnal_coverage <- "Day"
+CPC.monthly$land_cover <- "90"
+CPC.monthly$land_cover_bawld <- "Boreal forest"
 dat5 <- CPC.monthly
 ###Tutakoke Field Site Trace Gas fluxes (dat6) - Jeffrey Welker COMPLETED####-----------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/Tutakoke chambers")
@@ -257,7 +271,7 @@ tutakoke.monthly <- full_join(tutakoke.monthly, climate.monthly)
 #Adding in static vars
 tutakoke.monthly$site_name <- "Tutakoke Field Site"
 tutakoke.monthly$data_contributor_or_author <- "Jeffrey Welker"
-tutakoke.monthly$site_id <- paste("Welker_Tutakoke_agg_",tutakoke.monthly$site_reference)
+tutakoke.monthly$site_id <- paste("Welker_Tutakoke_",tutakoke.monthly$site_reference, "_agg")
 tutakoke.monthly$email <- "jmwelker@uaa.alaska.edu"
 tutakoke.monthly$extraction_source <- "Arctic Data Center"
 tutakoke.monthly$citation <- "DOI:10.18739/A29S1KK98"
@@ -274,7 +288,9 @@ tutakoke.monthly$biome <- "Tundra"
 tutakoke.monthly$permafrost <- "No"
 tutakoke.monthly$partition_method <- "GPP= NEE-RECO"
 tutakoke.monthly$soil_depth <- "0"
-  
+tutakoke.monthly$land_cover <- "180"
+tutakoke.monthly$land_cover_bawld <- ""
+tutakoke.monthly$diurnal_coverage <- "Day"
 dat6 <- tutakoke.monthly
 ###Barrow chambers 2015 (dat7) - Robert Wagner COMPLETED####-----------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/Barrow chambers 2015")
@@ -304,7 +320,7 @@ barrow.monthly$site_reference[barrow.monthly$site_reference == "t"] <- "Trough"
 barrow.monthly$site_name <- "Barrow"
 barrow.monthly$email <- "robertleafwagner@gmail.com"
 barrow.monthly$data_contributor_or_author <- "Robert Wagner"
-barrow.monthly$site_id <- paste("Wagner_Barrow_agg_",barrow.monthly$site_reference)
+barrow.monthly$site_id <- paste("Wagner_Barrow_",barrow.monthly$site_reference, "_agg")
 barrow.monthly$extraction_source <- "Arctic Data Center"
 barrow.monthly$citation <- "DOI:10.18739/A23T9D62D"
 tutakoke.monthly$country <- "United States"
@@ -312,6 +328,9 @@ barrow.monthly$flux_method <- "Chamber"
 barrow.monthly$instrumentation <- "LGR (Los Gatos Research) ultra-portable gas analyzer"
 barrow.monthly$gap_fill <- "Average"
 barrow.monthly$biome <- "Tundra"
+barrow.monthly$diurnal_coverage <- "Day"
+barrow.monthly$land_cover <-
+barrow.monthly$land_cover_bawld
 
 dat7 <- barrow.monthly
 ###Barrow chambers 2012 (dat8) -K Miller COMPLETED ####-----------------------------------------------------------------------------
@@ -343,7 +362,6 @@ friedman.monthly$longitude <- "-156.602"
 friedman.monthly$flux_method <- "Chambers"
 friedman.monthly$instrumentation <- "Los Gatos Research portable trace gas analyzer"
 friedman.monthly$gapfill <- "Average"
-friedman.monthly$notes <- ""
 
 dat8 <- friedman.monthly
 ###Pleistocene Park (dat9) - Syndonia Bret-Harte check if FC= NEE####-----------------------------------------------------------------------------
