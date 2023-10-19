@@ -12,9 +12,10 @@ abcflux.v1.Ch <- abcflux.v1 %>% filter(!flux_method=="EC")
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 flux.repository <- read_csv("towerrepositorydata.static.csv") #data from major flux repositories 
 PIdat.ec <- read_csv("PI.data.ec.csv") # data from PIs
+anna.bawld <- read_excel("chamber data extractions/ABCfluxv2.vars_AV_171023.xlsx", sheet= 5)[-(1:3),-1]
 #ADC.ec <- read.csv("ADC.ec.csv")
 #merging
-ABC.ec.wdupes <- rbindlist(list(PIdat.ec ,flux.repository, abcflux.v1.EC), fill = TRUE)
+ABC.ec.wdupes <- rbindlist(list(PIdat.ec ,flux.repository, abcflux.v1.EC, anna.bawld), fill = TRUE)
 #remove rows that do not contain flux data
 ABC.ec.wdupes <- ABC.ec.wdupes %>% filter(!if_all(c("nee", "gpp", "reco","ch4_flux_total"), ~ is.na(.)))
 #reformatting based on partitioning methods
@@ -35,7 +36,7 @@ ABC.ec <- ABC.ec.wdupes  %>%
 
 
 #save
-#setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 #towersites <- as.data.frame(unique(ABC.ec$site_reference) )
 #write_csv(towersites, "towersites.csv")
 #write_csv(ABC.ec, "ABCv2.ec.9.5.csv")
@@ -44,9 +45,9 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 PIdat.ch <- read_csv("PI.data.ch.csv")
 ADC.ch <- read_csv("ADC.ch.csv")
 Zenodo.ch <- read_csv("Zenodo.ch.csv")
-isabel.bawld <- read_csv("isabel.bawld.data.csv")
+bawld.dat <- read_csv("bawld.dat.csv")
 
-ABC.ch.wdupes <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch, isabel.bawld), fill = TRUE)
+ABC.ch.wdupes <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch, bawld.dat), fill = TRUE)
 #remove rows that do not contain flux data
 ABC.ch.wdupes <- ABC.ch.wdupes %>%
   filter(!if_all(c("nee", "gpp", "reco", "ch4_flux_total"), ~ is.na(.)))
@@ -58,15 +59,19 @@ dupes<- ABC.ch.wdupes %>% get_dupes(site_id, site_name, site_reference, site_id,
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
-write_csv(ABC.ch.wdupes, "ABCv2.ch.csv")
+#write_csv(ABC.ch.wdupes, "ABCv2.ch.csv")
 
 
 
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
-  
+ABC.v2.oct23 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
+#write_csv(ABC.v2.oct23, "ABC.v2.oct23.csv")
+
+
+
   
 ####extract list of sites and dates covered##
 sites.datescovered <- ABC.ec %>% 
