@@ -19,18 +19,19 @@ ceip$Precip <- ceip$Precip *ceip$n_days
 colnames(ceip)
 ceip.renamed <- ceip %>% dplyr::rename('month'= 'Month',
                                        'tair'='Ta_f',
-                                       'tsoil'= 'Ts_f',
+                                       'tsoil_surface'= 'Ts_f',
                                        'precip'='Precip',
                                        'soil_moisture'= 'SWC',
                                        'nee'= 'NEE_or_fMDS',
                                        'reco'= 'Reco_or',
                                        'gpp'='GPP_or_MDS')
 #add year, site_id, and partition method columns
-ceip.renamed <- ceip.renamed %>% mutate(year= substr(site_reference, 18, 21),
+ceip.renamed <- ceip.renamed %>% mutate(data_version= substr(site_reference, 23,25),
+                                        year= substr(site_reference, 18, 21),
                                         site_reference= paste(substr(site_reference, 12, 13), '-',substr(site_reference, 14, 16), sep=''),
                                         partition_method= "Reichstein")
 #select only relevant columns
-ceip.renamed <- ceip.renamed %>% select(year, month, site_reference, tair, tsoil,
+ceip.renamed <- ceip.renamed %>% select(year, month, site_reference, tair, tsoil_surface, data_version,
                                         precip, soil_moisture, nee, gpp, reco, partition_method)
 
 #####GAP FIll % ####--------------------------------------------------
