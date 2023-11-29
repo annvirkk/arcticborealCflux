@@ -21,12 +21,13 @@ amerifluxdf <- files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")         
 #clean up site id column
+amerifluxdf$data_version <- substr(amerifluxdf$site_id, 38,40)
 amerifluxdf$site_id <- substr(amerifluxdf$site_id, 5,10)
 #select columns to keep
 colnames(amerifluxdf) #see all column names
 amerifluxdf <- amerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
                                              SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
-                                             NEE_CUT_REF, 
+                                             NEE_CUT_REF, data_version,
                                              RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                              RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #add month and year columns
@@ -73,12 +74,13 @@ betaamerifluxdf <- betafiles %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")         
 #clean up site id column
+betaamerifluxdf$data_version <- substr(betaamerifluxdf$site_id, 42,47)
 betaamerifluxdf$site_id <- substr(betaamerifluxdf$site_id, 5,10)
 #select columns to keep
 colnames(betaamerifluxdf) #see all column names
 betaamerifluxdf <- betaamerifluxdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
                                              SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
-                                             NEE_CUT_REF,
+                                             NEE_CUT_REF, data_version,
                                              RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                              RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #add month and year columns
@@ -161,6 +163,7 @@ ameriflux.ALL$P_F <- ameriflux.ALL$P_F  *days_in_month(as.yearmon(paste(ameriflu
 
 setwd("/Users/iwargowsky/Desktop/Ameriflux")
 write_csv(ameriflux.ALL, "ameriflux.fluxnetALL.csv")
+
 
 
 
