@@ -5,6 +5,7 @@ library(dplyr)
 library(readr)
 library(gdata)
 library(DataCombine)
+library(rquery)
 ###ICOS####-------------------------------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ICOS")
 ICOSdat <- read.csv("ICOSdatapermonth.csv")
@@ -177,12 +178,11 @@ icos.fluxnet.AMF.euro.CH4.base <- icos.fluxnet.AMF.euro.CH4.base %>%
 
 #Thaw depth and water table data from arctic data center for Barrow, Aquasuk, and Ivotuk
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads")
-tdwt <- read_csv("tdwt.csv")
-tdwt.permonth <- tdwt %>% 
-  mutate(year= as.integer(year(as.Date(date, format= "%m/%d/%Y"))), #adding year and month columns
-         month= as.character(month(as.Date(date, format= "%m/%d/%Y"))) )%>%
-  group_by(year, month, site) %>%
-  summarise(thaw_depth = mean(thaw_depth, na.rm = TRUE),
+tdwt <- read_csv("tdwt.csv")#adding year and month columns
+tdwt <- tdwt %>% mutate(year= as.integer(year(as.Date(date, format= "%m/%d/%Y"))), 
+                        month= as.character(month(as.Date(date, format= "%m/%d/%Y"))) ) 
+tdwt.permonth <- tdwt %>% group_by(year, month, site) %>%
+  dplyr::summarise(thaw_depth = mean(thaw_depth, na.rm = TRUE),
             water_table_depth= mean(water_table, na.rm = TRUE))%>%
   dplyr::rename("site_reference"= "site")
 
@@ -205,23 +205,40 @@ write_csv(towersites, "repository.towersites.csv")
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 static <- read_csv("static.towersites.csv", skip= 1)
 #join to fill NAs
-library(rquery)
 icos.fluxnet.AMF.euro.CH4.base.static <- natural_join(icos.fluxnet.AMF.euro.CH4.base, static,
-                                          by= "site_reference")
-#save
+                                          by= "site_reference", jointype= "FULL")
+
+
+#x<- anti_join(icos.fluxnet.AMF.euro.CH4.base.static, icos.fluxnet.AMF.euro.CH4.base,
+              #by= c("site_reference", "year", "month"))
+
+
+##Unifying naming conventions
+#US-Bes and US-Beo (changing from fluxnet-ch4 naming)
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(site_name= ifelse(site_reference== "US-Beo", "Barrow-BEO", site_name)) %>%
+  mutate(site_name= ifelse(site_reference== "US-Bes", "Barrow-BES", site_name))
+#RU-Che and RU-Ch2
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(site_name= ifelse(site_reference== "RU-Che", "Cherski", site_name))%>%
+  mutate(site_name= ifelse(site_reference== "RU-Ch2", "Cherski reference", site_name))
+#US-EML
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(site_name= ifelse(site_reference== "US-EML", "Eight Mile Lake", site_name))
+#Kaamanen
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(site_name= ifelse(site_reference== "FI-Kaa", "Kaamanen", site_name))
+#Svalbard and Jan Mayen
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(country= ifelse(country== "Svalbard and Jan Mayen", "Norway", country))
+#United States
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(country= ifelse(country== "United States", "USA", country))
+
+####save###----------------------------------------------------------------------
+icos.fluxnet.AMF.euro.CH4.base.static$dataentry_person <- "Isabel"
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(icos.fluxnet.AMF.euro.CH4.base.static, "towerrepositorydata.static.csv")
-
-
-
-
-
-
-
-
-
-
-
 
 
 
