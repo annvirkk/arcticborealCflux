@@ -17,12 +17,13 @@ fluxnetdf <- files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")   
 #clean up site id column
+fluxnetdf$data_version <- substr(fluxnetdf$site_id, 42,44)
 fluxnetdf$site_id <- substr(fluxnetdf$site_id, 5,10)
 #select columns to keep
 colnames(fluxnetdf) #see all column names
 fluxnetdf <- fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
                                          SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
-                                         NEE_CUT_REF,
+                                         NEE_CUT_REF, data_version,
                                          RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                          RECO_NT_CUT_REF, GPP_NT_CUT_REF)
 #add month and year columns
@@ -67,9 +68,11 @@ setwd("/Users/iwargowsky/Desktop/Fluxnet2015/VUT sites")
 blv <- read_csv("FLX_SJ-Blv_FLUXNET2015_FULLSET_2008-2009_1-4/FLX_SJ-Blv_FLUXNET2015_FULLSET_MM_2008-2009_1-4.csv",
                 na=c("NA","-9999"))
 blv$site_id <- "SJ-Blv"
+blv$data_version <- "1-4"
 vrk <- read_csv("FLX_RU-Vrk_FLUXNET2015_FULLSET_2008-2008_1-4/FLX_RU-Vrk_FLUXNET2015_FULLSET_MM_2008-2008_1-4.csv",
                 na=c("NA","-9999"))
 vrk$site_id <- "RU-Vrk"
+vrk$data_version <- "1-4"
 #merge vut sites together
 VUTsites <- bind_rows(vrk, blv)
 #add year,month, day columns
@@ -78,7 +81,7 @@ VUTsites <- VUTsites %>% mutate(year= substr(VUTsites$TIMESTAMP, 1,4),
 #subset for only our variables of interest
 VUTsites  <- VUTsites  %>% dplyr::select(site_id, year, month, TS_F_MDS_1,
                                          SWC_F_MDS_1, TA_F, P_F, PPFD_IN,
-                                         NEE_VUT_REF, 
+                                         NEE_VUT_REF, data_version,
                                          RECO_DT_VUT_REF, GPP_DT_VUT_REF,
                                          RECO_NT_VUT_REF, GPP_NT_VUT_REF)
 #separate DT and NT approaches
@@ -144,11 +147,10 @@ fluxnetALL <- fluxnetALL %>%
   mutate(data_usage= ifelse(site_id %in% c('RU-Sam','RU-SkP','RU-Tks','RU-Vrk','SE-St1'), "Tier 2", "Tier 1"))
 
 
-
-
 #####final df #####--------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
 write_csv(fluxnetALL, "fluxnetpermonth.csv")
+
 
 ####extract list of sites and dates covered###
 fluxnetALL$ts <- paste(fluxnetALL$year, fluxnetALL$month)
