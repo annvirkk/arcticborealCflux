@@ -20,10 +20,12 @@ nykanen.permonth <- nykanen %>% group_by(year, month, site_name, site_reference)
             nee= mean(FLCO2, na.rm = TRUE),
             water_table_depth= mean(`water table`, na.rm=TRUE),
             tair= mean(air_temp, na.rm = TRUE),
-            tsoil_surface= mean(`temp_5 cm`, na.rm=TRUE),
-            tsoil_deep= mean(`temp_'15 cm`,na.rm=TRUE),
-            tsoil_surface_depth= "5",  tsoil_deep_depth= "15",
+            tsoil_surface= mean(c(`surface temp`, `temp_5 cm`, `temp_3 cm`, `temp 10_cm`), na.rm=TRUE),
+            tsoil_deep= mean(c(`temp_'15 cm`,`temp_25 cm`,`temp_30 cm`),na.rm=TRUE),
             chamber_nr_measurement_days= n_distinct(DATYE))
+#fix units from mg CO2/CH4 to g C
+nykanen.permonth$nee <- nykanen.permonth$nee/1000/44.01*12.01*days_in_month(as.yearmon(paste(nykanen.permonth$year,nykanen.permonth$month,sep = '-')))
+nykanen.permonth$ch4_flux_total <- nykanen.permonth$ch4_flux_total/1000/16.04*12.01*days_in_month(as.yearmon(paste(nykanen.permonth$year,nykanen.permonth$month,sep = '-')))
 #adding in other variables
 nykanen.permonth <- nykanen.permonth %>% mutate(latitude= case_when(site_name %in% "Lakkasuo" ~ "61.792",
                                                                     site_name %in% "Särkkä" ~ "62.802"),
@@ -41,7 +43,10 @@ nykanen.permonth$biome <- "Boreal"
 nykanen.permonth$flux_method <- "Chamber"
 nykanen.permonth$flux_method_detail <- "Closed Chamber"
 nykanen.permonth$flux_method_description <- "Aluminium collars (60 cm x  60 cm) equipped with water grooves for gas-tight connection of the chamber (60 cm x 60 cm x 20 cm) were inserted in the soil, two collars at each site in summer 1991 and a  new collar at each site at Lakkasuo from September 1991 onward. At the natural sites having drained counterparts, chamber bases were randomly inserted in the soil 30-50 m upstream of the ditch, while at the drained sites the chambers were approximately in the middle of the 50 m wide strip"
-nykanen.permonth$gapfill <- "Average"
+nykanen.permonth$gap_fill <- "Average"
+nykanen.permonth$tsoil_surface_depth <- "4.5"
+nykanen.permonth$tsoil_deep_depth <- "23.33"
+nykanen.permonth$tair_height <- "2"
 dat1 <- nykanen.permonth
   
 ####dat 2 Magnani et al ###-------------------------------------------------------
@@ -80,7 +85,7 @@ magnani.permonth$flux_method <- "Chamber"
 magnani.permonth$flux_method_detail <- "non-steady state, closed dynamic flux chamber"
 magnani.permonth$flux_method_description <- "Fluxes were measured by the non-steady state, closed dynamic flux chamber method80 using a LI-COR LI-840 IRGA (InfraRed Gas Analyser) spectrophotometer and a circular stainless- steel collar (661 cm2 area, well within the range used for this site40,41,45) inserted into the soil just prior to the measurement (to a depth of about 2 cm) where to place the transparent chamber (10 cm height)."
 magnani.permonth$instrumentation <- "LI-COR LI-840 IRGA spectrophotometer"
-magnani.permonth$gapfill <- "Average"
+magnani.permonth$gap_fill <- "Average"
 magnani.permonth$veg_detail <- "The vegetation cover is heterogeneous, typical of the bioclimate subzone B-C77 with vascular plants constellating the matrix of mosses and lichens, and can be classified as prostrate dwarf-shrub and herbs tundra "
 #adjusting units from mol/m2/day to g C /m2/month
 magnani.permonth$nee <- magnani.permonth$nee *12.01*days_in_month(as.yearmon(paste(magnani.permonth$year,magnani.permonth$month,sep = '-')))
@@ -91,7 +96,7 @@ dat2 <- magnani.permonth
 
 
 Zenodo.ch <- rbindlist(list(dat1, dat2), fill = TRUE)
-Zenodo.ch$extraction_source <- "Zenedo"
+Zenodo.ch$extraction_source <- "Zenodo"
 Zenodo.ch$data_usage <- "Tier 1"
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 write_csv(Zenodo.ch, "Zenodo.ch.csv")
