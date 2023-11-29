@@ -25,6 +25,8 @@ wwdat <- wwicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
                                      NEE_CUT_REF, 
                                      RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                      RECO_NT_CUT_REF, GPP_NT_CUT_REF)
+#add data version
+wwdat$data_version <- substr(wwdat$site_id, 42,47)
 #clean up site id column
 wwdat$site_id <- substr(wwdat$site_id, 5,10)
 #add year,month, day columns
@@ -83,6 +85,8 @@ icosdat <- allicosdat %>% dplyr::select(site_id, TIMESTAMP, TS_F_MDS_1,
                                         NEE_CUT_REF,
                                         RECO_DT_CUT_REF, GPP_DT_CUT_REF,
                                         RECO_NT_CUT_REF, GPP_NT_CUT_REF)
+#add data_version column (no data version is provided but need column for merging purposes)
+icosdat$data_version <- ""
 #clean up site id column
 icosdat$site_id <- substr(icosdat$site_id, 9,14)
 #add year,month, day columns
@@ -176,6 +180,7 @@ setwd("/Users/iwargowsky/Desktop/ICOS/ICOSETC")
 etcdoi <- read_csv("ICOSETCDOI.csv")
 VUTsites<- merge(VUTsites, etcdoi)
 VUTsites$tower_corrections <- "VUT" #noting what U-star filtering was used 
+VUTsites$data_version <- "" #no data version is provided but need column for merging purposes
 #####GAP FIll % ####--------------------------------------------------
 #load in files
 setwd("/Users/iwargowsky/Desktop/ICOS/VUT sites")
