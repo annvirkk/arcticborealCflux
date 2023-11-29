@@ -6,8 +6,9 @@ library(purrr)
 library(data.table)
 library(lubridate)
 library(zoo)
+library(rio)
 
-setwd("/Users/iwargowsky/Desktop/Data from PIs")
+setwd("/Users/iwargowsky/Desktop/Data from PIs") 
 ###Sonnentag and Alcock####-----------------------------------------------------
 files <- list.files(path= "/Users/iwargowsky/Desktop/Data from PIs", 
                     pattern = "*Sonnentag_",all.files = T,recursive = T)
@@ -23,6 +24,9 @@ masa <- read_csv("Arctic_Boreal_CO2_Flux_ueyama_V2.csv")
 
 ###Julia Boike####--------------------------------------------------------------
 boike <- read_csv("ABCfluxv2.varsAWI_Bayelva.csv")
+#changing site name to be consistent with fluxnet name for tower 
+# Bayelva, Svalbard -> Bayelva, Spitsbergen
+boike$site_name <- "Bayelva, Spitsbergen" 
 
 ###Sang Jong####----------------------------------------------------------------
 jong <- read_csv("ABCfluxv2.vars_US-KOC_Sangjong.csv")
@@ -49,7 +53,8 @@ jung <- read_csv("ABCfluxv2.vars_JYJ_230639.csv")
 althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv")
 
 ### Christopher Schulze####-----------------------------------------------------
-#schulze <- read_csv("ABCfluxv2.vars_CS.csv")
+schulze <- read_csv("ABCfluxv2.vars_CS.csv")
+schulze <- schulze %>% mutate(reco= as.numeric(reco)) #to remove soil respiration data
 
 ### Vincent Jassey ####---------------------------------------------------------
 jassey <- read_csv("ABCfluxv2.vars_JASSEY.csv")
@@ -67,11 +72,24 @@ heffernan <- read_csv("ABCfluxv2.vars.liamheffernan.lutose.csv")
 
 ### Helena Rautakoski###--------------------------------------------------------
 rautakoski <- read_csv("ABCfluxv2_Ranskala.csv")
-
+rautakoski <- rautakoski %>%
+  mutate(site_name= ifelse(notes=="Treatment: Area that will be harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment", site_name))%>%
+  mutate(site_name= ifelse(notes=="Treatment: Continuous cover forestry treatment. Area harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment ", site_name))
+  
 ### Efren Lopez-Blanco###-------------------------------------------------------
 lopezblanco <- read_csv("ABCflux_GEM2022data.csv", na = "-9999")
 
+### Mika Aurela####-------------------------------------------------------------
+aurela.terv <- read_csv("ABCfluxv2_tervalaminsuotower.csv")
+aurela.lett.ec <- read_csv("ABCfluxv2_lettosuo.vars.tower.csv")
+aurela.lett.ch <- read_csv("ABCfluxv2_lettosuo.vars.chamber.csv")
 
+###Pertti J. Martikainen#####---------------------------------------------------
+martikainen <- read_csv("Kaamanen aapa mire_Pertti J. Martikainen.csv")
+
+###Pierre Tallidart#####--------------------------------------------------------
+tallidart.ec <- read_csv("ABCfluxv5_CA-BOU_tower.csv")
+tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv")
 
 ## PROCESSING DATA FROM PIs #############################################################################
 ### Scott Davidson####----------------------------------------------------------
@@ -79,8 +97,8 @@ lopezblanco <- read_csv("ABCflux_GEM2022data.csv", na = "-9999")
 davidson.16 <- read_excel("Davidson/Davidson_et al. 2016 Ecosystems.xlsx", sheet= 2)
 davidson.16.monthly <- davidson.16 %>% 
   mutate(year= substr(date, 1,4), month= substr(date,5,6), day= substr(date,7,8)) %>%
-  group_by(year, month, site_position, wetness, vegetation, position) %>%
-  summarise(tsoil_surface= mean(`temp_10 (deg C)`, na.rm = TRUE) ,
+  group_by(year, month, site_position, wetness, vegetation) %>%
+  dplyr::summarise(tsoil_surface= mean(c(`temp_10 (deg C)`, `temp_5 (deg C)`), na.rm = TRUE) ,
             thaw_depth= mean(`thaw depth  (cm)`, na.rm = TRUE),
             gpp= mean(`GPP (gC - CO2 m2 hr1)`, na.rm = TRUE),
             nee= mean(`NEE (gC - CO2 m2 hr1)`, na.rm = TRUE),
@@ -102,11 +120,11 @@ davidson.16.monthly <- davidson.16.monthly %>% dplyr::rename("site_reference"="s
                                                              "soil_moisture_class"= "wetness",
                                                              "veg_detail"= "vegetation")
 #Adding static info
-davidson.16.monthly$tsoil_surface_depth <- "10"
+davidson.16.monthly$tsoil_surface_depth <- "7.5"
 davidson.16.monthly$data_contributor_or_author <- "Scott Davidson"
 davidson.16.monthly$email <- "scott.davidson@plymouth.ac.uk"
 davidson.16.monthly$citation <- "https://doi.org/10.1007/s10021-016-9991-0"
-davidson.16.monthly$country <- "United States"
+davidson.16.monthly$country <- "USA"
 davidson.16.monthly$biome <- "Tundra"
 davidson.16.monthly$gap_fill <- "Average"
 davidson.16.monthly$flux_method <- "Chamber"
@@ -191,11 +209,11 @@ davidson.16.monthly <- davidson.16.monthly %>%
                                 site_reference %in% c("BEO_low_centre", "BEO_trough", "BES_drained_lake",
                                                       "IVO_wetland") ~ "PermWet",
                                 site_reference %in% "ATQ_pool"~ "Marshes"))
-#davidson.16.monthly <- davidson.16.monthly %>% 
-  #mutate(land_cover= case_when(site_name %in% "Barrow-BEO"~ "",
-                            # site_name %in% "Barrow-BES"~ "",
-                            # site_name %in% "Atqasuk"~ "",
-                            # site_name %in% "Ivotuk"~ ""))
+davidson.16.monthly <- davidson.16.monthly %>% 
+  mutate(land_cover= case_when(site_name %in% "Barrow-BEO"~ "",
+                            site_name %in% "Barrow-BES"~ "",
+                            site_name %in% "Atqasuk"~ "",
+                            site_name %in% "Ivotuk"~ ""))
 davidson.16.monthly$site_id <- paste("Davidson_",davidson.16.monthly$site_reference,"_agg", sep = "")
 
 #####Processing davidson.19####
@@ -206,7 +224,7 @@ davidson.19.monthly <- davidson.19 %>%
          day= day(as.Date(Date)),
          site_reference= paste(Microform, Burn, sep="_")) %>%
   group_by(year, month, site_reference, Site,`Peatland type` ) %>%
-  summarise(ch4_flux_total= mean(`mg CH4 m2 d1`, na.rm = TRUE),
+  dplyr::summarise(ch4_flux_total= mean(`mg CH4 m2 d1`, na.rm = TRUE),
             water_table_depth= mean(`Water table (cm) below ground surface`, na.rm = TRUE),
             chamber_nr_measurement_days= n_distinct(day))
 #change units
@@ -237,6 +255,8 @@ davidson.19.monthly$flux_method_detail <- "Closed chambers"
 davidson.19.monthly$flux_method_description <- "A cylindrical opaque chamber (20 cm × 50 cm) was placed on the collar, with water poured around the collar edge to create a seal. A battery-powered fan was used to mix the chamber headspace. A thermocouple located within the chamber, attached to a thermometer, was used to measure temperature during sampling. A 20 mL syringe was used to collect gas samples at intervals of 7, 15, 25, and 35 min following chamber closure and injected into Exetainers (Labco, UK). A gas chromatograph with a flame ionization detector (250 ◦ C), helium gas carrier, and standards of 5 and 50 ppm was used to determine CH4 concentration"
 davidson.19.monthly$instrumentation <- "Shimadzu GC2014, Mandel Scientific"
 davidson.19.monthly$diurnal_coverage <- "Day"
+davidson.19.monthly$land_cover_bawld <- "Fen"
+davidson.19.monthly$land_cover <- "170"
 
 #####Processing davidson.21####
 davidson.21 <- read_excel("Davidson/Davidson_et al. 2021 JGR Biogeosciences.xlsx", sheet= 2)
@@ -246,7 +266,7 @@ davidson.21 <- davidson.21 %>% mutate(year= year(as.Date(Date, format= "%m/%d/%Y
                                       site_reference= paste(Peatland, Position, Veg_type, sep='_'))
 davidson.21.monthly <- davidson.21 %>% group_by(Site, site_reference, year, month ) %>%
   group_by(year, month, Site, site_reference, Veg_type ) %>%
-  summarise(gpp= mean(GPP, na.rm=TRUE),
+  dplyr::summarise(gpp= mean(GPP, na.rm=TRUE),
             chamber_nr_measurement_days= n_distinct(day))
 #change unit
 davidson.21.monthly$gpp <- davidson.21.monthly$gpp *days_in_month(as.yearmon(paste(davidson.21.monthly$year,davidson.21.monthly$month,sep = '-')))
@@ -258,12 +278,14 @@ davidson.21.monthly$data_contributor_or_author <- "Scott Davidson"
 davidson.21.monthly$email <- "scott.davidson@plymouth.ac.uk"
 davidson.21.monthly$citation <- "https://doi.org/10.1029/2021JG006403"
 davidson.21.monthly$country <- "Canada"
+davidson.21.monthly$biome <- "Boreal"
 davidson.21.monthly$gap_fill <- "Average"
 davidson.21.monthly$flux_method <- "Chamber"
 davidson.21.monthly$flux_method_detail <- "Closed dynamic chamber method"
 davidson.21.monthly$flux_method_description <- "A clear acrylic chamber (60 × 60 × 30 cm) was placed on a stainless-steel collar (60 × 60 cm).The concentration of CO2 (ppm) was determined inside the chamber at 15 s intervals for a maximum of 2.5 min. The linear change in CO2 concentration over time was used to calcu- late net ecosystem exchange (NEE; g CO2 m2 d−1). Ecosystem respiration (ER; g CO2 m2 d−1) was determined by darkening the chamber with an opaque cloth shroud. Gross primary production (GPP; g CO2 m2 d−1) was calculated as the difference between NEE and ER."
 davidson.21.monthly$instrumentation <- "portable infrared gas analyzer (EGM-4, PP systems)"
 davidson.21.monthly$diurnal_coverage <- "Day"
+davidson.21.monthly$land_cover <- "170"
 davidson.21.monthly <- davidson.21.monthly %>% 
   mutate(latitude= case_when(site_name %in% c("Carmon Creek", "Carmon Creek 2")~ "56.36222",
                              site_name %in% "IPAD"~ "56.397561"),
@@ -296,12 +318,235 @@ davidson.21.monthly <- davidson.21.monthly %>%
 davidson.21.monthly <- davidson.21.monthly %>% 
   mutate(dec_broad_tree = case_when(veg_detail %in% c("Treed poor fen Carex/Salix", "Treed poor fen Feathermoss/Salix")~ "Present"))
 
+#####Processing Dobosy_Deadhorse_NOAA-ATDD_tower_1_Kochnendorfer#####---------------------------------------------------
+dobosy.all <- read_csv("original files/CO2flux_ADC_Synthesis_Metadata_TOWER_201809_20181005_timeData.csv")
+dobosy <- dobosy.all %>% filter(Study_ID== "Dobosy_Deadhorse_NOAA-ATDD_tower_1_Kochnendorfer") %>%
+  group_by(Meas_year, End_month_meas) %>%
+  reframe(nee= sum(as.numeric(NEE_gC_m2), na.rm = TRUE),
+                   gap_fill_perc= mean(as.numeric(`Gap_%`), na.rm = TRUE),
+                   tair= mean(as.numeric(Tair_int_C), na.rm = TRUE),
+                   tsoil_surface= mean(as.numeric(Tsoil_C), na.rm = TRUE),
+                   soil_moisture= mean(as.numeric(`Soil_moisture_%`), na.rm = TRUE),
+                   ppfd= mean(as.numeric(PAR_W_m2), na.rm = TRUE))
+
+dobosy <- dobosy %>% dplyr::rename("year"= "Meas_year", "month"= "End_month_meas")
+dobosy$diurnal_coverage <- "Day and Night"
+dobosy$gap_fill <- "MDS"
+dobosy$citation <- "Dobosy; R.; D. et al.: Estimating Random Uncertainty in Airborne Flux Measurements over Alaskan Tundra: Update on the Flux Fragment Method. https://doi.org/10.1175/JTECH-D-16-0187.1"
+dobosy$site_name <- "NOAA-ATDD; Deadhorse"
+dobosy$data_contributor_or_author <- "Kochendorfer"
+dobosy$email <- "john.kochendorfer@noaa.gov"
+dobosy$country <- "USA"
+dobosy$biome <- "Tundra"
+dobosy$latitude <- "70.086"
+dobosy$longitude <- "-148.57"
+dobosy$flux_method <- "EC"
+dobosy$flux_method_detail <- "EC_closed"
+dobosy$veg_detail <- "Wet sedge"
+dobosy$thaw_depth <- "20 - 50 cm"
+
+
+
+
+#####Torbern Tagesson####
+#tower data
+sheet <- excel_sheets("Torbern Tagesson/Flux_data_tower_2008_2009.xlsx") 
+tag.ec  <- bind_rows(lapply(setNames(sheet, sheet),  
+                    function(x) read_excel("Torbern Tagesson/Flux_data_tower_2008_2009.xlsx", sheet=x, na=c("NA","9999"))) )
+tag.ec.monthly <- tag.ec %>%
+  mutate(year= year(as.Date(Time) ), month= month(as.Date(Time))) %>%
+  group_by(year, month) %>%
+  dplyr::summarise( ch4_flux_total= mean(`GAP FILLED CH4 FLUX (mg CH4 m-2 h-1)`, na.rm= T),
+                    gpp= mean(`GAPfilled GPP (umol CO2 m-2 s-1)`, na.rm= T),
+                    reco= mean(`GAPFILLED ER (umol CO2 m-2 s-1)`, na.rm= T))
+#convert units
+tag.ec.monthly$gpp <- tag.ec.monthly$gpp*1.0368*days_in_month(as.yearmon(paste(tag.ec.monthly$year, tag.ec.monthly$month,sep = '-')))
+tag.ec.monthly$reco <- tag.ec.monthly$reco*1.0368*days_in_month(as.yearmon(paste(tag.ec.monthly$year, tag.ec.monthly$month,sep = '-')))
+tag.ec.monthly$ch4_flux_total <- tag.ec.monthly$ch4_flux_total/1000/16.04*12.01*24*days_in_month(as.yearmon(paste(tag.ec.monthly$year, tag.ec.monthly$month,sep = '-')))
+#calc nee
+tag.ec.monthly$nee <- tag.ec.monthly$reco + tag.ec.monthly$gpp
+#meteo data
+tag.meteo.07 <- read_excel("Torbern Tagesson/Zackenberg_klimatdatabase.xlsx", sheet = 1) %>%
+  dplyr::rename("year"= "Year", "month"= "Month", "tair"= "AirTemp(200cm)(C)...9", "precip"= "Precipitation(150cm)(mm)...26",
+                "par"= "PAR(200cm)(my-mol*m-2s-1)...32", "snow_depth"= "Snow depth") %>%
+  select(year, month, tair, precip, par, snow_depth)
+tag.meteo.08 <- read_excel("Torbern Tagesson/Zackenberg_klimatdatabase.xlsx", sheet = 2) %>%
+  dplyr::rename("year"= "Year", "month"= "Month", "tair"= "AirTemp(200cm)(C)...9", "precip"= "Precipitation(150cm)(mm)...26",
+                "par"= "PAR(200cm)(my-mol*m-2s-1)...32", "snow_depth"= "Snow depth") %>%
+  select(year, month, tair, precip, par, snow_depth)
+tag.meteo.09 <- read_excel("Torbern Tagesson/Zackenberg_klimatdatabase.xlsx", sheet = 3)  %>%
+  mutate(month= month(as.Date(DateTime)), year= year(as.Date(DateTime)))%>%
+  dplyr::rename("tsoil_0"= "Soil temp 0cm_°C", "tsoil_5" = "Soil temp 5cm_°C", "tsoil_20"= "Soil temp 20cm_°C",
+                "tsoil_60" = "Soil temp 60cm_°C", "tsoil_100" = "Soil temp 100cm_°C", "tair"= "Air temp_°C", "precip"= "Precipitation Pluvio") %>%
+  select(year, month, tsoil_0, tsoil_5, tsoil_20, tsoil_60, tsoil_100, tair, precip)
+tag.meteo <- full_join(tag.meteo.07, tag.meteo.08) %>% full_join(tag.meteo.09)
+tag.meteo.monthly <- tag.meteo %>% group_by(year, month) %>%
+  dplyr::summarise(tair= mean(tair, na.rm = T),
+                   precip= max(precip, na.rm = T),
+                   par= mean(par, na.rm = T),
+                   snow_depth= mean(snow_depth, na.rm = T),
+                   tsoil_surface= mean(c(tsoil_0, tsoil_5), na.rm = T),
+                   tsoil_deep= mean(c(tsoil_20, tsoil_60, tsoil_100), na.rm = T))
+tagesson.ec <- left_join(tag.ec.monthly, tag.meteo.monthly)
+tagesson.ec$tsoil_surface_depth <- "2.5"
+tagesson.ec$tsoil_deep_depth <- "60"
+tagesson.ec$site_name <- "Rylekaerene"
+tagesson.ec$data_contributor_or_author <- "Torbern Tagesson; Department of Physical Geography and Ecosystems Science, Lund University, Sölvegatan 12, 223 62, Lund, Sweden,"
+tagesson.ec$email <- "torbern.tagesson@nateko.lu.se"
+tagesson.ec$citation <- "Tagesson, T., Mölder, M., Mastepanov, M., Sigsgaard, C., Tamstorf, M.P., Lund, M., . . . Ström, L. (2012) Land-atmosphere exchange of methane from soil thawing to soil freezing in a high-Arctic wet tundra ecosystem. Global Change Biology, 18, 1928–1940."
+tagesson.ec$country <- "Greenland"
+tagesson.ec$latitude <- "74.481511"
+tagesson.ec$longitude <- "-20.555689"
+tagesson.ec$veg_detail <- "High-Arctic heterogeneous wetland area. It is a patterned fen characterized by alternatinghigh, dry heath areas, and low, wet fen areas"
+tagesson.ec$flux_method <- "CO2: EC CH4: Combo of EC and gradient"
+tagesson.ec$flux_method_detail <- "CO2: EC_open CH4: Combination of the gradient and eddy covariance methods"
+tagesson.ec$flux_method_description <- "3-axis sonic anemometer (Metek, Gmbh, Elmshorn,Germany), and an open-path CO2/H2O infrared gas analyzer was installed at 3.3 m above the surface. The gas analyzer was tilted 32°from vertical next to the sonic anemometer. CH4 fluxes were thus estimated by combining gradient and EC methods. The CH4 concentrations were measured at two levels (0.70 and 2.75 m) on the tower at 1 Hz rate. The system consisted of a laser off-axis integrated cavity output spectroscopy analyzer (LGR; DLT200,Fast Methane Analyzer, repeatability 1 ppb at 0.1 Hz, Los Gatos Research, Mountain View, CA, USA"
+tagesson.ec$instrumentation <- "LI-7500"
+tagesson.ec$permafrost <- "Yes"
+tagesson.ec$biome <- "Tundra"
+tagesson.ec$non_sedge_herbaceous <- "Present"
+tagesson.ec$ev_shrub <- "Present"
+tagesson.ec$dec_shrub <- "Present"
+tagesson.ec$sedge <- "Present"
+tagesson.ec$other_moss_cover <- "Present"
+tagesson.ec$alt <- "40-80"
+tagesson.ec$soil_depth <- "20-30"
+tagesson.ec$soil_ph <- "6.9"
+tagesson.ec$tair_height <- "3"
+tagesson.ec$notes <- "NEE values calculated from gapfilled ER and GPP measurements (NEE= ER+GPP)"
+tagesson.ec$land_cover <- "180"
+tagesson.ec$land_cover_bawld <- "Wet Tundra"
+  
+#chamber 
+tag.ch <- dplyr::bind_rows(import_list("Torbern Tagesson/Chamber_fluxes_Tagesson_2007.xls"))
+tag.ch <- tag.ch %>% mutate(year= year(as.Date(Time, format= "%d.%m.%Y %H:%M:%S")),
+                            month= month(as.Date(Time, format= "%d.%m.%Y %H:%M:%S")),
+                            day= day(as.Date(Time, format= "%d.%m.%Y %H:%M:%S")))
+#remove empty rows
+tag.ch <- tag.ch %>% filter(!if_all("year", ~ is.na(.)))
+#need to convert coordinate units
+library(sf)
+utm_data <- st_as_sf(tag.ch, coords = c("East Coordiante (UTM27x)", "North Coordiante (UTM27x)"), crs = 32627)  # Assuming UTM zone 27
+decimal_degrees <- st_transform(utm_data, 4326)  # EPSG code for WGS84 (decimal degrees)
+# Add the result to the original data.frame
+tag.ch$latitude <- st_coordinates(decimal_degrees)[, 2]
+tag.ch$longitude <- st_coordinates(decimal_degrees)[, 1]
+#fix chamber names
+tag.ch <- tag.ch %>%
+  mutate(Chamber = gsub("CF", "Continuous fen ", Chamber)) %>%
+  mutate(Chamber = gsub("HF", "Hummocky fen ", Chamber)) %>%
+  mutate(Chamber = gsub("G", "Grassland ", Chamber)) %>%
+  mutate(Chamber = gsub("CAS", "Cassiope heath ", Chamber)) %>%
+  mutate(Chamber = gsub("Dry", "Dryas heath ", Chamber)) %>%
+  mutate(Chamber = gsub("Sax", "Salix snowbed ", Chamber)) %>%
+  mutate(Chamber = gsub("Vac", "Vaccinium heath ", Chamber))
+tag.ch <- tag.ch %>% dplyr::rename("site_reference"= "Chamber")
+  
+## summarize by month
+tag.ch.monthly <- tag.ch %>% 
+  group_by(site_reference, latitude, longitude, year, month) %>%
+  dplyr::summarise(tsoil_surface= mean(`Soil temp 10 cm`, na.rm = T),
+                   alt= mean(`Active layer`, na.rm = T),
+                   water_table_depth= mean(`Wt depth`, na.rm = T),
+                   par= mean(PAR, na.rm = T),
+                   ch4_flux_total= mean(`CH4 flux dark (mg CH4 m−2 h−1)`, na.rm = T),
+                   nee= mean(`NEE (mg CO2 m−2 h−1)`, na.rm = T),
+                   reco= mean(`RESP (mg CO2 m−2 h−1)`, na.rm = T),
+                   gpp= mean(`GPP (mg CO2 m−2 h−1)`, na.rm = T),
+                   tair= mean(`AirTemp(200cm)(C)`, na.rm = T),
+                   chamber_nr_measurement_days= n_distinct(day))
+#change units
+tag.ch.monthly$ch4_flux_total<- tag.ch.monthly$ch4_flux_total/1000/16.04*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
+tag.ch.monthly$nee<- tag.ch.monthly$nee/1000/44.01*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
+tag.ch.monthly$gpp<- tag.ch.monthly$gpp/1000/44.01*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
+tag.ch.monthly$reco<- tag.ch.monthly$reco/1000/44.01*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
+#Adding in static info
+tag.ch.monthly$site_name <- "Rylekaerene"
+tag.ch.monthly$site_id <- paste("Tagesson_Rylekaerene_", tag.ch.monthly$site_reference, sep = "")
+tag.ch.monthly$data_contributor_or_author <- "Torbern Tagesson; Department of Physical Geography and Ecosystems Science, Lund University, Sölvegatan 12, 223 62, Lund, Sweden,"
+tag.ch.monthly$email <- "torbern.tagesson@nateko.lu.se"
+tag.ch.monthly$citation <- "CO2: Torbern Tagesson et al. (2012) High-resolution satellite data reveal an increase in peak growing season gross primary production in a high-Arctic wet tundra ecosystem 1992-2008. International Journal of Applied Earth Observation and Geoinformation, 18, 407-416. CH4: Torbern Tagesson et al. (2013) Modelling of growing season methane fluxes in a high-Arctic wet tundra ecosystem 1997–2010 using in situ and high-resolution satellite data, Tellus B: Chemical and Physical Meteorology, 65:1, DOI: 10.3402/tellusb.v65i0.19722"
+tag.ch.monthly$veg_detail <- "High-Arctic heterogeneous wetland area. It is a patterned fen characterized by alternating high, dry heath areas, and low, wet fen areas"
+tag.ch.monthly$permafrost <- "Yes"
+tag.ch.monthly$country <- "Greenland"
+tag.ch.monthly$biome <- "Tundra"
+tag.ch.monthly$alt <- "50- 100"
+tag.ch.monthly$tsoil_surface_depth <- "10"
+tag.ch.monthly$flux_method <- "Chamber"
+tag.ch.monthly$flux_method_detail <- "Closed chamber"
+tag.ch.monthly$flux_method_description <- "The chamber was a transparent Plexiglas cube of 0.3 m height and a ground area of 0.34 m2. The outlet and inlet for gases were located on one of the chamber sides, 0.15 and 0.25 m above the ground, respectively. Two small fans were located in the upper part of the chamber to ensure proper mixing of the chamber headspace and representative sampling"
+tag.ch.monthly$instrumentation <- "CO2: EGM-4, PP-systems, Hitchin, Hertfordshire, UK CH4: LGR, DLT200 Fast Methane Analyzer, Los Gatos Research,USA"
+tag.ch.monthly$diurnal_coverage <- "Day"
+tag.ch.monthly$gapfill <- "Average"
+tag.ch.monthly$land_cover_bawld <- "Wet Tundra"
+tag.ch.monthly <- tag.ch.monthly %>%
+  mutate(land_cover= case_when( startsWith(site_reference, "Grassland") ~ "130",
+                                startsWith(site_reference, "Continuous fen")~ "180",
+                                startsWith(site_reference, "Hummocky fen")~ "180",
+                                startsWith(site_reference, "Cassiope heath")~ "120",
+                                startsWith(site_reference, "Dryas heath")~"120",
+                                startsWith(site_reference,"Salix snowbed")~"120",
+                                startsWith(site_reference,"Vaccinium heath")~"120"))
+tag.ch.monthly <- tag.ch.monthly %>%
+  mutate(sedge= case_when(startsWith(site_reference, "Continuous fen")~ "Dominant",
+                          startsWith(site_reference, "Hummocky fen")~ "Dominant"))
+tag.ch.monthly <- tag.ch.monthly %>%
+  mutate(non_sedge_herbaceous= case_when(startsWith(site_reference, "Continuous fen")~ "Dominant",
+                          startsWith(site_reference, "Hummocky fen")~ "Dominant",
+                          startsWith(site_reference, "Grassland") ~ "Dominant"))
+tag.ch.monthly <- tag.ch.monthly %>%
+  mutate(ev_shrub= case_when(startsWith(site_reference, "Cassiope heath")~ "Dominant",
+                             startsWith(site_reference, "Dryas heath")~"Dominant"))
+tag.ch.monthly <- tag.ch.monthly %>%
+  mutate(dec_shrub= case_when(startsWith(site_reference, "Hummocky fen")~ "Dominant",
+                              startsWith(site_reference,"Salix snowbed")~"Dominant",
+                              startsWith(site_reference,"Vaccinium heath")~"Dominant"))
+tag.ch.monthly$other_moss_cover <- "Present"
+tagesson.ch <- tag.ch.monthly
+#####Margaret Torn/ Sigrid Dengel NGEE####
+torn.meteo <- read_csv("NGEEdata/CN_MM71_ chamber_soil_temp_moist_thaw_20210120.csv", na=c("NA","-9999", "NaN"))
+torn.flux.lgr <- read_csv("NGEEdata/CN_MM71_soil_chamber_fluxes_LGR_20210120.csv", na=c("NA","-9999", "NaN"))
+torn.flux.pic <- read_csv("NGEEdata/CN_MM71_soil_chamber_fluxes_Picarro_20230227.csv", na=c("NA","-9999", "NaN"))
+#merge data
+torn.flux  <- torn.flux.lgr %>% full_join(torn.flux.pic)
+torn.meteo <- torn.meteo %>% mutate(measurement_date= as.Date(measurement_date, format= "%Y-%m-%d"),
+                                    time= as.POSIXct(time, format= "%H:%M"))
+torn.flux <- torn.flux %>% mutate(measurement_date= as.Date(measurement_date, format= "%Y-%m-%d"),
+                                    time= as.POSIXct(time, format= "%H:%M"))
+torn <- torn.flux %>% full_join(torn.meteo)
+#add year and month
+torn <- torn %>% mutate(year= year(measurement_date), month= month(measurement_date))
+#summary by month
+torn.monthly <- torn %>% group_by(year, month, plot_ID, latitude, longitude) %>%
+  reframe(nee= mean(as.numeric(flux_CO2), na.rm = TRUE),
+          ch4_flux_total= mean(as.numeric(flux_CH4), na.rm = TRUE),
+          water_table_depth= -mean(as.numeric(standing_water_depth), na.rm = TRUE),
+          tsoil_surface= mean(as.numeric(soil_temp_10_cm), na.rm = TRUE),
+          tsoil_deep= mean(as.numeric(c(soil_temp_15_cm, soil_temp_20_cm)), na.rm = TRUE),
+          tair= mean(as.numeric(air_temp), na.rm = TRUE),
+          thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
+          soil_moisture= mean(VWC, na.rm = TRUE))
+#convert units
+torn.monthly$nee<- torn.monthly$nee*1.0368*days_in_month(as.yearmon(paste(torn.monthly$year, torn.monthly$month,sep = '-')))
+torn.monthly$ch4_flux_total<- torn.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(torn.monthly$year, torn.monthly$month,sep = '-')))
+#adding static info
+torn.monthly$moisture_depth <- "20"
+torn.monthly$site_name <- "Seward Peninsula"
+torn.monthly$country <- "USA"
+torn.monthly$biome <- "Tundra"
+torn.monthly$citation <-"Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret Torn. 2023. Soil CO2 and CH4 Chamber Fluxes in Tussock Tundra, Council Road Mile Marker 71, Seward Peninsula, Alaska, 2016-2019. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Dataset accessed on 11/20/2023 at https://doi.org/10.5440/1765733."
+
+torn.ch <- torn.monthly
+
 ########----------------------------------------------------------------------------------------------
 PIdat.ec <- rbindlist(list(sonnentag, pink, masa, boike, jong, sabrekov.ec, dyukarev.ec, roy, 
-                           hung.ec, rautakoski ), fill = TRUE)
+                           lopezblanco, hung.ec, rautakoski, aurela.lett.ec, aurela.terv,
+                           dobosy, tallidart.ec, tagesson.ec), 
+                      fill = TRUE)
 PIdat.ec$extraction_source <- "User-contributed"
-PIdat.ch <- rbindlist(list(peacock, jung, althuizen,  jassey, sabrekov.ch, dyukarev.ch, hung.ch,
-                            davidson.16.monthly, davidson.19.monthly, davidson.21.monthly ), 
+PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze, jassey, sabrekov.ch, dyukarev.ch, hung.ch,
+                            heffernan, davidson.16.monthly, davidson.19.monthly, davidson.21.monthly,
+                           aurela.lett.ch, martikainen, tallidart.ch, tagesson.ch, torn.ch), 
                       fill = TRUE)
 PIdat.ch$extraction_source <- "User-contributed"
 
