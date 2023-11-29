@@ -118,7 +118,7 @@ pleindat.monthly$site_id <- 'Plein_Utqiaġvik_agg'
 pleindat.monthly$email <- 'jlplein@sdsu.edu'
 pleindat.monthly$extraction_source <- 'Arctic Data Center'
 pleindat.monthly$citation <- 'DOI:10.18739/A2S17ST8F'
-pleindat.monthly$country <- 'United States'
+pleindat.monthly$country <- 'USA'
 pleindat.monthly$latitude <- '71.322527'
 pleindat.monthly$longitude <- '-156.60917'
 pleindat.monthly$flux_method <- 'Chamber'
@@ -212,7 +212,7 @@ CPC.monthly$site_id <- paste("Watts_Caribou-Poker-Creek_",CPC.monthly$site_refer
 CPC.monthly$email <- "jwatts@woodwellclimate.org"
 CPC.monthly$extraction_source <- "Arctic Data Center"
 CPC.monthly$citation <- "DOI:10.18739/A2P55DJ3K"
-CPC.monthly$country <- "United States"
+CPC.monthly$country <- "USA"
 CPC.monthly$latitude <- "65.1574753"
 CPC.monthly$longitude <- "-147.4997501"
 CPC.monthly$flux_method <- "Chamber"
@@ -275,7 +275,7 @@ tutakoke.monthly$site_id <- paste("Welker_Tutakoke_",tutakoke.monthly$site_refer
 tutakoke.monthly$email <- "jmwelker@uaa.alaska.edu"
 tutakoke.monthly$extraction_source <- "Arctic Data Center"
 tutakoke.monthly$citation <- "DOI:10.18739/A29S1KK98"
-tutakoke.monthly$country <- "United States"
+tutakoke.monthly$country <- "USA"
 tutakoke.monthly$latitude <- "61.416667"
 tutakoke.monthly$longitude <- "-165.833333"
 tutakoke.monthly$flux_method <- "Chamber"
@@ -323,14 +323,13 @@ barrow.monthly$data_contributor_or_author <- "Robert Wagner"
 barrow.monthly$site_id <- paste("Wagner_Barrow_",barrow.monthly$site_reference, "_agg")
 barrow.monthly$extraction_source <- "Arctic Data Center"
 barrow.monthly$citation <- "DOI:10.18739/A23T9D62D"
-tutakoke.monthly$country <- "United States"
+barrow.monthly$country <- "USA"
 barrow.monthly$flux_method <- "Chamber"
 barrow.monthly$instrumentation <- "LGR (Los Gatos Research) ultra-portable gas analyzer"
 barrow.monthly$gap_fill <- "Average"
 barrow.monthly$biome <- "Tundra"
 barrow.monthly$diurnal_coverage <- "Day"
-barrow.monthly$land_cover <-
-barrow.monthly$land_cover_bawld
+
 
 dat7 <- barrow.monthly
 ###Barrow chambers 2012 (dat8) -K Miller COMPLETED ####-----------------------------------------------------------------------------
@@ -348,20 +347,21 @@ friedman.monthly <- friedman %>% filter(Collar=="Control") %>%
                                                nee= mean(C02_Flux, na.rm = TRUE),
                                                chamber_nr_measurement_days= n_distinct(day))
 #change units from mgC/m2/h to gC/m2/month
-friedman.monthly$ch4_flux_total <- friedman.monthly$ch4_flux_total/100*24*days_in_month(as.yearmon(paste(friedman.monthly$year, friedman.monthly$month,sep = '-')))
-friedman.monthly$nee <- friedman.monthly$nee/100*24*days_in_month(as.yearmon(paste(friedman.monthly$year, friedman.monthly$month,sep = '-')))
+friedman.monthly$ch4_flux_total <- friedman.monthly$ch4_flux_total/1000*24*days_in_month(as.yearmon(paste(friedman.monthly$year, friedman.monthly$month,sep = '-')))
+friedman.monthly$nee <- friedman.monthly$nee/1000*24*days_in_month(as.yearmon(paste(friedman.monthly$year, friedman.monthly$month,sep = '-')))
 #adding in static vars
 friedman.monthly$site_name <- "Barrow"
 friedman.monthly$site_id <- paste("Friedman_Barrow_agg_",friedman.monthly$site_reference)
 friedman.monthly$email <- "support@arcticdata.io"
 friedman.monthly$data_contributor_or_author <- "K Miller, E Friedman, L Angenent, and D A Lipson"
 friedman.monthly$citation <- "DOI:10.18739/A2T727H0D"
-friedman.monthly$country <- "United States"
+friedman.monthly$country <- "USA"
+friedman.monthly$biome <- "Tundra"
 friedman.monthly$latitude <- "71.294"
 friedman.monthly$longitude <- "-156.602"
 friedman.monthly$flux_method <- "Chambers"
 friedman.monthly$instrumentation <- "Los Gatos Research portable trace gas analyzer"
-friedman.monthly$gapfill <- "Average"
+friedman.monthly$gap_fill <- "Average"
 
 dat8 <- friedman.monthly
 ###Pleistocene Park (dat9) - Syndonia Bret-Harte check if FC= NEE####-----------------------------------------------------------------------------
@@ -401,7 +401,8 @@ wilkman.soilmonthly$Depth <- NULL
 wilkman.soilmonthly$tsoil <- NULL
 #summarise flux by month 
 wilkman.monthly <- wilkman %>% group_by(year, month) %>%
-  summarise(nee= mean(CO2_flx_gC_d, na.rm = TRUE))
+  summarise(nee= mean(CO2_flx_gC_d, na.rm = TRUE),
+            percent_na = (sum(is.na(CO2_flx_gC_d))/n()*100))
 #merge together
 wilkman.monthly <- merge(wilkman.monthly, wilkman.soilmonthly, by= c("year", "month"))
 
@@ -411,7 +412,7 @@ wilkman.monthly$site_name <- "Barrow-Biocomplexity Experiment South"
 wilkman.monthly$email <- "ewilkman-w@sdsu.edu"
 wilkman.monthly$data_contributor_or_author <- "Eric Wilkman"
 wilkman.monthly$citation <- "doi:10.18739/A20P0WR91"
-wilkman.monthly$country <- "United States"
+wilkman.monthly$country <- "USA"
 wilkman.monthly$latitude <- "71.280881"
 wilkman.monthly$longitude <- "-156.596467"
 wilkman.monthly$flux_method <- "EC"
@@ -435,16 +436,18 @@ zona.2 <- lapply(zona, function(df) df %>%
                                  air_temperature, co2_flux))
 #convert column classes
 zona.2 <- lapply(zona.2, function(df) df %>%
-                   mutate( ch4_flux= as.integer(ch4_flux),
-                           co2_flux= as.integer(co2_flux),
-                           air_temperature= as.integer(air_temperature)))
+                  mutate( ch4_flux= as.character(ch4_flux),
+                           co2_flux= as.character(co2_flux),
+                           air_temperature= as.character(air_temperature)))
 #turn list  into one df
 names(zona.2)<- substr(files2, 1,3) 
 zona.dat <- bind_rows(zona.2, .id = "site_id")
 #monthly means
 zona.monthly <- group_by(zona.dat, year, month, site_id) %>% 
   dplyr::summarise( ch4_flux_total = mean(ch4_flux, na.rm = TRUE),
+                    percent_na_ch4 = (sum(is.na(ch4_flux))/n()*100),
                     nee = mean(co2_flux, na.rm = TRUE),
+                    percent_na_nee = (sum(is.na(co2_flux))/n()*100),
                     tair = mean(air_temperature, na.rm = TRUE))
 #remove rows without flux data
 zona.monthly <- zona.monthly %>% filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
@@ -536,16 +539,26 @@ IVO <- bind_rows(IVO1.1, IVO2.1, IVO3.1) %>%
 meteo <- bind_rows(ATQ, BES, BEO, CMDL, IVO)
 
 meteo.monthly <- group_by( meteo, year, month, site_id) %>% 
-  dplyr::summarise( ppfd = mean(ppfd, na.rm = TRUE),
-                    tsoil_surface = mean(tsoil_surface, na.rm = TRUE),
-                    tsoil_deep = mean(tsoil_deep, na.rm = TRUE),
-                    tair = mean(tair, na.rm = TRUE),
-                    precip = sum(precip, na.rm = TRUE),
+  dplyr::summarise( ppfd = mean(ppfd, na.rm = FALSE),
+                    tsoil_surface = mean(tsoil_surface, na.rm = FALSE),
+                    tsoil_deep = mean(tsoil_deep, na.rm = FALSE),
+                    tair = mean(tair, na.rm = FALSE),
+                    precip = sum(precip, na.rm = FALSE),
                     soil_moisture = mean(soil_moisture, na.rm = TRUE),
                     snow_depth = mean(snow_depth, na.rm = TRUE),
                     tsoil_surface_depth= mean(as.numeric(tsoil_surface_depth), na.rm = TRUE),
                     tsoil_deep_depth = mean(as.numeric(tsoil_deep_depth), na.rm = TRUE),
-                    moisture_depth = mean(as.numeric(moisture_depth), na.rm = TRUE)) 
+                    moisture_depth = mean(as.numeric(moisture_depth), na.rm = FALSE)) 
+
+###Merging for gapfilling exercise####
+zona.dat <- zona.dat %>%  mutate(site_id= case_when(site_id %in% 'ATQ'~ "US-Atq",
+                                                     site_id %in% 'BES'~ "US-Bes",
+                                                     site_id %in% 'BEO'~ "US-Beo",
+                                                     site_id %in% 'CMD'~ "US-Brw",
+                                                     site_id %in% 'IVO'~ "US-Ivo")) %>%
+  mutate(air_temperature = as.integer(air_temperature)-273.15)
+
+zona.HH <- left_join(zona.dat, meteo, by=c('site_id', 'year', 'month'))
 
 dat2 <- left_join(zona.monthly, meteo.monthly, by=c('site_id', 'year', 'month'))
 
@@ -560,6 +573,7 @@ dat2 <- left_join(zona.monthly, meteo.monthly, by=c('site_id', 'year', 'month'))
 #ADC.ec$data_usage <- "Tier 1"
 ADC.ch <- rbindlist(list(dat3, dat4, dat5, dat6, dat7, dat8), fill = TRUE)
 ADC.ch$extraction_source <- "Arctic Data Center"
+ADC.ch$dataentry_person <- "Isabel"
 ADC.ch$data_usage <- "Tier 1"
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 #write_csv(ADC.ec, "ADC.ec.csv")
