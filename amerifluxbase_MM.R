@@ -253,7 +253,9 @@ base[[40]] <- base[[40]] %>% group_by(year, month) %>%
                    P= sum(P, na.rm=FALSE),
                    SWC= mean(SWC_1, na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
-                   RECO= mean(RECO_PI, na.rm=FALSE))
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
 base[[40]]$GPP <- base[[40]]$NEE-base[[40]]$RECO
 #Arctic data center is also not gap filled and same dates
 ###US-Bn1####-----------------------NO NEE DATA----------------------------------------------------
@@ -295,14 +297,16 @@ base[[43]]$GPP <- base[[43]]$NEE-base[[43]]$RECO
 ###US-Brw####---------------------------------------------------------------------------
 colnames(base[[44]])
 base[[44]] <- base[[44]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na = (sum(is.na(NEE_PI))/n()*100),
+  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
                    TA= mean(TA, na.rm=FALSE),
                    NEE= mean(NEE_PI, na.rm=FALSE),
                    TS= mean(TS_1, na.rm=FALSE),
                    P= sum(P, na.rm=FALSE),
                    SWC= mean(SWC_1, na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
-                   RECO= mean(RECO_PI, na.rm=FALSE))
+                   percent_na_ppfd= (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
 base[[44]]$GPP <- base[[44]]$NEE-base[[44]]$RECO
 #RECO column is empty
 #Not gapfilled 
@@ -317,6 +321,7 @@ base[[45]] <- base[[45]] %>% group_by(year, month) %>%
                    SWC= mean(SWC_PI_1, na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
                    FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_ch4 = (sum(is.na(FCH4_PI_F))/n()*100),
                    D_SNOW= mean(D_SNOW_PI_F, na.rm=FALSE),
                    GPP= mean(GPP_PI, na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE))
@@ -327,6 +332,7 @@ colnames(base[[46]])
 base[[46]] <- base[[46]] %>% group_by(year, month) %>%
   dplyr::summarise(percent_na = (sum(is.na(GPP_PI))/n()*100),
                    FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_ch4 = (sum(is.na(FCH4_PI_F))/n()*100),
                    TA= mean(TA_PI_F, na.rm=FALSE),
                    TS= mean(TS_PI_F_1, na.rm=FALSE),
                    P= sum(P_PI_F, na.rm=FALSE),
@@ -342,6 +348,7 @@ colnames(base[[47]])
 base[[47]] <- base[[47]] %>% group_by(year, month) %>%
   dplyr::summarise(percent_na = (sum(is.na(GPP_PI))/n()*100),
                    FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_ch4 = (sum(is.na(FCH4_PI_F))/n()*100),
                    TA= mean(TA_PI_F, na.rm=FALSE),
                    TS= mean(TS_PI_F_1, na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
@@ -363,7 +370,8 @@ base[[48]] <- base[[48]] %>% group_by(year, month) %>%
                    SWC= mean(SWC_PI_1, na.rm=FALSE),
                    GPP= mean(GPP_PI, na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE),
-                   FCH4= mean(FCH4_PI_F, na.rm=FALSE))
+                   FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_ch4 = (sum(is.na(FCH4_PI_F))/n()*100))
 base[[48]]$NEE <- base[[48]]$RECO-base[[48]]$GPP
 #summer months gapfilled but most dates covered by Ameriflux
 ###US-EML####---------------------------------------------------------------------------
@@ -421,31 +429,37 @@ base[[52]] <- base[[52]] %>% group_by(year, month) %>%
 ###US-ICh####---------------------------------------------------------------------------
 colnames(base[[53]])
 base[[53]] <- base[[53]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na = (sum(is.na(GPP_PI))/n()*100),
+  dplyr::summarise(percent_na_gpp = (sum(is.na(GPP_PI))/n()*100),
                    TA= mean(TA_PI_F, na.rm=FALSE),
                    TS= mean(c(TS_PI_1, TS_PI_2), na.rm=FALSE),
                    P= sum(P, na.rm=FALSE),
                    SWC= mean(c(SWC_PI_1, SWC_PI_2), na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
                    D_SNOW= mean(D_SNOW, na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100),
                    GPP= mean(GPP_PI, na.rm=FALSE),
-                   FCH4= mean(FCH4_PI_F, na.rm=FALSE))
+                   FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_fch4 = (sum(is.na(FCH4_PI_F))/n()*100))
 base[[53]]$NEE <- base[[53]]$RECO-base[[53]]$GPP
 #summer months gapfilled
 ###US-ICs####---------------------------------------------------------------------------
 colnames(base[[54]])
 base[[54]] <- base[[54]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na = (sum(is.na(GPP_PI))/n()*100),
-                   FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+  dplyr::summarise(FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_ch4 = (sum(is.na(FCH4_PI_F))/n()*100),
                    TA= mean(TA_PI_F, na.rm=FALSE),
                    TS= mean(c(TS_PI_1, TS_PI_2), na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
                    P= sum(P, na.rm=FALSE),
                    D_SNOW= mean(D_SNOW, na.rm=FALSE),
                    SWC= mean(c(SWC_PI_1, SWC_PI_2), na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE),
-                   GPP= mean(GPP_PI, na.rm=FALSE))
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100),
+                   GPP= mean(GPP_PI, na.rm=FALSE),
+                   percent_na_gpp = (sum(is.na(GPP_PI))/n()*100))
 base[[54]]$NEE <- base[[54]]$RECO-base[[54]]$GPP
 #Data seems a little strange GPP= 0 A LOT
 #gapfilled mid sept 2007 through 2021
@@ -455,24 +469,30 @@ colnames(base[[55]])
 base[[55]] <- base[[55]] %>% mutate(GPP_PI= as.numeric(GPP_PI)) 
 base[[55]] <- base[[55]] %>% mutate(FCH4_PI_F= as.numeric(FCH4_PI_F))
 base[[55]] <- base[[55]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na = (sum(is.na(GPP_PI))/n()*100),
-                   TA= mean(TA_PI_F, na.rm=FALSE),
+  dplyr::summarise(TA= mean(TA_PI_F, na.rm=FALSE),
                    TS= mean(c(TS_1_1_1, TS_2_1_1), na.rm=FALSE),
                    PPFD= mean(PPFD_IN, na.rm=FALSE),
                    P= sum(P, na.rm=FALSE),
                    SWC= mean(c(SWC_1_1_1, SWC_2_1_1), na.rm=FALSE),
                    TS= mean(c(TS_1_1_1, TS_2_1_1), na.rm=FALSE),
                    RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100),
                    GPP= mean(GPP_PI, na.rm=FALSE),
-                   FCH4= mean(FCH4_PI_F, na.rm=FALSE))
+                   percent_na_gpp = (sum(is.na(GPP_PI))/n()*100),
+                   FCH4= mean(FCH4_PI_F, na.rm=FALSE),
+                   percent_na_fch4 = (sum(is.na(FCH4_PI_F))/n()*100))
 base[[55]]$NEE <- base[[55]]$RECO-base[[55]]$GPP
 #Data seems a little strange GPP= 0 A LOT
 #gapfilled 2021, rest NAs
 #Ameriflux covers 2007-2021
 ###US-Ivo####------------------NO NEE DATA--------------------------------------------------------
 colnames(base[[56]])
-base[[56]] <- base[[56]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na = (sum(is.na(NEE_PI))/n()*100),
+USbase[[56]] <- base[[56]] %>% group_by(year, month) %>%
+  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+                   percent_na_rh = (sum(is.na(RH))/n()*100),
+                   percent_na_fch4 = (sum(is.na(FCH4))/n()*100),
+                   percent_na_PPFD = (sum(is.na(PPFD_IN))/n()*100),
+                   percent_na_TA = (sum(is.na(TA))/n()*100),
                    TA= mean(TA, na.rm=FALSE),
                    NEE= mean(NEE_PI, na.rm=FALSE),
                    TS= mean(c(TS_PI_1, TS_PI_2), na.rm=FALSE),
@@ -667,3 +687,89 @@ sites.datescovered2 <- sites %>% group_by(site_id) %>% dplyr::summarise(start_da
                                                                         end_date = max(ts))
 #double checking that function above worked
 checkdates <- sites %>% arrange(site_id, ts)
+
+
+
+
+
+#----------------------------------------------------------------------------------
+#PROCESSING ARCTIC DATA CENTER AMERIFLUX BASE FILES
+setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
+path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
+files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
+#load in files as a list of df
+adcbase.dat <-  lapply(files,function(i){
+  fread(i, na.strings =c("NA","-9999"), skip= 2)
+})
+#add year, month, day columns
+adc.base <- lapply(adcbase.dat, function(df) df %>%
+                 mutate( year = substr(df$TIMESTAMP_START, 1,4),
+                         month = substr(df$TIMESTAMP_START, 5,6)))
+###US-Ivo
+colnames(adc.base[[12]])
+adc.base[[12]] <- adc.base[[12]] %>% group_by(year, month) %>%
+  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+                   percent_na_rh = (sum(is.na(RH))/n()*100),
+                   percent_na_PPFD = (sum(is.na(PPFD_IN))/n()*100),
+                   percent_na_TA = (sum(is.na(TA))/n()*100),
+                   TA= mean(TA, na.rm=FALSE),
+                   NEE= mean(NEE_PI, na.rm=FALSE),
+                   TS= mean(c(TS_1, TS_2), na.rm=FALSE),
+                   P= sum(P, na.rm=FALSE),
+                   PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   SWC= mean(c(SWC_1, SWC_2), na.rm=FALSE))
+#US-Brw
+colnames(adc.base[[7]])
+adc.base[[7]] <- adc.base[[7]] %>% group_by(year, month) %>%
+  dplyr::summarise(NEE= mean(NEE_PI, na.rm=FALSE),
+                   percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+                   TA= mean(TA, na.rm=FALSE),
+                   percent_na_ta = (sum(is.na(TA))/n()*100),
+                   TS= mean(TS_1, na.rm=FALSE),
+                   P= sum(P, na.rm=FALSE),
+                   SWC= mean(SWC_1, na.rm=FALSE),
+                   PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd= (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
+#US-Atq
+colnames(adc.base[[6]])
+adc.base[[6]] <- adc.base[[6]] %>% group_by(year, month) %>%
+  dplyr::summarise(percent_na = (sum(is.na(NEE_PI))/n()*100),
+                   TA= mean(TA, na.rm=FALSE),
+                   NEE= mean(NEE_PI, na.rm=FALSE),
+                   TS= mean(TS_1, na.rm=FALSE),
+                   P= sum(P, na.rm=FALSE),
+                   SWC= mean(SWC_1, na.rm=FALSE),
+                   PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
+#US-ICh
+colnames(adc.base[[9]])
+adc.base[[9]] <- adc.base[[9]] %>% group_by(year, month) %>%
+  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+                   TA= mean(TA, na.rm=FALSE),
+                   percent_na_ta = (sum(is.na(TA))/n()*100),
+                   PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
+#US-ICs
+colnames(adc.base[[10]])
+adc.base[[10]] <- adc.base[[10]] %>% group_by(year, month) %>%
+  dplyr::summarise(NEE= mean(NEE_PI, na.rm=FALSE),
+                   percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+                   PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
+#US-ICt
+colnames(adc.base[[11]])
+adc.base[[11]] <- adc.base[[11]] %>% group_by(year, month) %>%
+  dplyr::summarise(NEE= mean(NEE_PI, na.rm=FALSE),
+                   percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+                   PPFD= mean(PPFD_IN, na.rm=FALSE),
+                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
+                   RECO= mean(RECO_PI, na.rm=FALSE),
+                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
