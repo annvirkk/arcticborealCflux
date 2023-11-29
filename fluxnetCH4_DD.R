@@ -14,17 +14,18 @@ CH4fluxnetdf <- files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x,  col_names = TRUE, na=c("NA","-9999")), .id = "site_id")   
 #clean up site id column
+CH4fluxnetdf$data_version <- substr(CH4fluxnetdf$site_id, 34,36)
 CH4fluxnetdf$site_id <- substr(CH4fluxnetdf$site_id, 5,10)
 #select columns to keep
 colnames(CH4fluxnetdf) #see all column names
 CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F, TA_F, P_F,
                                              D_SNOW_F, TS_1, SWC_F, GPP_NT, GPP_DT,
-                                             RECO_NT, RECO_DT, PPFD_IN_F, NEE_F)
+                                             RECO_NT, RECO_DT, PPFD_IN_F, NEE_F, data_version)
 #add month and year columns
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
-CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id) %>% 
+CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id, data_version) %>% 
   dplyr::summarise(FCH4_F = sum(FCH4_F, na.rm= FALSE),
                    TA_F = mean(TA_F),
                    P_F = sum(P_F),
@@ -47,6 +48,12 @@ CH4fluxnet.permonthNT <- CH4fluxnet.permonthNT %>% dplyr::rename("GPP"= "GPP_NT"
                                                     "RECO"= "RECO_NT")
 #merge back together with new column "partition method"
 CH4fluxnet.permonth <- bind_rows(CH4fluxnet.permonthNT, CH4fluxnet.permonthDT) 
+
+#units
+CH4fluxnet.permonth$NEE_F <- CH4fluxnet.permonth$NEE_F*1.0368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
+CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
+CH4fluxnet.permonth$RECO <- CH4fluxnet.permonth$RECO*1.0368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
+CH4fluxnet.permonth$FCH4_F <- CH4fluxnet.permonth$FCH4_F*0.0010368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
 
 
 #Adding in some metadata####-----------------------------------------------------
@@ -76,7 +83,11 @@ CH4fluxnetALL <- left_join(CH4fluxnet.permonth, meta.3)
 CH4fluxnetALL <- CH4fluxnetALL %>%
   mutate('FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="CCBY4.0","Tier 1",`FLUXNET-CH4_DATA_POLICY`),
          'FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="TIER2","Tier 2",`FLUXNET-CH4_DATA_POLICY`))
+#adding FLUXNET-CH4 citation
+CH4fluxnetALL$citation <- "https://doi.org/10.5194/essd-13-3607-2021"
 
+
+setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
 
 
