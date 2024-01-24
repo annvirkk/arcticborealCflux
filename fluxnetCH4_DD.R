@@ -18,24 +18,29 @@ CH4fluxnetdf$data_version <- substr(CH4fluxnetdf$site_id, 34,36)
 CH4fluxnetdf$site_id <- substr(CH4fluxnetdf$site_id, 5,10)
 #select columns to keep
 colnames(CH4fluxnetdf) #see all column names
-CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F, TA_F, P_F,
-                                             D_SNOW_F, TS_1, SWC_F, GPP_NT, GPP_DT,
-                                             RECO_NT, RECO_DT, PPFD_IN_F, NEE_F, data_version)
+CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM, TA_F, 
+                                             P_F, D_SNOW_F, TS_1, SWC_F, GPP_NT, GPP_DT,
+                                             RECO_NT, RECO_DT, PPFD_IN_F, NEE_F_ANNOPTLM,
+                                             data_version, FCH4_F_ANNOPTLM_QC)
+###  Adding gap_fill_perc####
+CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
+                                                             FCH4_F_ANNOPTLM_QC %in% 1 ~0))
 #add month and year columns
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
 CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id, data_version) %>% 
-  dplyr::summarise(FCH4_F = sum(FCH4_F, na.rm= FALSE),
-                   TA_F = mean(TA_F),
-                   P_F = sum(P_F),
-                   D_SNOW_F = mean(D_SNOW_F),
-                   TS_1 = mean(TS_1),
-                   SWC_F= mean(SWC_F),
-                   PPFD_IN_F = mean(PPFD_IN_F),
-                   GPP_NT= sum(GPP_NT), GPP_DT=sum(GPP_DT),
-                   RECO_NT= sum(RECO_NT), RECO_DT=sum(RECO_DT),
-                   NEE_F= sum(NEE_F))
+  dplyr::summarise(FCH4_F = sum(FCH4_F_ANNOPTLM, na.rm= FALSE),
+                   TA_F = mean(TA_F, na.rm= TRUE),
+                   P_F = sum(P_F, na.rm= TRUE),
+                   D_SNOW_F = mean(D_SNOW_F, na.rm= TRUE),
+                   TS_1 = mean(TS_1, na.rm= TRUE),
+                   SWC_F= mean(SWC_F, na.rm= TRUE),
+                   PPFD_IN_F = mean(PPFD_IN_F, na.rm= TRUE),
+                   GPP_NT= sum(GPP_NT, na.rm=FALSE), GPP_DT=sum(GPP_DT, na.rm= FALSE),
+                   RECO_NT= sum(RECO_NT, na.rm= FALSE), RECO_DT=sum(RECO_DT, na.rm= FALSE),
+                   NEE_F= sum(NEE_F_ANNOPTLM, na.rm= FALSE),
+                   gap_fill_perc_ch4= mean(gap_fill_perc, na.rm= TRUE))
 
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
@@ -50,11 +55,10 @@ CH4fluxnet.permonthNT <- CH4fluxnet.permonthNT %>% dplyr::rename("GPP"= "GPP_NT"
 CH4fluxnet.permonth <- bind_rows(CH4fluxnet.permonthNT, CH4fluxnet.permonthDT) 
 
 #units
-CH4fluxnet.permonth$NEE_F <- CH4fluxnet.permonth$NEE_F*1.0368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
-CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
-CH4fluxnet.permonth$RECO <- CH4fluxnet.permonth$RECO*1.0368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
-CH4fluxnet.permonth$FCH4_F <- CH4fluxnet.permonth$FCH4_F*0.0010368*days_in_month(as.yearmon(paste(CH4fluxnet.permonth$year,CH4fluxnet.permonth$month,sep = '-')))
-
+CH4fluxnet.permonth$NEE_F <- CH4fluxnet.permonth$NEE_F*1.0368
+CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368
+CH4fluxnet.permonth$RECO <- CH4fluxnet.permonth$RECO*1.0368
+CH4fluxnet.permonth$FCH4_F <- CH4fluxnet.permonth$FCH4_F*0.0010368
 
 #Adding in some metadata####-----------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
@@ -85,8 +89,10 @@ CH4fluxnetALL <- CH4fluxnetALL %>%
          'FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="TIER2","Tier 2",`FLUXNET-CH4_DATA_POLICY`))
 #adding FLUXNET-CH4 citation
 CH4fluxnetALL$citation <- "https://doi.org/10.5194/essd-13-3607-2021"
+#adding gap fill method
+CH4fluxnetALL$gap_fill <- "MDS"
 
-
+#-----------------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
 
