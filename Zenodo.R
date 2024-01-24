@@ -32,7 +32,7 @@ nykanen.permonth <- nykanen.permonth %>% mutate(latitude= case_when(site_name %i
                                                 longitude= case_when(site_name %in% "Lakkasuo" ~ "24.2761",
                                                                     site_name %in% "Särkkä" ~ "30.97916"))
 nykanen.permonth <- nykanen.permonth %>% mutate(disturbance= case_when(site_reference %in% "Drained" ~ "Drained"),
-                                                disturb_year= case_when(site_reference %in% "Drained" ~ "Drained"))
+                                                disturb_year= case_when(site_reference %in% "Drained" ~ ""))
 nykanen.permonth$data_contributor_or_author <- "Nykänen, Hannu; Alm, Jukka; Martikainen, Pertti; Silvola, Jouko"
 nykanen.permonth$site_id <- paste("Nykanen_", nykanen.permonth$site_name, nykanen.permonth$site_reference, "agg", sep= "_")
 nykanen.permonth$email <- "hannu.nykanen@uef.fi"
