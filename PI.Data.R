@@ -77,8 +77,9 @@ rautakoski <- rautakoski %>%
   mutate(site_name= ifelse(notes=="Treatment: Continuous cover forestry treatment. Area harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment ", site_name))
   
 ### Efren Lopez-Blanco###-------------------------------------------------------
-lopezblanco <- read_csv("ABCflux_GEM2022data.csv", na = "-9999")
-
+lopezblanco.ec <- read_csv("ABCflux_GEM2022data_upto2022.tower.csv", na = "-9999")
+lopezblanco.ch <- read_csv("ABCflux_GEM2022data_upto2022.ch.csv", na = "-9999")
+lopezblanco.ch$chamber_nr_measurement_days <- "Continous" #automatic chambers
 ### Mika Aurela####-------------------------------------------------------------
 aurela.terv <- read_csv("ABCfluxv2_tervalaminsuotower.csv")
 aurela.lett.ec <- read_csv("ABCfluxv2_lettosuo.vars.tower.csv")
@@ -90,6 +91,74 @@ martikainen <- read_csv("Kaamanen aapa mire_Pertti J. Martikainen.csv")
 ###Pierre Tallidart#####--------------------------------------------------------
 tallidart.ec <- read_csv("ABCfluxv5_CA-BOU_tower.csv")
 tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv")
+
+### Kajar Köster ####-----------------------------------------------------------
+koster.ch <- read_csv("ABCfluxv2_Koster.csv")
+
+### Sofie Sjogersten ####-------------------------------------------------------
+sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv")
+
+###Patrick Sullivan ####--------------------------------------------------------
+sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
+
+###Geert Hensgens####-----------------------------------------------------------
+hensgens.ec <- read_csv("ABCfluxv2.KYT.csv")
+
+###Danila Illyasov####---------------------------------------------------------
+ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv")
+glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv")
+
+###Joachim Jansen####-----------------------------------------------------------
+jansen.ec <- read_csv("ABCfluxv2_vars_SE-St1_qcJV_ter_tower.csv")
+
+###Sean Carey####---------------------------------------------------------------
+carey.ec <- read_csv("ABCfluxv2.vars_Carey_Dec20.csv")
+
+###Carolina Voigt####-----------------------------------------------------------
+voigt.ch <- read_csv("ABCfluxv2_CarolinaVoigt.csv")
+
+###Roger Seco####---------------------------------------------------------------
+seco.ec <- read_csv("ABCfluxv2.vars_RogerSeco_birch.csv")
+
+###Sujan Pal and Ryan Sullivan####----------------------------------------------
+pal.bar.ec <- read_csv("BAR_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")
+pal.oli.ec <- read_csv("OLI_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")
+
+###Matthias Peichl####----------------------------------------------------------
+peichl.deg.ch <- read_csv("ABCfluxv2.vars_SE-Deg_ch.csv")
+peichl.hlf.ec <- read_csv("ABCfluxv2.vars_SE-Hlf.csv")
+peichl.hlm.ec <- read_csv("ABCfluxv2.vars_SE-Hlm.csv")
+peichl.stj.ec <- read_csv("ABCfluxv2.vars_SE-Stj.csv")
+
+###Claire Treat, Lona van Delden####--------------------------------------------
+treat.ch <- read_csv("ABCfluxv2_Siikaneva2022.csv")
+#fix units from ug CO2/CH4 to g C 
+treat.ch$nee <- treat.ch$nee*0.000001/44.01*12.01
+treat.ch$reco <- treat.ch$reco*0.000001/44.01*12.01
+treat.ch$ch4_flux_total <- treat.ch$ch4_flux_total*0.000001/16.04*12.01
+
+###Eeva-Stiina Tuittila/Elisa Männistö####--------------------------------------
+tuittila.ch <- read_csv("ABCfluxv2.vars_Siikaneva2.csv")
+
+###Kuno Kasak####---------------------------------------------------------------
+kasak.ec <- read_csv("ABCFlux_data_Estonia.csv")
+
+###Katey Walter Anthony####-----------------------------------------------------
+anthony.ch <- read_csv("2024_01_04_ABCfluxv2.vars-1_ThermokarstMounds.chamber.csv")
+anthony.ec <- read_csv("2023_01_04_ABCfluxv2.vars-1_ThermokarstMounds.tower.csv")
+
+### Mats Bjorkman####-----------------------------------------------------------
+bjorkman.ch <- read_csv("Flux Latnjajaure.csv", na= "NA")
+
+### Alexander Salazar ####------------------------------------------------------
+salazar.ch <- read_csv("ABCfluxv2.vars_AS.csv", na= "NA")
+
+### Kyle Arndt ###--------------------------------------------------------------
+arndt.ec <- read_csv("ABCfluxv2.vars_arndt_cf3.csv")
+
+### Anatoly Prokushkin ###------------------------------------------------------
+#prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv")
+#prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv")
 
 ## PROCESSING DATA FROM PIs #############################################################################
 ### Scott Davidson####----------------------------------------------------------
@@ -504,51 +573,166 @@ tag.ch.monthly <- tag.ch.monthly %>%
 tag.ch.monthly$other_moss_cover <- "Present"
 tagesson.ch <- tag.ch.monthly
 #####Margaret Torn/ Sigrid Dengel NGEE####
-torn.meteo <- read_csv("NGEEdata/CN_MM71_ chamber_soil_temp_moist_thaw_20210120.csv", na=c("NA","-9999", "NaN"))
-torn.flux.lgr <- read_csv("NGEEdata/CN_MM71_soil_chamber_fluxes_LGR_20210120.csv", na=c("NA","-9999", "NaN"))
-torn.flux.pic <- read_csv("NGEEdata/CN_MM71_soil_chamber_fluxes_Picarro_20230227.csv", na=c("NA","-9999", "NaN"))
+#Soil CO2 and CH4 Chamber Fluxes in Tussock Tundra, Council Road Mile Marker 71, Seward Peninsula, Alaska, 2016-2019
+chafe.meteo <- read_csv("NGEEdata/CN_MM71_ chamber_soil_temp_moist_thaw_20210120.csv", na=c("NA","-9999", "NaN"))
+chafe.flux.lgr <- read_csv("NGEEdata/CN_MM71_soil_chamber_fluxes_LGR_20210120.csv", na=c("NA","-9999", "NaN"))
+chafe.flux.pic <- read_csv("NGEEdata/CN_MM71_soil_chamber_fluxes_Picarro_20230227.csv", na=c("NA","-9999", "NaN"))
 #merge data
-torn.flux  <- torn.flux.lgr %>% full_join(torn.flux.pic)
-torn.meteo <- torn.meteo %>% mutate(measurement_date= as.Date(measurement_date, format= "%Y-%m-%d"),
+chafe.flux  <- chafe.flux.lgr %>% full_join(chafe.flux.pic)
+chafe.meteo <- chafe.meteo %>% mutate(measurement_date= as.Date(measurement_date, format= "%Y-%m-%d"),
                                     time= as.POSIXct(time, format= "%H:%M"))
-torn.flux <- torn.flux %>% mutate(measurement_date= as.Date(measurement_date, format= "%Y-%m-%d"),
+chafe.flux <- chafe.flux %>% mutate(measurement_date= as.Date(measurement_date, format= "%Y-%m-%d"),
                                     time= as.POSIXct(time, format= "%H:%M"))
-torn <- torn.flux %>% full_join(torn.meteo)
+chafe <- chafe.flux %>% full_join(chafe.meteo)
 #add year and month
-torn <- torn %>% mutate(year= year(measurement_date), month= month(measurement_date))
+chafe <- chafe %>% mutate(year= year(measurement_date), month= month(measurement_date), day= day(measurement_date))
+#rename
+chafe <- chafe %>% dplyr::rename("site_reference"= "plot_ID")
+#If opaque chamber, flux= reco, if clear flux = nee
+chafe <- chafe %>% mutate(reco= case_when(chamber_type== "Opq"~ flux_CO2)) %>%
+                 mutate(nee= case_when(chamber_type== "Trns"~ flux_CO2)) 
+chafe <- as.data.frame(sapply(chafe,as.numeric))
 #summary by month
-torn.monthly <- torn %>% group_by(year, month, plot_ID, latitude, longitude) %>%
-  reframe(nee= mean(as.numeric(flux_CO2), na.rm = TRUE),
+chafe.monthly <- chafe %>% group_by(year, month, site_reference, latitude, longitude, landscape_position) %>%
+  reframe(nee= mean(as.numeric(nee), na.rm = TRUE),
+          reco= mean(as.numeric(reco), na.rm = TRUE),
           ch4_flux_total= mean(as.numeric(flux_CH4), na.rm = TRUE),
           water_table_depth= -mean(as.numeric(standing_water_depth), na.rm = TRUE),
           tsoil_surface= mean(as.numeric(soil_temp_10_cm), na.rm = TRUE),
           tsoil_deep= mean(as.numeric(c(soil_temp_15_cm, soil_temp_20_cm)), na.rm = TRUE),
           tair= mean(as.numeric(air_temp), na.rm = TRUE),
           thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
-          soil_moisture= mean(VWC, na.rm = TRUE))
+          soil_moisture= mean(VWC, na.rm = TRUE),
+          chamber_nr_measurement_days= n_distinct(day))
 #convert units
-torn.monthly$nee<- torn.monthly$nee*1.0368*days_in_month(as.yearmon(paste(torn.monthly$year, torn.monthly$month,sep = '-')))
-torn.monthly$ch4_flux_total<- torn.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(torn.monthly$year, torn.monthly$month,sep = '-')))
+chafe.monthly$nee<- chafe.monthly$nee*1.0368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
+chafe.monthly$reco<- chafe.monthly$reco*1.0368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
+chafe.monthly$gpp<- chafe.monthly$nee- chafe.monthly$reco
+chafe.monthly$ch4_flux_total<- chafe.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
 #adding static info
-torn.monthly$moisture_depth <- "20"
-torn.monthly$site_name <- "Seward Peninsula"
-torn.monthly$country <- "USA"
-torn.monthly$biome <- "Tundra"
-torn.monthly$citation <-"Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret Torn. 2023. Soil CO2 and CH4 Chamber Fluxes in Tussock Tundra, Council Road Mile Marker 71, Seward Peninsula, Alaska, 2016-2019. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Dataset accessed on 11/20/2023 at https://doi.org/10.5440/1765733."
+chafe.monthly$moisture_depth <- "20"
+chafe.monthly$site_name <- "Council Road Mile Marker 71, Seward Peninsula"
+chafe.monthly$site_id <- paste("Chafe_SewardPeninsula_",chafe.monthly$site_reference, sep= "")
+chafe.monthly$country <- "USA"
+chafe.monthly$biome <- "Tundra"
+chafe.monthly$data_contributor_or_author <- "Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret Torn"
+chafe.monthly$citation <-"Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret chafe. 2023. Soil CO2 and CH4 Chamber Fluxes in Tussock Tundra, Council Road Mile Marker 71, Seward Peninsula, Alaska, 2016-2019. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Dataset accessed on 11/20/2023 at https://doi.org/10.5440/1765733."
+chafe.monthly$gapfill <- "Average"
+chafe.monthly$partition_method <- "GPP= NEE- ER"
+chafe.monthly$flux_method <- "Chamber"
+chafe.monthly$flux_method_detail <- "Closed-loop chambers"
+chafe.monthly$flux_method_description <- "Chambers (25 cm diameter, 15-20 cm height) were tall enough to enclose vegetation and were vented according to Xu et al. (2006), to minimize pressure excursions due to the Venturi effect. In all plots, chambers were seated on PVC bases extending ~15 cm below the soil surface. For each flux measurement, the chamber was seated in a 3 cm-deep, water-filled trench in the base's top rim to create an airtight seal."
+chafe.monthly <- chafe.monthly %>% 
+  mutate(instrumentation= case_when(year %in% c("2016", "2017")~ "Los Gatos Research, Inc. (LGR) Ultraportable Greenhouse Gas Analyzer",
+                                    year %in% c("2018", "2019")~"Picarro G4301 Mobile Gas Concentration Analyzer"))
+chafe.monthly <- chafe.monthly %>%
+  mutate(land_cover= case_when(landscape_position %in% c("upland", "slope")~ "130",
+                               landscape_position== "lowland"~ "180") )
+chafe.monthly <- chafe.monthly %>%
+  mutate(land_cover_bawld= case_when(landscape_position %in% c("upland", "slope")~ "Dry Tundra",
+                               landscape_position== "lowland"~ "Tundra Wetland") )
+chafe.monthly$landscape_position <- NULL
+chafe.ch <- chafe.monthly
 
-torn.ch <- torn.monthly
+#CO2 and CH4 surface flux, soil profile concentrations, and stable isotope composition, Barrow, Alaska, 2012-2013
+vaughn.flux <- read_csv("NGEEdata/flux_CO2_CH4_Barrow_2012_2013.csv") %>%
+  select(UTM_northing, UTM_easting, plot_ID, chamber_type, date, flux_CO2, flux_CH4)
+vaughn.soil <- read_csv("NGEEdata/soil_moisture_Barrow_2012_2013.csv") %>%
+  select(UTM_northing, UTM_easting, plot_ID, date, VWC)
+vaughn.temp <- read_csv("NGEEdata/temperature_profiles_Barrow_2012_2013.csv") %>%
+  select(UTM_northing, UTM_easting, plot_ID, date, soil_temp, air_temp, depth_probe)
+vaughn.isotopes <- read_csv("NGEEdata/isotopes_concentratons_Barrow_2012_2013.csv") %>%
+  select(UTM_northing, UTM_easting, area, plot_ID, sample, sampletype, date, thawdepth)          
+#merge dfs
+vaughn <- vaughn.flux %>% full_join(vaughn.soil, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
+vaughn <- vaughn %>% full_join(vaughn.temp, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
+vaughn <- vaughn %>% full_join(vaughn.isotopes, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
+vaughn <- vaughn %>% filter(!is.na(UTM_northing))#removing empty rows
+#add year and month
+vaughn$date <- as.POSIXct(vaughn$date, format= "%Y-%m-%d")
+vaughn <- vaughn %>% mutate(year= year(as.POSIXct(vaughn$date, format= "%Y-%m-%d")), 
+                            month= month(as.POSIXct(vaughn$date, format= "%Y-%m-%d")), 
+                            day= day(as.POSIXct(vaughn$date, format= "%Y-%m-%d")))
+#rename
+vaughn <- vaughn %>% dplyr::rename("site_reference"= "plot_ID")
+#If opaque chamber, flux= reco, if clear flux = nee
+vaughn <- vaughn %>% mutate(reco= case_when(chamber_type== "Opq"~ flux_CO2)) %>%
+  mutate(nee= case_when(chamber_type== "Trns"~ flux_CO2)) 
+#separate soil temps
+vaughn <- vaughn %>% mutate(tsoil_surface= case_when(depth_probe < 10 ~ soil_temp)) %>%
+                     mutate(tsoil_deep= case_when(depth_probe > 10 ~ soil_temp)) %>%
+                     mutate(tsoil_surface_depth= case_when(depth_probe < 10 ~ depth_probe)) %>%
+                     mutate(tsoil_deep_depth= case_when(depth_probe > 10 ~ depth_probe)) 
+#need to convert coordinate units
+library(sf)
+utm_data <- st_as_sf(vaughn, coords = c("UTM_easting", "UTM_northing"), crs = 32604)  # Assuming UTM zone 27
+decimal_degrees <- st_transform(utm_data, 4326)  # EPSG code for WGS84 (decimal degrees)
+# Add the result to the original data.frame
+vaughn$latitude <- st_coordinates(decimal_degrees)[, 2]
+vaughn$longitude <- st_coordinates(decimal_degrees)[, 1]
+#summary by month
+vaughn <- as.data.frame(sapply(vaughn, as.numeric))
+vaughn.monthly <- vaughn %>% group_by(year, month, site_reference, latitude, longitude) %>%
+  reframe(nee= mean(nee, na.rm = TRUE),
+          reco= mean(reco, na.rm = TRUE),
+          ch4_flux_total= mean(flux_CH4, na.rm = TRUE),
+          tsoil_surface= mean(tsoil_surface, na.rm = TRUE),
+          tsoil_surface_depth = mean(tsoil_surface_depth, na.rm = TRUE),
+          tsoil_deep= mean(tsoil_deep, na.rm = TRUE),
+          tsoil_deep_depth= mean(tsoil_deep_depth, na.rm = TRUE),
+          soil_moisture= mean(VWC, na.rm = TRUE),
+          tair= mean(air_temp, na.rm = TRUE),
+          thaw_depth= mean(thawdepth, na.rm = TRUE),
+          chamber_nr_measurement_days= n_distinct(day))
+#remove rows without flux data
+vaughn.monthly <- vaughn.monthly %>% filter(!if_all(c(nee, reco, ch4_flux_total), ~ is.na(.)))
+#convert units
+vaughn.monthly$nee<- vaughn.monthly$nee*1.0368*days_in_month(as.yearmon(paste(vaughn.monthly$year, vaughn.monthly$month,sep = '-')))
+vaughn.monthly$reco<- vaughn.monthly$reco*1.0368*days_in_month(as.yearmon(paste(vaughn.monthly$year, vaughn.monthly$month,sep = '-')))
+vaughn.monthly$gpp<- vaughn.monthly$nee- vaughn.monthly$reco
+vaughn.monthly$ch4_flux_total<- vaughn.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(vaughn.monthly$year, vaughn.monthly$month,sep = '-')))
+#Adding in static vars
+vaughn.monthly$site_name <- "Barrow, Alaska"
+vaughn.monthly$site_id <- paste("Vaughn_Barrow_", vaughn.monthly$site_reference, sep= "")
+vaughn.monthly$country <- "USA"
+vaughn.monthly$biome <- "Tundra"
+vaughn.monthly$data_contributor_or_author <- "Vaughn, L.S., Conrad, M.S., Torn, M.S., Bill, M., Curtis, J.B., Chafe, O"
+vaughn.monthly$citation <-"Vaughn, L.S., Conrad, M.S., Torn, M.S., Bill, M., Curtis, J.B., Chafe, O. 2015. CO2 and CH4 surface fluxes, soil profile concentrations, and stable isotope composition, Barrow, Alaska, 20122013. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Data set accessed at DOI:10.5440/1227684."
+vaughn.monthly$gapfill <- "Average"
+vaughn.monthly$partition_method <- "GPP= NEE- ER"
+vaughn.monthly$flux_method <- "Chamber"
+vaughn.monthly$flux_method_detail <- "Static manual chambers"
+vaughn.monthly$flux_method_description <- "Opaque or transparent static chambers (25 cm diameter, 15-20 cm height). In inundated plots, a floating chamber was used whose base extended 4 cm below the water surface. In all other plots, chambers were seated on PVC bases extending ~15 cm below the soil surface."
+vaughn.monthly$instrumentation <- "Los Gatos Research, Inc. (LGR) portable Greenhouse Gas Analyzer"
+vaughn.monthly$permafrost <- "Yes"
+vaughn.monthly$landform <- "Polygonal features"
 
+vaughn.ch <- vaughn.monthly
 ########----------------------------------------------------------------------------------------------
 PIdat.ec <- rbindlist(list(sonnentag, pink, masa, boike, jong, sabrekov.ec, dyukarev.ec, roy, 
-                           lopezblanco, hung.ec, rautakoski, aurela.lett.ec, aurela.terv,
-                           dobosy, tallidart.ec, tagesson.ec), 
+                           lopezblanco.ec, hung.ec, rautakoski, aurela.lett.ec, aurela.terv,
+                           dobosy, tallidart.ec, tagesson.ec, sullivan.ec, hensgens.ec,
+                           carey.ec, jansen.ec, seco.ec, pal.bar.ec, pal.oli.ec, 
+                           peichl.hlf.ec, peichl.hlm.ec, peichl.stj.ec, kasak.ec, anthony.ec,
+                           arndt.ec ), 
                       fill = TRUE)
 PIdat.ec$extraction_source <- "User-contributed"
+#remove rows that do not contain flux data
+PIdat.ec <- PIdat.ec %>%
+  filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
+
 PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze, jassey, sabrekov.ch, dyukarev.ch, hung.ch,
                             heffernan, davidson.16.monthly, davidson.19.monthly, davidson.21.monthly,
-                           aurela.lett.ch, martikainen, tallidart.ch, tagesson.ch, torn.ch), 
+                           aurela.lett.ch, martikainen, tallidart.ch, tagesson.ch, chafe.ch, koster.ch,
+                           sjogersten.ch, lopezblanco.ch, ilyasov.ch, voigt.ch, glagolev.ch, peichl.deg.ch,
+                           treat.ch, tuittila.ch, anthony.ch, vaughn.ch, bjorkman.ch, salazar.ch), 
                       fill = TRUE)
 PIdat.ch$extraction_source <- "User-contributed"
+#remove rows that do not contain flux data
+PIdat.ch <- PIdat.ch %>%
+  filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
+
+
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(PIdat.ec, "PI.data.ec.csv")
