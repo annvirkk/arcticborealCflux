@@ -135,7 +135,8 @@ meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUN
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 fluxnetALL <- left_join(fluxnetdf, meta.bysite)
-
+#adding gap fill method
+fluxnetALL$gap_fill <- "MDS"
 
 ##change units from per day to per month
 fluxnetALL$NEE_CUT_REF <- fluxnetALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
