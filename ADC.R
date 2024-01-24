@@ -198,7 +198,7 @@ CPC.monthly <- CPCflux %>% group_by(year, month, site_reference)%>%
           tsoil_deep_depth = "12",
           moisture_depth= "12")
 #convert units umol m-2 s-1 to g C m-2 month-1
-CPC.monthly$ch4_flux_total <- CPC.monthly$ch4_flux_total*1.0368*days_in_month(as.yearmon(paste(CPC.monthly$year, CPC.monthly$month,sep = '-')))
+CPC.monthly$ch4_flux_total <- CPC.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(CPC.monthly$year, CPC.monthly$month,sep = '-')))
 #Adding in static vars
 CPC.monthly <- CPC.monthly %>% mutate(ev_needle_tree = case_when(site_reference %in% c('lichen','deep_moss')~ "Dominant"),
                                       dec_broad_tree= case_when(site_reference %in% 'mosaic'~ "Present"),
@@ -359,7 +359,7 @@ friedman.monthly$country <- "USA"
 friedman.monthly$biome <- "Tundra"
 friedman.monthly$latitude <- "71.294"
 friedman.monthly$longitude <- "-156.602"
-friedman.monthly$flux_method <- "Chambers"
+friedman.monthly$flux_method <- "Chamber"
 friedman.monthly$instrumentation <- "Los Gatos Research portable trace gas analyzer"
 friedman.monthly$gap_fill <- "Average"
 
