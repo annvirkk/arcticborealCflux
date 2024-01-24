@@ -115,7 +115,8 @@ CH4fluxnet.renamed <- CH4fluxnet %>% dplyr::rename("site_reference"="site_id",
 #have to convert month column from character
 CH4fluxnet.renamed$month <- as.numeric(CH4fluxnet.renamed$month)
 #some sites have ch4 flux along with nee, gpp, and reco so we'll separate ch4 fluxes and merge them with our df first
-CH4fluxnet.renamedCH4 <- CH4fluxnet.renamed %>% select (year, month, site_reference, ch4_flux_total, data_usage_ch4) %>%
+CH4fluxnet.renamedCH4 <- CH4fluxnet.renamed %>% 
+  select (year, month, site_reference, ch4_flux_total, data_usage_ch4, gap_fill_perc_ch4) %>%
   mutate(notes= "Methane flux from Fluxnet-CH4") #add note about where methane flux came from 
 #remove any rows that don't have CH4 flux data
 CH4fluxnet.renamedCH4 <- CH4fluxnet.renamedCH4 %>% filter(if_all("ch4_flux_total", ~ !is.na(.)))
@@ -203,7 +204,7 @@ write_csv(towersites, "repository.towersites.csv")
 
 #adding static variables
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-static <- read_csv("static.towersites.csv", skip= 1)
+static <- read_csv("static.towersites.csv")
 #join to fill NAs
 icos.fluxnet.AMF.euro.CH4.base.static <- natural_join(icos.fluxnet.AMF.euro.CH4.base, static,
                                           by= "site_reference", jointype= "FULL")
@@ -218,6 +219,9 @@ icos.fluxnet.AMF.euro.CH4.base.static <- natural_join(icos.fluxnet.AMF.euro.CH4.
 icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
   mutate(site_name= ifelse(site_reference== "US-Beo", "Barrow-BEO", site_name)) %>%
   mutate(site_name= ifelse(site_reference== "US-Bes", "Barrow-BES", site_name))
+#SE-St1 (changing from fluxnet-ch4 naming)
+icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
+  mutate(site_name= ifelse(site_reference== "SE-St1", "Stordalen - Fen", site_name))
 #RU-Che and RU-Ch2
 icos.fluxnet.AMF.euro.CH4.base.static <- icos.fluxnet.AMF.euro.CH4.base.static %>%
   mutate(site_name= ifelse(site_reference== "RU-Che", "Cherski", site_name))%>%
