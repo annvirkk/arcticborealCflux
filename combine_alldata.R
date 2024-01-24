@@ -6,7 +6,7 @@ library(janitor)
 library(data.table)
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 abcflux.v1 <- read.csv("ABCfluxv1.v2format.csv") #ABCflux v1 in v2 format
-abcflux.v1$extraction_source <- paste("ABCFlux v1-", abcflux.v1$extraction_source)
+abcflux.v1$extraction_source <- paste("ABCflux v1-", abcflux.v1$extraction_source)
 #separate EC and chamber measurements
 abcflux.v1.EC <- abcflux.v1 %>% filter(flux_method=="EC")
 abcflux.v1.Ch <- abcflux.v1 %>% filter(!flux_method=="EC")
@@ -31,13 +31,13 @@ ABC.ec.wdupes <- ABC.ec.wdupes %>%
   mutate(partition_method = ifelse(ABC.ec.wdupes$partition_method %in% c("Reichstein et al. (2005)", "Reichstein (night time=Reco partitioning)"),"Reichstein",
                                    ifelse(ABC.ec.wdupes$partition_method %in% c("DT", "Lasslop (bulk/day-time partitioning)"), "Lasslop", ABC.ec.wdupes$partition_method)))
 ####reformatting based on partitioning methods ####
-ABC.ec.wdupes <- ABC.ec.wdupes %>%
-  mutate(gpp.nt = ifelse(partition_method %in% "Reichstein", gpp, NA),
-         gpp.dt = ifelse(partition_method %in% "Lasslop", gpp, NA),
-         reco.nt = ifelse(partition_method %in% "Reichstein", reco, NA),
-         reco.dt = ifelse(partition_method %in% "Lasslop", reco, NA),
-         gpp = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), gpp, NA),
-         reco = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), reco, NA))
+#ABC.ec.wdupes <- ABC.ec.wdupes %>%
+#  mutate(gpp.nt = ifelse(partition_method %in% "Reichstein", gpp, NA),
+ #        gpp.dt = ifelse(partition_method %in% "Lasslop", gpp, NA),
+  #       reco.nt = ifelse(partition_method %in% "Reichstein", reco, NA),
+   #      reco.dt = ifelse(partition_method %in% "Lasslop", reco, NA),
+   #      gpp = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), gpp, NA),
+    #     reco = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), reco, NA))
 
 #find number of  duplicates
 dupes<- ABC.ec.wdupes %>% get_dupes(site_name, site_reference, year, month, partition_method)  
@@ -81,9 +81,12 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.nov23 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+ABC.v2.jan24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+#fixing month column
+ABC.v2.jan24$month <- as.integer(ABC.v2.jan24$month)
+
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-#write_csv(ABC.v2.nov23, "ABC.v2.nov23.csv")
+#write_csv(ABC.v2.jan24, "ABC.v2.jan24.csv")
 
 
 
