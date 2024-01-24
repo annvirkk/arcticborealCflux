@@ -45,6 +45,7 @@ amerifluxdfNT <- amerifluxdfNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_CUT_REF"
                                                     "RECO_CUT_REF"= "RECO_NT_CUT_REF")
 #merge back together with new column "partition method"
 amerifluxdf <- bind_rows(amerifluxdfNT, amerifluxdfDT) 
+amerifluxdf$tower_corrections <- "CUT" #noting what U-star filtering was used 
 
 #####GAP FIll % ####--------------------------------------------------
 files <- list.files(path = path,pattern = '*_FULLSET_H',all.files = T,recursive = T)
@@ -65,6 +66,59 @@ ameriflux.dat2.gf <- lapply(ameriflux.dat2, function(df) df %>%
 
 ameriflux.dat2.gf  <- bind_rows(ameriflux.dat2.gf , .id = "site_id") #turn list  into one df
 amerifluxdf <- merge(ameriflux.dat2.gf, amerifluxdf) #merge with data
+
+###VUT sites #####----------------------------------------------------------
+setwd("/Users/iwargowsky/Desktop/Ameriflux/VUT sites")
+cf1 <- read_csv("AMF_CA-CF1_FLUXNET_FULLSET_2007-2008_3-5/AMF_CA-CF1_FLUXNET_FULLSET_MM_2007-2008_3-5.csv",
+                na=c("NA","-9999"))
+cf1$site_id <- "CA-CF1"
+cf1$data_version <- "3-5"
+
+VUTsites <- cf1
+#add year,month, day columns
+VUTsites <- VUTsites %>% mutate(year= substr(VUTsites$TIMESTAMP, 1,4),
+                                month= substr(VUTsites$TIMESTAMP, 5,6))
+#subset for only our variables of interest
+VUTsites  <- VUTsites  %>% dplyr::select(site_id, year, month, TS_F_MDS_1,
+                                         TA_F, P_F, PPFD_IN,
+                                         NEE_VUT_REF, data_version,
+                                         RECO_DT_VUT_REF, GPP_DT_VUT_REF,
+                                         RECO_NT_VUT_REF, GPP_NT_VUT_REF)
+#separate DT and NT approaches
+VUTsitesDT <- VUTsites %>% dplyr::select(-c(GPP_NT_VUT_REF, RECO_NT_VUT_REF))
+VUTsitesDT$partition_method <- "Lasslop"
+VUTsitesDT <- VUTsitesDT %>% dplyr::rename("GPP_CUT_REF"= "GPP_DT_VUT_REF",
+                                           "RECO_CUT_REF"= "RECO_DT_VUT_REF",
+                                           "NEE_CUT_REF"= "NEE_VUT_REF")
+VUTsitesNT <- VUTsites %>% dplyr::select(-c(GPP_DT_VUT_REF, RECO_DT_VUT_REF))
+VUTsitesNT$partition_method <- "Reichstein"
+VUTsitesNT <- VUTsitesNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_VUT_REF", 
+                                           "RECO_CUT_REF"= "RECO_NT_VUT_REF",
+                                           "NEE_CUT_REF"= "NEE_VUT_REF") 
+#intentionally renamed as CUT not VUT for merging purposes
+#merge back together with new column "partition method"
+VUTsites <- bind_rows(VUTsitesNT, VUTsitesDT) 
+VUTsites$tower_corrections <- "VUT" #noting what U-star filtering was used 
+
+#####GAP FIll % ####--------------------------------------------------
+setwd("/Users/iwargowsky/Desktop/Ameriflux/VUT sites")
+cf1.gf <- read_csv("AMF_CA-CF1_FLUXNET_FULLSET_2007-2008_3-5/AMF_CA-CF1_FLUXNET_FULLSET_HH_2007-2008_3-5.csv")
+cf1.gf$site_id <- "CA-CF1"
+#merge vut sites together
+VUTsites.gf <- cf1.gf
+#replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
+VUT.dat2.gf <- VUTsites.gf %>%
+  mutate( year = substr(TIMESTAMP_START, 1,4),
+          month = substr(TIMESTAMP_START, 5,6) ) %>%
+  mutate(gapfill = case_when(NEE_VUT_REF_QC %in% c(1,2,3)~1,
+                             NEE_VUT_REF_QC %in% 0 ~ 0))%>%
+  dplyr::select(year, month, gapfill, NEE_VUT_REF_QC) %>%
+  group_by(year,month) %>% 
+  dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100)
+VUTsites <- merge(VUT.dat2.gf, VUTsites) #merge with data
+
+###merge VUT sites with main ameriflux df####-------
+amerifluxdf <- amerifluxdf %>% full_join(VUTsites)
 
 #load in all FLUXNETbeta files ####------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNETbeta")
@@ -119,6 +173,8 @@ beta.dat2.gf <- lapply(beta.dat2, function(df) df %>%
 
 beta.dat2.gf  <- bind_rows(beta.dat2.gf , .id = "site_id") #turn list  into one df
 betaamerifluxdf <- merge(beta.dat2.gf, betaamerifluxdf) #merge with data
+betaamerifluxdf$tower_corrections <- "CUT" 
+
 #########Merging ameriflux fluxnet and ameriflux fluxnet beta #######
 alldat.wdupes <- gdata::combine(betaamerifluxdf, amerifluxdf) 
 #find duplicates
@@ -127,11 +183,11 @@ dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)
 ameriflux.fluxnetall <- gdata::combine(betaamerifluxdf, amerifluxdf) 
 #adding data usage policies
 ameriflux.fluxnetall <- ameriflux.fluxnetall %>% 
-  mutate(data_usage= ifelse(site_id %in% c('CA-HPC',"CA-NS1","CA-NS2","CA-NS3","CA-NS4","CA-NS5","CA-NS6",
-                                           "CA-NS7","CA-NS8","CA-Ojp","CA-Qc2","CA-SCC","CA-SCB","CA-SJ1",
-                                           "CA-SJ2","CA-SJ3","CA-SMC","CA-TVC","CA-WP1","CA-WP2","CA-WP3",
-                                           "US-Atq","US-Beo","US-Bes","US-Bn1","US-Bn2","US-Bn3","US-Brw",
-                                           "US-Cms","US-HVa","US-HVs","US-Ivo","US-Sag","US-Upa"), "Tier 2", "Tier 1"))
+  mutate(data_usage= ifelse(site_id %in% c("CA-NS8", "CA-Ojp", "CA-Qc2", "CA-SJ3",
+                                           "CA-WP1", "CA-WP2", "CA-WP3", "US-Atq",
+                                           "US-Beo", "US-Bes", "US-Bn1", "US-Bn2", 
+                                           "US-Bn3", "US-Brw", "US-Hva", "US-Ivo",
+                                           "US-SJ1", "US-SJ2", "US-Upa"), "Tier 2", "Tier 1"))
 
 
 
@@ -145,15 +201,12 @@ meta <- meta %>% filter(SITE_ID %in% names)
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
                                                            citation = na.omit(DOI),
-                                                           site_name= na.omit(SITE_NAME),
                                                            latitude= na.omit(LOCATION_LAT),
                                                            longitude= na.omit(LOCATION_LONG))
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
-#noting what U-star filtering was used 
-ameriflux.ALL$tower_corrections <- "CUT"
-#save
+
 
 ##change units from per day to per month
 ameriflux.ALL$NEE_CUT_REF <- ameriflux.ALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
@@ -161,6 +214,12 @@ ameriflux.ALL$RECO_CUT_REF <- ameriflux.ALL$RECO_CUT_REF *days_in_month(as.yearm
 ameriflux.ALL$GPP_CUT_REF <- ameriflux.ALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 ameriflux.ALL$P_F <- ameriflux.ALL$P_F  *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 
+#adding gap fill method
+ameriflux.ALL$gap_fill <- "MDS"
+
+
+
+#save data frame
 setwd("/Users/iwargowsky/Desktop/Ameriflux")
 write_csv(ameriflux.ALL, "ameriflux.fluxnetALL.csv")
 
