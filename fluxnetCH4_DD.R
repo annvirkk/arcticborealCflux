@@ -23,7 +23,7 @@ CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM
                                              RECO_NT, RECO_DT, PPFD_IN_F, NEE_F_ANNOPTLM,
                                              data_version, FCH4_F_ANNOPTLM_QC)
 ###  Adding gap_fill_perc####
-CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
+CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc_ch4= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
                                                              FCH4_F_ANNOPTLM_QC %in% 1 ~0))
 #add month and year columns
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
@@ -40,7 +40,7 @@ CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id, data_version) 
                    GPP_NT= sum(GPP_NT, na.rm=FALSE), GPP_DT=sum(GPP_DT, na.rm= FALSE),
                    RECO_NT= sum(RECO_NT, na.rm= FALSE), RECO_DT=sum(RECO_DT, na.rm= FALSE),
                    NEE_F= sum(NEE_F_ANNOPTLM, na.rm= FALSE),
-                   gap_fill_perc_ch4= mean(gap_fill_perc, na.rm= TRUE))
+                   gap_fill_perc_ch4= mean(gap_fill_perc_ch4, na.rm= TRUE))
 
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
@@ -56,7 +56,7 @@ CH4fluxnet.permonth <- bind_rows(CH4fluxnet.permonthNT, CH4fluxnet.permonthDT)
 
 #units
 CH4fluxnet.permonth$NEE_F <- CH4fluxnet.permonth$NEE_F*1.0368
-CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368
+CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368 * -1
 CH4fluxnet.permonth$RECO <- CH4fluxnet.permonth$RECO*1.0368
 CH4fluxnet.permonth$FCH4_F <- CH4fluxnet.permonth$FCH4_F*0.0010368
 
@@ -68,7 +68,7 @@ names <- unique(CH4fluxnet.permonth$site_id)
 meta <- meta %>% filter(SITE_ID %in% names)
 colnames(meta)
 #keep relevant columns
-meta.2 <- meta %>% select(SITE_NAME, SITE_ID, COUNTRY, LAT, LON, SOIL_TEMP_PROBE_DEPTHS,
+meta.2 <- meta %>% select(SITE_ID, COUNTRY, SOIL_TEMP_PROBE_DEPTHS,
                           MOSS_BROWN, MOSS_SPHAGNUM, DOM_VEG, "FLUXNET-CH4_DATA_POLICY")
 #convert columns to match variables in ABCflux v2
 meta.2$sphagnum_cover[meta.2$MOSS_SPHAGNUM == "1"] <- "Present"
@@ -77,8 +77,7 @@ meta.2$sphagnum_cover[meta.2$DOM_VEG == "moss_sphagnum"] <- "Dominant"
 meta.2$other_moss_cover[meta.2$DOM_VEG == "moss_brown"] <- "Dominant"
 
 colnames(meta.2)
-meta.3 <- meta.2 %>% select(SITE_NAME, SITE_ID, COUNTRY, LAT, LON,
-                            sphagnum_cover, other_moss_cover, "FLUXNET-CH4_DATA_POLICY")
+meta.3 <- meta.2 %>% select(SITE_ID, COUNTRY, sphagnum_cover, other_moss_cover, "FLUXNET-CH4_DATA_POLICY")
 
 #merge flux df and meta data
 meta.3<- meta.3 %>% dplyr::rename(site_id= SITE_ID)
@@ -90,7 +89,7 @@ CH4fluxnetALL <- CH4fluxnetALL %>%
 #adding FLUXNET-CH4 citation
 CH4fluxnetALL$citation <- "https://doi.org/10.5194/essd-13-3607-2021"
 #adding gap fill method
-CH4fluxnetALL$gap_fill <- "MDS"
+CH4fluxnetALL$gap_fill <- "ANNOPTLM"
 
 #-----------------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
