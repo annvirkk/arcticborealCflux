@@ -179,8 +179,10 @@ betaamerifluxdf$tower_corrections <- "CUT"
 alldat.wdupes <- gdata::combine(betaamerifluxdf, amerifluxdf) 
 #find duplicates
 dupes<- alldat.wdupes %>% get_dupes(site_id, year, month, partition_method)  
-#No duplicates OK to combine
-ameriflux.fluxnetall <- gdata::combine(betaamerifluxdf, amerifluxdf) 
+#remove duplicates
+ameriflux.fluxnetall <- alldat.wdupes %>%  
+  arrange(desc(source)) %>%  #give preference to amerifluxdf
+  distinct(site_id , year, month, partition_method, .keep_all = TRUE)
 #adding data usage policies
 ameriflux.fluxnetall <- ameriflux.fluxnetall %>% 
   mutate(data_usage= ifelse(site_id %in% c("CA-NS8", "CA-Ojp", "CA-Qc2", "CA-SJ3",
@@ -200,9 +202,7 @@ meta <- meta %>% filter(SITE_ID %in% names)
 #move to better format and group by site
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
-                                                           citation = na.omit(DOI),
-                                                           latitude= na.omit(LOCATION_LAT),
-                                                           longitude= na.omit(LOCATION_LONG))
+                                                           citation = na.omit(DOI))
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
@@ -212,6 +212,7 @@ ameriflux.ALL <- left_join(ameriflux.fluxnetall, meta.bysite)
 ameriflux.ALL$NEE_CUT_REF <- ameriflux.ALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 ameriflux.ALL$RECO_CUT_REF <- ameriflux.ALL$RECO_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 ameriflux.ALL$GPP_CUT_REF <- ameriflux.ALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
+ameriflux.ALL$GPP_CUT_REF <- ameriflux.ALL$GPP_CUT_REF *-1
 ameriflux.ALL$P_F <- ameriflux.ALL$P_F  *days_in_month(as.yearmon(paste(ameriflux.ALL$year,ameriflux.ALL$month,sep = '-')))
 
 #adding gap fill method
