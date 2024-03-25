@@ -7,6 +7,8 @@ library(data.table)
 library(lubridate)
 library(zoo)
 library(rio)
+library(janitor)
+library(stringr)
 
 setwd("/Users/iwargowsky/Desktop/Data from PIs") 
 ###Sonnentag and Alcock####-----------------------------------------------------
@@ -20,7 +22,7 @@ sonnentag <- sonnentag %>% filter(!site_name=="") #removing blank rows
 pink <- read_csv("ABCfluxv2_finse.csv")
 
 ###Masahito Ueyama####----------------------------------------------------------
-masa <- read_csv("Arctic_Boreal_CO2_Flux_ueyama_V2.csv")
+masa <- read_csv("Arctic_Boreal_CO2_Flux_ueyama_V2_2024.03.11.csv")
 
 ###Julia Boike####--------------------------------------------------------------
 boike <- read_csv("ABCfluxv2.varsAWI_Bayelva.csv")
@@ -43,18 +45,21 @@ dyukarev.ch <- read_csv("Russian data/ABCfluxv2_vars - Dyukarev-Veretennikova.ch
 peacock <- read_csv("ABCfluxv2.vars_Mike_Peacock_terrestrialchamber.csv")
 
 ###Ji Young Jung####------------------------------------------------------------
-jung <- read_csv("ABCfluxv2.vars_JYJ_230639.csv")
-#aggregate measurements to single monthly observation since there are replicates
-#jung <- jung %>% group_by(year, month)%>%
-  #mutate(nee= mean(nee), gpp= mean(gpp), reco=mean(reco)) %>%
-  #distinct(year, month, .keep_all = TRUE)
+jung <- read_csv("ABCfluxv2.vars_JYJ_230639.csv") %>% 
+group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
+  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
+                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
+  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
+  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
 
 ###Inge Althuizen ####----------------------------------------------------------
-althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv")
+althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv") %>%
+  filter(nee== ifelse(is.na(gpp), NA, nee)) ### NEE suspiciously high when lacking gpp
 
 ### Christopher Schulze####-----------------------------------------------------
-schulze <- read_csv("ABCfluxv2.vars_CS.csv")
-schulze <- schulze %>% mutate(reco= as.numeric(reco)) #to remove soil respiration data
+schulze.ch <- read_csv("ABCflux_SMC_STR_LUT_vCS_2023-12-25.csv") %>% mutate(reco= as.numeric(reco)) #to remove soil respiration data
+schulze.lut.ec <- read_csv("ABCflux_LUT_vCS_2023-12-25.csv")
+schulze.str.ec <- read_csv("ABCflux_STR_vCS_2023-12-25.csv")
 
 ### Vincent Jassey ####---------------------------------------------------------
 jassey <- read_csv("ABCfluxv2.vars_JASSEY.csv")
@@ -74,12 +79,15 @@ heffernan <- read_csv("ABCfluxv2.vars.liamheffernan.lutose.csv")
 rautakoski <- read_csv("ABCfluxv2_Ranskala.csv")
 rautakoski <- rautakoski %>%
   mutate(site_name= ifelse(notes=="Treatment: Area that will be harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment", site_name))%>%
-  mutate(site_name= ifelse(notes=="Treatment: Continuous cover forestry treatment. Area harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment ", site_name))
-  
+  mutate(site_name= ifelse(notes=="Treatment: Continuous cover forestry treatment. Area harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment", site_name)) %>%
+  mutate(site_reference= ifelse(site_name=="Ränskälänkorpi, Continuous cover forestry treatment", "FI-Ran forestry treatment", site_reference))
+
+
 ### Efren Lopez-Blanco###-------------------------------------------------------
 lopezblanco.ec <- read_csv("ABCflux_GEM2022data_upto2022.tower.csv", na = "-9999")
 lopezblanco.ch <- read_csv("ABCflux_GEM2022data_upto2022.ch.csv", na = "-9999")
-lopezblanco.ch$chamber_nr_measurement_days <- "Continous" #automatic chambers
+lopezblanco.ch$chamber_nr_measurement_days <- "Continuous" #automatic chambers
+
 ### Mika Aurela####-------------------------------------------------------------
 aurela.terv <- read_csv("ABCfluxv2_tervalaminsuotower.csv")
 aurela.lett.ec <- read_csv("ABCfluxv2_lettosuo.vars.tower.csv")
@@ -90,13 +98,18 @@ martikainen <- read_csv("Kaamanen aapa mire_Pertti J. Martikainen.csv")
 
 ###Pierre Tallidart#####--------------------------------------------------------
 tallidart.ec <- read_csv("ABCfluxv5_CA-BOU_tower.csv")
-tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv")
+tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv") 
 
 ### Kajar Köster ####-----------------------------------------------------------
 koster.ch <- read_csv("ABCfluxv2_Koster.csv")
 
 ### Sofie Sjogersten ####-------------------------------------------------------
-sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv")
+sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
+  group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
+  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
+                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
+  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
+  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
 
 ###Patrick Sullivan ####--------------------------------------------------------
 sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
@@ -105,8 +118,22 @@ sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
 hensgens.ec <- read_csv("ABCfluxv2.KYT.csv")
 
 ###Danila Illyasov####---------------------------------------------------------
-ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv")
-glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv")
+ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%
+  group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
+  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
+                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
+  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
+  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+
+
+glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv") %>%
+  mutate(ch4_flux_total= as.numeric(ch4_flux_total)) %>% 
+  group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
+  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
+                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
+  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
+  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+
 
 ###Joachim Jansen####-----------------------------------------------------------
 jansen.ec <- read_csv("ABCfluxv2_vars_SE-St1_qcJV_ter_tower.csv")
@@ -115,13 +142,17 @@ jansen.ec <- read_csv("ABCfluxv2_vars_SE-St1_qcJV_ter_tower.csv")
 carey.ec <- read_csv("ABCfluxv2.vars_Carey_Dec20.csv")
 
 ###Carolina Voigt####-----------------------------------------------------------
-voigt.ch <- read_csv("ABCfluxv2_CarolinaVoigt.csv")
+voigt.ch <- read_csv("ABCfluxv2_CarolinaVoigt.csv") %>% 
+  mutate(site_reference= ifelse(flux_method_detail== "automated chamber", paste(site_reference, "Automatic Chamber"), site_reference)) %>%
+  filter(!nee_seasonal_interval == "06/27/2019-08/24/2019") %>%
+  filter(!ch4_flux_seasonal_interval =="05/31/2021-06/09/2021")
 
 ###Roger Seco####---------------------------------------------------------------
 seco.ec <- read_csv("ABCfluxv2.vars_RogerSeco_birch.csv")
 
 ###Sujan Pal and Ryan Sullivan####----------------------------------------------
-pal.bar.ec <- read_csv("BAR_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")
+pal.bar.ec <- read_csv("BAR_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")%>% 
+  mutate(ch4_flux_total= ch4_flux_total/1000) # values are suspiciously high so i suspect its mg not g
 pal.oli.ec <- read_csv("OLI_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")
 
 ###Matthias Peichl####----------------------------------------------------------
@@ -138,7 +169,11 @@ treat.ch$reco <- treat.ch$reco*0.000001/44.01*12.01
 treat.ch$ch4_flux_total <- treat.ch$ch4_flux_total*0.000001/16.04*12.01
 
 ###Eeva-Stiina Tuittila/Elisa Männistö####--------------------------------------
-tuittila.ch <- read_csv("ABCfluxv2.vars_Siikaneva2.csv")
+tuittila.ch <- read_csv("ABCfluxv2.vars_Siikaneva2.csv") %>%
+  mutate(site_reference= ifelse(!is.na(ch4_flux_total), paste(site_reference, "ch4"), site_reference)) %>%
+  mutate(site_reference= ifelse(!is.na(nee), paste(site_reference, "nee"), site_reference)) %>%
+  mutate(site_reference= ifelse(!is.na(reco), paste(site_reference, "reco"), site_reference)) 
+
 
 ###Kuno Kasak####---------------------------------------------------------------
 kasak.ec <- read_csv("ABCFlux_data_Estonia.csv")
@@ -151,16 +186,67 @@ anthony.ec <- read_csv("2023_01_04_ABCfluxv2.vars-1_ThermokarstMounds.tower.csv"
 bjorkman.ch <- read_csv("Flux Latnjajaure.csv", na= "NA")
 
 ### Alexander Salazar ####------------------------------------------------------
-salazar.ch <- read_csv("ABCfluxv2.vars_AS.csv", na= "NA")
+salazar.ch <- read_csv("ABCfluxv2.vars_AS.csv", na= "NA") %>% 
+    group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
+  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
+                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
+  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
+  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
 
 ### Kyle Arndt ###--------------------------------------------------------------
-arndt.ec <- read_csv("ABCfluxv2.vars_arndt_cf3.csv")
+arndt.ec.cf <- read_csv("ABCfluxv2.vars_arndt_cf3.csv")
+arndt.ec.iq <- read_csv("ABCfluxv2.vars_IQ1.csv")
+
+### Hannu Nykanen ###-----------------------------------------------------------
+nykanen.ch <- read_csv("Kevo-ABCfluxv_Nykänen_231120.csv")
+
+### Maija E. Marushchak ###-----------------------------------------------------
+marushchak.ch <- read_csv("ABCfluxv2.MaijaMarushchak.csv", na= "NA")
+
+### Haley Webb ###--------------------------------------------------------------
+webb.ch <- read_csv("ABCfluxv2vars_HWebb.csv", na= "NA") %>%
+  mutate(ch4_flux_total= as.numeric(ch4_flux_total),
+         nee= as.numeric(nee), gpp=as.numeric(gpp), reco= as.numeric(reco)) %>%
+  group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
+  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
+                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
+  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
+  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+
+
+### Carl-Fredrik Johannesson ###------------------------------------------------
+johannesson.ch <-read_delim("MethaneData_CFJ.csv", delim = ";", escape_double = FALSE, locale = locale(decimal_mark = ",", 
+                          encoding = "Latin1"), trim_ws = TRUE)[,-1]
+
+### David Olefeldt ###----------------------------------------------------------
+olefeldt.ch <- read_csv("ABCflux.kashakempton.lutose.2023.csv")
 
 ### Anatoly Prokushkin ###------------------------------------------------------
-#prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv")
-#prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv")
+prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv") 
+prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv")
+
+### Matthias Goeckede/Abdullah Bolek ###----------------------------------------
+goeckede.1.ec <- read_csv("ABCfluxv2.vars_Tower1.csv")
+goeckede.2.ec <- read_csv("ABCfluxv2.vars_Tower2.csv")
+
+### Kyra St.Pierre ###----------------------------------------------------------
+stpierre.ch <- read_csv("ABCfluxv2.vars_KSP.csv")
+
+### Elena Blanc-Betes ###-------------------------------------------------------
+blancbetes.ch <- read_csv("ABCflux_blanc-betes-with_ch4.csv")
+
+### Räsänen Aleksi ###----------------------------------------------------------
+rasanen.ch <- read_csv("ABCfluxv2.vars_AR.csv")
+
+### Anna Virkkala ###----------------------------------------------------------
+virkkala.2017.ch <- read_csv("abcflux_kilpisjarvi_2017_co2_virkkala_march2024.csv") %>%
+  mutate(site_reference= str_extract(site_id, "chamber_\\d+"))
+virkkala.2018.ch <- read_csv("abcflux_kilpisjarvi_2018_ch4_virkkala_march2024.csv") %>%
+  mutate(site_reference= str_extract(site_id, "chamber_\\d+"))
+
 
 ## PROCESSING DATA FROM PIs #############################################################################
+
 ### Scott Davidson####----------------------------------------------------------
 #####Processing davidson.16####
 davidson.16 <- read_excel("Davidson/Davidson_et al. 2016 Ecosystems.xlsx", sheet= 2)
@@ -452,7 +538,7 @@ tag.meteo <- full_join(tag.meteo.07, tag.meteo.08) %>% full_join(tag.meteo.09)
 tag.meteo.monthly <- tag.meteo %>% group_by(year, month) %>%
   dplyr::summarise(tair= mean(tair, na.rm = T),
                    precip= max(precip, na.rm = T),
-                   par= mean(par, na.rm = T),
+                  # par= mean(par, na.rm = T),
                    snow_depth= mean(snow_depth, na.rm = T),
                    tsoil_surface= mean(c(tsoil_0, tsoil_5), na.rm = T),
                    tsoil_deep= mean(c(tsoil_20, tsoil_60, tsoil_100), na.rm = T))
@@ -467,7 +553,7 @@ tagesson.ec$country <- "Greenland"
 tagesson.ec$latitude <- "74.481511"
 tagesson.ec$longitude <- "-20.555689"
 tagesson.ec$veg_detail <- "High-Arctic heterogeneous wetland area. It is a patterned fen characterized by alternatinghigh, dry heath areas, and low, wet fen areas"
-tagesson.ec$flux_method <- "CO2: EC CH4: Combo of EC and gradient"
+tagesson.ec$flux_method <- "EC"
 tagesson.ec$flux_method_detail <- "CO2: EC_open CH4: Combination of the gradient and eddy covariance methods"
 tagesson.ec$flux_method_description <- "3-axis sonic anemometer (Metek, Gmbh, Elmshorn,Germany), and an open-path CO2/H2O infrared gas analyzer was installed at 3.3 m above the surface. The gas analyzer was tilted 32°from vertical next to the sonic anemometer. CH4 fluxes were thus estimated by combining gradient and EC methods. The CH4 concentrations were measured at two levels (0.70 and 2.75 m) on the tower at 1 Hz rate. The system consisted of a laser off-axis integrated cavity output spectroscopy analyzer (LGR; DLT200,Fast Methane Analyzer, repeatability 1 ppb at 0.1 Hz, Los Gatos Research, Mountain View, CA, USA"
 tagesson.ec$instrumentation <- "LI-7500"
@@ -482,7 +568,7 @@ tagesson.ec$alt <- "40-80"
 tagesson.ec$soil_depth <- "20-30"
 tagesson.ec$soil_ph <- "6.9"
 tagesson.ec$tair_height <- "3"
-tagesson.ec$notes <- "NEE values calculated from gapfilled ER and GPP measurements (NEE= ER+GPP)"
+tagesson.ec$notes <- "NEE values calculated from gapfilled ER and GPP measurements (NEE= GPP+RECO)"
 tagesson.ec$land_cover <- "180"
 tagesson.ec$land_cover_bawld <- "Wet Tundra"
   
@@ -546,7 +632,7 @@ tag.ch.monthly$flux_method_detail <- "Closed chamber"
 tag.ch.monthly$flux_method_description <- "The chamber was a transparent Plexiglas cube of 0.3 m height and a ground area of 0.34 m2. The outlet and inlet for gases were located on one of the chamber sides, 0.15 and 0.25 m above the ground, respectively. Two small fans were located in the upper part of the chamber to ensure proper mixing of the chamber headspace and representative sampling"
 tag.ch.monthly$instrumentation <- "CO2: EGM-4, PP-systems, Hitchin, Hertfordshire, UK CH4: LGR, DLT200 Fast Methane Analyzer, Los Gatos Research,USA"
 tag.ch.monthly$diurnal_coverage <- "Day"
-tag.ch.monthly$gapfill <- "Average"
+tag.ch.monthly$gap_fill <- "Average"
 tag.ch.monthly$land_cover_bawld <- "Wet Tundra"
 tag.ch.monthly <- tag.ch.monthly %>%
   mutate(land_cover= case_when( startsWith(site_reference, "Grassland") ~ "130",
@@ -591,7 +677,6 @@ chafe <- chafe %>% dplyr::rename("site_reference"= "plot_ID")
 #If opaque chamber, flux= reco, if clear flux = nee
 chafe <- chafe %>% mutate(reco= case_when(chamber_type== "Opq"~ flux_CO2)) %>%
                  mutate(nee= case_when(chamber_type== "Trns"~ flux_CO2)) 
-chafe <- as.data.frame(sapply(chafe,as.numeric))
 #summary by month
 chafe.monthly <- chafe %>% group_by(year, month, site_reference, latitude, longitude, landscape_position) %>%
   reframe(nee= mean(as.numeric(nee), na.rm = TRUE),
@@ -602,7 +687,7 @@ chafe.monthly <- chafe %>% group_by(year, month, site_reference, latitude, longi
           tsoil_deep= mean(as.numeric(c(soil_temp_15_cm, soil_temp_20_cm)), na.rm = TRUE),
           tair= mean(as.numeric(air_temp), na.rm = TRUE),
           thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
-          soil_moisture= mean(VWC, na.rm = TRUE),
+          soil_moisture= mean(as.numeric(VWC), na.rm = TRUE),
           chamber_nr_measurement_days= n_distinct(day))
 #convert units
 chafe.monthly$nee<- chafe.monthly$nee*1.0368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
@@ -617,7 +702,7 @@ chafe.monthly$country <- "USA"
 chafe.monthly$biome <- "Tundra"
 chafe.monthly$data_contributor_or_author <- "Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret Torn"
 chafe.monthly$citation <-"Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret chafe. 2023. Soil CO2 and CH4 Chamber Fluxes in Tussock Tundra, Council Road Mile Marker 71, Seward Peninsula, Alaska, 2016-2019. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Dataset accessed on 11/20/2023 at https://doi.org/10.5440/1765733."
-chafe.monthly$gapfill <- "Average"
+chafe.monthly$gap_fill <- "Average"
 chafe.monthly$partition_method <- "GPP= NEE- ER"
 chafe.monthly$flux_method <- "Chamber"
 chafe.monthly$flux_method_detail <- "Closed-loop chambers"
@@ -671,18 +756,17 @@ decimal_degrees <- st_transform(utm_data, 4326)  # EPSG code for WGS84 (decimal 
 vaughn$latitude <- st_coordinates(decimal_degrees)[, 2]
 vaughn$longitude <- st_coordinates(decimal_degrees)[, 1]
 #summary by month
-vaughn <- as.data.frame(sapply(vaughn, as.numeric))
 vaughn.monthly <- vaughn %>% group_by(year, month, site_reference, latitude, longitude) %>%
-  reframe(nee= mean(nee, na.rm = TRUE),
-          reco= mean(reco, na.rm = TRUE),
-          ch4_flux_total= mean(flux_CH4, na.rm = TRUE),
-          tsoil_surface= mean(tsoil_surface, na.rm = TRUE),
-          tsoil_surface_depth = mean(tsoil_surface_depth, na.rm = TRUE),
-          tsoil_deep= mean(tsoil_deep, na.rm = TRUE),
-          tsoil_deep_depth= mean(tsoil_deep_depth, na.rm = TRUE),
-          soil_moisture= mean(VWC, na.rm = TRUE),
-          tair= mean(air_temp, na.rm = TRUE),
-          thaw_depth= mean(thawdepth, na.rm = TRUE),
+  reframe(nee= mean(as.numeric(nee), na.rm = TRUE),
+          reco= mean(as.numeric(reco), na.rm = TRUE),
+          ch4_flux_total= mean(as.numeric(flux_CH4), na.rm = TRUE),
+          tsoil_surface= mean(as.numeric(tsoil_surface), na.rm = TRUE),
+          tsoil_surface_depth = mean(as.numeric(tsoil_surface_depth), na.rm = TRUE),
+          tsoil_deep= mean(as.numeric(tsoil_deep), na.rm = TRUE),
+          tsoil_deep_depth= mean(as.numeric(tsoil_deep_depth), na.rm = TRUE),
+          soil_moisture= mean(as.numeric(VWC), na.rm = TRUE),
+          tair= mean(as.numeric(air_temp), na.rm = TRUE),
+          thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
           chamber_nr_measurement_days= n_distinct(day))
 #remove rows without flux data
 vaughn.monthly <- vaughn.monthly %>% filter(!if_all(c(nee, reco, ch4_flux_total), ~ is.na(.)))
@@ -698,7 +782,7 @@ vaughn.monthly$country <- "USA"
 vaughn.monthly$biome <- "Tundra"
 vaughn.monthly$data_contributor_or_author <- "Vaughn, L.S., Conrad, M.S., Torn, M.S., Bill, M., Curtis, J.B., Chafe, O"
 vaughn.monthly$citation <-"Vaughn, L.S., Conrad, M.S., Torn, M.S., Bill, M., Curtis, J.B., Chafe, O. 2015. CO2 and CH4 surface fluxes, soil profile concentrations, and stable isotope composition, Barrow, Alaska, 20122013. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Data set accessed at DOI:10.5440/1227684."
-vaughn.monthly$gapfill <- "Average"
+vaughn.monthly$gap_fill <- "Average"
 vaughn.monthly$partition_method <- "GPP= NEE- ER"
 vaughn.monthly$flux_method <- "Chamber"
 vaughn.monthly$flux_method_detail <- "Static manual chambers"
@@ -708,32 +792,68 @@ vaughn.monthly$permafrost <- "Yes"
 vaughn.monthly$landform <- "Polygonal features"
 
 vaughn.ch <- vaughn.monthly
-########----------------------------------------------------------------------------------------------
+########------COMBINE ALL----------------------------------------------------------------------------------------
 PIdat.ec <- rbindlist(list(sonnentag, pink, masa, boike, jong, sabrekov.ec, dyukarev.ec, roy, 
                            lopezblanco.ec, hung.ec, rautakoski, aurela.lett.ec, aurela.terv,
                            dobosy, tallidart.ec, tagesson.ec, sullivan.ec, hensgens.ec,
                            carey.ec, jansen.ec, seco.ec, pal.bar.ec, pal.oli.ec, 
                            peichl.hlf.ec, peichl.hlm.ec, peichl.stj.ec, kasak.ec, anthony.ec,
-                           arndt.ec ), 
+                           arndt.ec.cf, arndt.ec.iq , schulze.lut.ec, schulze.str.ec, prokushkin.ec, goeckede.1.ec,
+                           goeckede.2.ec), 
                       fill = TRUE)
 PIdat.ec$extraction_source <- "User-contributed"
 #remove rows that do not contain flux data
 PIdat.ec <- PIdat.ec %>%
   filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
 
-PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze, jassey, sabrekov.ch, dyukarev.ch, hung.ch,
+PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze.ch, jassey, sabrekov.ch, dyukarev.ch, hung.ch,
                             heffernan, davidson.16.monthly, davidson.19.monthly, davidson.21.monthly,
                            aurela.lett.ch, martikainen, tallidart.ch, tagesson.ch, chafe.ch, koster.ch,
                            sjogersten.ch, lopezblanco.ch, ilyasov.ch, voigt.ch, glagolev.ch, peichl.deg.ch,
-                           treat.ch, tuittila.ch, anthony.ch, vaughn.ch, bjorkman.ch, salazar.ch), 
+                           treat.ch, tuittila.ch, anthony.ch, vaughn.ch, bjorkman.ch, salazar.ch, nykanen.ch,
+                           marushchak.ch, webb.ch, johannesson.ch, olefeldt.ch, prokushkin.ch, stpierre.ch,
+                           blancbetes.ch, rasanen.ch, virkkala.2017.ch, virkkala.2018.ch), 
                       fill = TRUE)
 PIdat.ch$extraction_source <- "User-contributed"
 #remove rows that do not contain flux data
 PIdat.ch <- PIdat.ch %>%
   filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
 
+dupes.ec <- PIdat.ec %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method) 
+dupes.ch <- PIdat.ch %>% get_dupes(site_name, site_reference, site_id, year, month)  
+
+
+PIdat.ec2 <- PIdat.ec %>% 
+  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
+  mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), citation, NA)) %>%
+  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total), extraction_source, NA)) %>%
+  mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), extraction_source, NA)) %>%
+  mutate(chamber_nr_measurement_days_ch4 = ifelse(!is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), chamber_nr_measurement_days, NA)) %>%
+  mutate(citation = NULL, extraction_source= NULL, chamber_nr_measurement_days= NULL)
+
+PIdat.ch2 <- PIdat.ch %>% 
+  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
+  mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), citation, NA)) %>%
+  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total), extraction_source, NA)) %>%
+  mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), extraction_source, NA)) %>%
+  mutate(chamber_nr_measurement_days_ch4 = ifelse(!is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), chamber_nr_measurement_days, NA)) %>%
+  mutate(citation = NULL, extraction_source= NULL, chamber_nr_measurement_days= NULL)
+
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-write_csv(PIdat.ec, "PI.data.ec.csv")
-write_csv(PIdat.ch, "PI.data.ch.csv")
+static <- read_csv("static.towersites.csv")
+#join to fill NAs
+library(rquery)
+PIdat.ec2.static <- natural_join(PIdat.ec2, static, by= "site_reference", jointype= "FULL")
+#x<- dplyr::anti_join(PIdat.ec2.static, PIdat.ec2, by= c("site_reference")) #checking to see if any data was removed
+
+
+
+
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+write_csv(PIdat.ec2.static, "PI.data.ec.csv")
+write_csv(PIdat.ch2, "PI.data.ch.csv")
+
