@@ -575,6 +575,19 @@ ADC.ch <- rbindlist(list(dat3, dat4, dat5, dat6, dat7, dat8), fill = TRUE)
 ADC.ch$extraction_source <- "Arctic Data Center"
 ADC.ch$dataentry_person <- "Isabel"
 ADC.ch$data_usage <- "Tier 1"
+
+ADC.ch<- ADC.ch %>% 
+  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
+  mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), citation, NA)) %>%
+  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total), extraction_source, NA)) %>%
+  mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), extraction_source, NA)) %>%
+  mutate(chamber_nr_measurement_days_ch4 = ifelse(!is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), chamber_nr_measurement_days, NA)) %>%
+  mutate(citation = NULL, extraction_source= NULL, chamber_nr_measurement_days= NULL)
+
+
+
+
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 #write_csv(ADC.ec, "ADC.ec.csv")
 write_csv(ADC.ch, "ADC.ch.csv")
