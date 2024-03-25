@@ -14,6 +14,7 @@ ceip <- list_of_files %>%
 ceip$NEE_or_fMDS <- ceip$NEE_or_fMDS *ceip$n_days
 ceip$Reco_or <- ceip$Reco_or *ceip$n_days
 ceip$GPP_or_MDS <- ceip$GPP_or_MDS *ceip$n_days
+ceip$GPP_or_MDS <- ceip$GPP_or_MDS *-1
 ceip$Precip <- ceip$Precip *ceip$n_days
 #rename columns to match ABCflux v2
 colnames(ceip)
