@@ -130,8 +130,7 @@ meta <- meta %>% filter(SITE_ID %in% names)
 #more to better format and group by site
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
-                                             citation = na.omit(DOI),
-                                             site_name= na.omit(SITE_NAME))
+                                                           citation = na.omit(DOI))
 #merge flux df and meta data
 meta.bysite<- meta.bysite %>% dplyr::rename(site_id= SITE_ID)
 fluxnetALL <- left_join(fluxnetdf, meta.bysite)
@@ -142,6 +141,7 @@ fluxnetALL$gap_fill <- "MDS"
 fluxnetALL$NEE_CUT_REF <- fluxnetALL$NEE_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 fluxnetALL$RECO_CUT_REF <- fluxnetALL$RECO_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 fluxnetALL$GPP_CUT_REF <- fluxnetALL$GPP_CUT_REF *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
+fluxnetALL$GPP_CUT_REF <- fluxnetALL$GPP_CUT_REF*-1 #reverse signs
 fluxnetALL$P_F <- fluxnetALL$P_F *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 ##adding data usage policies according to https://fluxnet.org/data/data-policy/
 fluxnetALL <- fluxnetALL %>% 
