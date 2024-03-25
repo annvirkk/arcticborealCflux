@@ -98,5 +98,17 @@ dat2 <- magnani.permonth
 Zenodo.ch <- rbindlist(list(dat1, dat2), fill = TRUE)
 Zenodo.ch$extraction_source <- "Zenodo"
 Zenodo.ch$data_usage <- "Tier 1"
+
+
+Zenodo.ch <- Zenodo.ch %>% 
+  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
+  mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(reco), citation, NA)) %>%
+  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total), extraction_source, NA)) %>%
+  mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(reco), extraction_source, NA)) %>%
+  mutate(chamber_nr_measurement_days_ch4 = ifelse(!is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee) | !is.na(reco), chamber_nr_measurement_days, NA)) %>%
+  mutate(citation = NULL, extraction_source= NULL, chamber_nr_measurement_days= NULL)
+
+
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 write_csv(Zenodo.ch, "Zenodo.ch.csv")
