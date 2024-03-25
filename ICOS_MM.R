@@ -64,7 +64,7 @@ ww.dat2.gf <- lapply(ww.dat2, function(df) df %>%
                                                     NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                          dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                          group_by(year,month) %>% 
-                         dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
+                         dplyr::summarise(gap_fill_perc_nee = sum(gapfill)/n()*100))
 
 ww.dat2.gf <- bind_rows(ww.dat2.gf, .id = "site_id") #turn list  into one df
 wwdat <- merge(ww.dat2.gf, wwdat) #merge with data
@@ -125,7 +125,7 @@ etc.dat2.gf <- lapply(etc.dat2, function(df) df %>%
                                                    NEE_CUT_REF_QC %in% 0 ~ 0))%>%
                        dplyr::select(year, month, gapfill, NEE_CUT_REF_QC) %>%
                        group_by(year,month) %>% 
-                       dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100))
+                       dplyr::summarise(gap_fill_perc_nee = sum(gapfill)/n()*100))
 
 etc.dat2.gf  <- bind_rows(etc.dat2.gf , .id = "site_id") #turn list  into one df
 icosdat <- merge(etc.dat2.gf, icosdat) #merge with data
@@ -134,7 +134,7 @@ icosdat$tower_corrections <- "CUT" #noting what U-star filtering was used
 
 ###VUT sites#####----------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ICOS/VUT sites")
-sto <- read_csv("ICOSETC_SE-Sto_ARCHIVE_INTERIM_L2/ICOSETC_SE-Sto_FLUXNET_MM_INTERIM_L2.csv")
+sto <- read_csv("ICOSETC_SE-Sto_ARCHIVE_INTERIM_L2/ICOSETC_SE-Sto_FLUXNET_MM_INTERIM_L2.csv", na= c(NA, "-9999"))
 sto$site_id <- "SE-Sto"
 #merge vut sites together
 VUTsites <- sto
@@ -183,7 +183,7 @@ VUT.dat2.gf <- VUTsites.gf %>%
                                                    NEE_VUT_REF_QC %in% 0 ~ 0))%>%
                         dplyr::select(year, month, gapfill, NEE_VUT_REF_QC) %>%
                         group_by(year,month) %>% 
-                        dplyr::summarise(gap_fill_perc = sum(gapfill)/n()*100)
+                        dplyr::summarise(gap_fill_perc_nee = sum(gapfill)/n()*100)
 VUTsites <- merge(VUT.dat2.gf, VUTsites) #merge with data
 
 #merge VUTsites with icosdat
@@ -206,66 +206,112 @@ se.sto.files.flux <- list.files(path = path,pattern = '*SE-Sto_Fluxes_*',all.fil
 se.sto.files.eco <- list.files(path = path,pattern = '*SE-Sto_eco_*',all.files = T,recursive = T)
 se.sto.files.meteo <- list.files(path = path,pattern = '*SE-Sto_meteo_*',all.files = T,recursive = T)
 #cycle through folders and subset for only our variables of interest
-se.sto.flux <- rbindlist(sapply(se.sto.files.flux, fread, simplify = FALSE), use.names = TRUE, fill= TRUE)  %>%
-  select(date, time, doy,Fch4_f_1_1_1, Reco_f_1_1_1, GPP_f_1_1_1, Reco_1_1_1, NEE_1_1_1 )
-se.sto.eco <- rbindlist(sapply(se.sto.files.eco, fread, simplify = FALSE), use.names = TRUE, fill= TRUE)  %>%
-  select(date, time, doy, starts_with("TS_"), starts_with("SWC_"), starts_with("GWL_") )
-se.sto.meteo <- rbindlist(sapply(se.sto.files.meteo, fread, simplify = FALSE), use.names = TRUE, fill= TRUE) %>%
-  select(date, time, doy, PPFD_IN_1_2_1, Ta_1_1_1, D_SNOW_1_1_1, P_1_1_1)
+se.sto.flux <- rbindlist(sapply(se.sto.files.flux, fread, simplify = FALSE, na.strings="NaN"), use.names = TRUE, fill= TRUE)  %>%
+  select(date, time, Fch4_f_1_1_1, Reco_f_1_1_1, GPP_f_1_1_1, Reco_1_1_1, NEE_1_1_1 ) %>% filter(!date== "dd/mm/yyyy")
+se.sto.eco <- rbindlist(sapply(se.sto.files.eco, fread, simplify = FALSE, na.strings="NaN"), use.names = TRUE, fill= TRUE)  %>%
+  select(date, time, starts_with("TS_"), starts_with("SWC_"), starts_with("GWL_") )%>% filter(!date== "dd/mm/yyyy")
+se.sto.meteo <- rbindlist(sapply(se.sto.files.meteo, fread, simplify = FALSE, na.strings=c("NaN", "-9999.00000")), use.names = TRUE, fill= TRUE) %>%
+  select(date, time, PPFD_IN_1_2_1, Ta_1_1_1, D_SNOW_1_1_1, P_1_1_1)%>% filter(!date== "dd/mm/yyyy")
+#consistent data column formats
+se.sto.flux$date <- as.Date(se.sto.flux$date, format= "%d/%m/%Y")
+se.sto.eco$date <- as.Date(se.sto.eco$date, format= "%d/%m/%Y")
+se.sto.meteo$date <- as.Date(se.sto.meteo$date, format= "%d/%m/%Y")
+
 #Merge dfs
-se.sto <- se.sto.flux %>% full_join(se.sto.eco, by= c("date", "time", "doy")) %>% 
-  full_join(se.sto.meteo, by= c("date", "time", "doy"))
+se.sto <- se.sto.flux %>% full_join(se.sto.eco, by= c("date", "time")) %>% 
+  full_join(se.sto.meteo, by= c("date", "time"))
+
+#average by time to create consistent column names
+se.sto.time <- se.sto %>% group_by(date, time) %>%
+  dplyr::summarise(NEE_CUT_REF= mean(as.numeric(NEE_1_1_1), na.rm= TRUE), #using naming conventions that match dfs above
+          RECO_CUT_REF= mean(as.numeric(c(Reco_f_1_1_1, Reco_1_1_1)), na.rm= TRUE),
+          GPP_CUT_REF= mean(as.numeric(GPP_f_1_1_1), na.rm= TRUE),
+          ch4_flux_total= mean(as.numeric(Fch4_f_1_1_1), na.rm = TRUE),
+          TA_F_MDS= mean(as.numeric(Ta_1_1_1), na.rm= TRUE),
+          SWC_F_MDS_1= mean(as.numeric(c(SWC_1_1_1, SWC_1_2_1, SWC_1_3_1, SWC_1_4_1, SWC_1_5_1, 
+                            SWC_2_1_1, SWC_2_2_1, SWC_2_3_1, SWC_2_4_1, SWC_2_5_1,
+                            SWC_3_1_1, SWC_3_2_1, SWC_3_3_1, SWC_3_4_1, SWC_3_5_1,
+                            SWC_4_1_1, SWC_4_2_1, SWC_4_3_1, SWC_4_4_1, SWC_4_5_1)), na.rm= TRUE),
+          TS_F_MDS_1= mean(as.numeric(c(TS_1_1_1, TS_1_2_1, TS_1_3_1,
+                                TS_2_1_1, TS_2_2_1, TS_2_3_1,
+                                TS_3_1_1, TS_3_2_1, TS_3_3_1,
+                                TS_2_1_1, TS_4_2_1, TS_4_3_1)), na.rm= TRUE),
+          tsoil_deep= mean(as.numeric(c(TS_1_4_1, TS_1_5_1, TS_2_4_1, TS_2_5_1,
+                             TS_3_4_1, TS_3_5_1,  TS_4_5_1)), na.rm= TRUE),
+          PPFD_IN = mean(as.numeric(PPFD_IN_1_2_1), na.rm= TRUE),
+          P_F= mean(as.numeric(P_1_1_1), na.rm= TRUE),
+          snow_depth= sum(as.numeric(D_SNOW_1_1_1), na.rm= TRUE),
+          water_table_depth= mean(as.numeric(c(GWL_1_1_1, GWL_2_1_1, GWL_3_1_1, GWL_4_1_1)), na.rm= TRUE))
+
+#remove rows that do not contain flux data
+se.sto.time <- se.sto.time %>%
+  filter(!if_all(c(NEE_CUT_REF, RECO_CUT_REF, GPP_CUT_REF, ch4_flux_total), ~ is.na(.)))
+
 #create new time columns
-se.sto <- se.sto %>% mutate(year= year(as.Date(date, format= "%d/%m/%Y")),
-                            month= month(as.Date(date, format= "%d/%m/%Y")))
+se.sto.time <- se.sto.time %>% mutate(year= year(date), month= month(date))
 
-
-se.sto$ts <- as.yearmon(paste(se.sto$year, se.sto$month, sep="-"))
-ggplot(se.sto) + 
-  geom_point(aes(ts, Reco_f_1_1_1))
-ggplot(se.sto) + 
-  geom_point(aes(ts, GPP_f_1_1_1))
-ggplot(se.sto) + 
-  geom_point(aes(ts, NEE_1_1_1))
-ggplot(data = subset(se.sto, se.sto$year=='2016')) + 
-  geom_smooth(aes(ts, Ta_1_1_1))+
-  ggtitle("2016")
-
-se.sto <- as.data.frame(sapply(se.sto,as.numeric))
 #aggregate by month
-se.sto.monthly <- se.sto %>% group_by(year, month) %>%
-  dplyr::summarise(NEE_CUT_REF= mean(NEE_1_1_1, na.rm= TRUE), #using naming conventions that match dfs above
-            percent_na = (sum(is.na(NEE_1_1_1))/n()*100),
-            RECO_CUT_REF= mean(c(Reco_f_1_1_1, Reco_1_1_1), na.rm= TRUE),
-            GPP_CUT_REF= mean(GPP_f_1_1_1, na.rm= TRUE),
-            TA_F_MDS= mean(Ta_1_1_1),
-            SWC_F_MDS= mean(c(SWC_1_1_1, SWC_1_2_1, SWC_1_3_1, SWC_1_4_1, SWC_1_5_1, 
-                              SWC_2_1_1, SWC_2_2_1, SWC_2_3_1, SWC_2_4_1, SWC_2_5_1,
-                              SWC_3_1_1, SWC_3_2_1, SWC_3_3_1, SWC_3_4_1, SWC_3_5_1,
-                              SWC_4_1_1, SWC_4_2_1, SWC_4_3_1, SWC_4_4_1, SWC_4_5_1)),
-            tsoil_surface= mean(c(TS_1_1_1, TS_1_2_1, TS_1_3_1,
-                                  TS_2_1_1, TS_2_2_1, TS_2_3_1,
-                                  TS_3_1_1, TS_3_2_1, TS_3_3_1,
-                                  TS_2_1_1, TS_4_2_1, TS_4_3_1)),
-            tsoil_deep= mean(c(TS_1_4_1, TS_1_5_1, TS_2_4_1, TS_2_5_1,
-                               TS_3_4_1, TS_3_5_1,  TS_4_5_1)),
-            PPFD_IN = mean(PPFD_IN_1_2_1),
-            P_F= sum(P_1_1_1),
-            snow_depth= sum(D_SNOW_1_1_1),
-            water_table_depth= mean(c(GWL_1_1_1, GWL_2_1_1, GWL_3_1_1, GWL_4_1_1)))
+se.sto.monthly <- se.sto.time %>% group_by(year, month) %>%
+  dplyr::summarise( percent_na_nee= sum(is.na(NEE_CUT_REF)/n())*100,
+                    percent_na_reco= sum(is.na(RECO_CUT_REF)/n())*100,
+                    percent_na_gpp= sum(is.na(GPP_CUT_REF)/n())*100,
+                    percent_na_ch4= sum(is.na(ch4_flux_total)/n())*100,
+            NEE_CUT_REF= mean(NEE_CUT_REF, na.rm= TRUE), #using naming conventions that match dfs above
+            RECO_CUT_REF= mean(RECO_CUT_REF, na.rm= TRUE),
+            GPP_CUT_REF= mean(GPP_CUT_REF, na.rm= TRUE),
+            ch4_flux_total= mean(ch4_flux_total, na.rm= TRUE),
+            TA_F_MDS= mean(TA_F_MDS, na.rm= TRUE),
+            SWC_F_MDS_1= mean(SWC_F_MDS_1, na.rm= TRUE),
+            TS_F_MDS_1= mean(TS_F_MDS_1, na.rm= TRUE),
+            tsoil_deep= mean(tsoil_deep, na.rm= TRUE),
+            PPFD_IN = mean(PPFD_IN, na.rm= TRUE),
+            P_F= mean(P_F, na.rm= TRUE),
+            snow_depth= sum(snow_depth, na.rm= TRUE),
+            water_table_depth= mean(water_table_depth, na.rm= TRUE))
 
+#keep only months with 98% of data present
+se.sto.monthly <- se.sto.monthly %>% dplyr::rename(gap_fill_perc_nee = "percent_na_nee",
+                                                   gap_fill_perc_reco = "percent_na_reco",
+                                                   gap_fill_perc_gpp = "percent_na_gpp",
+                                                   gap_fill_perc_ch4 = "percent_na_ch4")
+
+#remove 2020 data according to email from Jutta
+se.sto.monthly <- se.sto.monthly %>% filter(!year== 2020)
+
+#convert units from umol m-2 s-1 to g C m-2 day-1
+se.sto.monthly$NEE_CUT_REF <- se.sto.monthly$NEE_CUT_REF *1.0368 
+se.sto.monthly$RECO_CUT_REF <- se.sto.monthly$RECO_CUT_REF *1.0368
+se.sto.monthly$GPP_CUT_REF <- se.sto.monthly$GPP_CUT_REF *1.0368 
+se.sto.monthly$ch4_flux_total <- se.sto.monthly$ch4_flux_total *1.0368
+
+#clarifying partition method because they used Lasslop for GPP fluxes and Reichstein for RECO
+se.sto.monthly.gpp <- se.sto.monthly %>% mutate(partition_method= "Lasslop") %>%
+                                         mutate(RECO_CUT_REF= NA)
+se.sto.monthly.reco <- se.sto.monthly %>% mutate(partition_method= "Reichstein")%>%
+                                          mutate(GPP_CUT_REF= NA)
+se.sto.monthly <- se.sto.monthly.gpp %>% full_join(se.sto.monthly.reco)
+
+
+#Static info
 se.sto.monthly$site_id <- "SE-Sto"
-se.sto.monthly$source <- "ICOS Sweden"
-se.sto.monthly$data_version <- "Tier1"
-se.sto.monthly$partition_method <- ""
+se.sto.monthly$source <- "Sweden"
+se.sto.monthly$extraction_source_ch4 <- "ICOS Sweden"
 se.sto.monthly$citation <- "ICOS Sweden, 2023. Collection of Abisko Stordalen Palsa Bog Swedish network data. https://doi.org/10.18160/Q6H6-B94B"
+se.sto.monthly$citation_ch4 <- "ICOS Sweden, 2023. Collection of Abisko Stordalen Palsa Bog Swedish network data. https://doi.org/10.18160/Q6H6-B94B"
 se.sto.monthly$tower_corrections <- ""
 se.sto.monthly$moisture_depth <- "5"
 se.sto.monthly$tsoil_surface_depth <- "5"
 se.sto.monthly$tsoil_deep_depth <- "31"
 
+#se.sto.monthly$ts <- as.yearmon(paste(se.sto.monthly$year, se.sto.monthly$month, sep="-"))
+#ggplot(data = subset(se.sto.monthly, se.sto.monthly$year== "2020"))+
+#  geom_line(aes(ts, NEE_CUT_REF))
+
 ###Final df#####----------------------------------------------------------------
-x <- alldatpermonth %>% full_join(se.sto.monthly)
+alldatpermonth$year <- as.integer(alldatpermonth$year)
+alldatpermonth$month <- as.integer(alldatpermonth$month)
+allICOSpermonth.wdupes <- alldatpermonth %>% full_join(se.sto.monthly)
+
 #find duplicates
 dupes<- allICOSpermonth.wdupes  %>% get_dupes(site_id, year, month, partition_method)  
 #remove duplicates to get final df
@@ -277,11 +323,15 @@ allICOSpermonth <-allICOSpermonth.wdupes  %>%
 allICOSpermonth$NEE_CUT_REF <- allICOSpermonth$NEE_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 allICOSpermonth$RECO_CUT_REF <- allICOSpermonth$RECO_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
+allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF* -1
 allICOSpermonth$P_F <- allICOSpermonth$P_F *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 #data usage
 allICOSpermonth$data_usage <- "Tier 1" 
 #adding gap fill method
-allICOSpermonth$gap_fill <- "MDS"
+allICOSpermonth$gap_fill<- "MDS"
+allICOSpermonth$flux_method <- "EC"
+
+
 
 setwd("/Users/iwargowsky/Desktop/ICOS")
 write_csv(allICOSpermonth, "ICOSdatapermonth.csv")
