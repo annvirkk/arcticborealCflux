@@ -683,6 +683,7 @@ base.monthly <- base.monthly %>% dplyr::rename("gap_fill_perc_nee"= "percent_na_
 
 ##add site_id and data version
 base.monthly$data_version <- substr(base.monthly$site_id, 22,24)
+base.monthly$data_version_ch4 <- substr(base.monthly$site_id, 22,24)
 base.monthly$site_id <- substr(base.monthly$site_id, 5,10)
 #Convert units to match ABCflux v2
 base.monthly$ts <- as.yearmon(paste(base.monthly$year, base.monthly$month, sep = "-"))
@@ -697,6 +698,9 @@ base.monthly2 <- base.monthly %>%
 #adding data usage policies
 base.monthly2  <- base.monthly2  %>% 
   mutate(data_usage= ifelse(site_id %in% c("CA-NS8","CA-Ojp","CA-Qc2","CA-SJ3","CA-WP1","CA-WP2","CA-WP3",
+                                           "US-Atq","US-Beo","US-Bes","US-Bn1","US-Bn2","US-Bn3","US-Brw",
+                                           "US-HVa","US-Ivo","US-Upa"), "Tier 2", "Tier 1")) %>%
+  mutate(data_usage_ch4= ifelse(site_id %in% c("CA-NS8","CA-Ojp","CA-Qc2","CA-SJ3","CA-WP1","CA-WP2","CA-WP3",
                                            "US-Atq","US-Beo","US-Bes","US-Bn1","US-Bn2","US-Bn3","US-Brw",
                                            "US-HVa","US-Ivo","US-Upa"), "Tier 2", "Tier 1"))
 ### Adding in other variables
