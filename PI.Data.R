@@ -16,10 +16,11 @@ files <- list.files(path= "/Users/iwargowsky/Desktop/Data from PIs",
                     pattern = "*Sonnentag_",all.files = T,recursive = T)
 sonnentag <- files %>%
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999", "NaN")))          
-sonnentag <- sonnentag %>% filter(!site_name=="") #removing blank rows
+sonnentag <- sonnentag %>% dplyr::filter(!site_name=="") #removing blank rows
 
-###Norbert Pink####-------------------------------------------------------------
-pink <- read_csv("ABCfluxv2_finse.csv")
+###Norbert Pirk####-------------------------------------------------------------
+pirk.finse <- read_csv("ABCfluxv2_finse.csv")
+pirk.iskoras <- read_csv("ABCfluxv2_iskoras.csv")
 
 ###Masahito Ueyama####----------------------------------------------------------
 masa <- read_csv("Arctic_Boreal_CO2_Flux_ueyama_V2_2024.03.11.csv")
@@ -53,8 +54,8 @@ group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %
   rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
 
 ###Inge Althuizen ####----------------------------------------------------------
-althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv") %>%
-  filter(nee== ifelse(is.na(gpp), NA, nee)) ### NEE suspiciously high when lacking gpp
+althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv")
+  #filter(nee== ifelse(is.na(gpp), NA, nee)) ### NEE suspiciously high when lacking gpp
 
 ### Christopher Schulze####-----------------------------------------------------
 schulze.ch <- read_csv("ABCflux_SMC_STR_LUT_vCS_2023-12-25.csv") %>% mutate(reco= as.numeric(reco)) #to remove soil respiration data
@@ -63,7 +64,7 @@ schulze.str.ec <- read_csv("ABCflux_STR_vCS_2023-12-25.csv")
 
 ### Vincent Jassey ####---------------------------------------------------------
 jassey <- read_csv("ABCfluxv2.vars_JASSEY.csv")
-jassey <- jassey %>% filter(!site_name== 'Lapazeuil')
+jassey <- jassey %>% dplyr::filter(!site_name== 'Lapazeuil')
 
 ### Alexandre Roy ####----------------------------------------------------------
 roy <- read_csv("ABCflux_MES.csv")
@@ -144,8 +145,8 @@ carey.ec <- read_csv("ABCfluxv2.vars_Carey_Dec20.csv")
 ###Carolina Voigt####-----------------------------------------------------------
 voigt.ch <- read_csv("ABCfluxv2_CarolinaVoigt.csv") %>% 
   mutate(site_reference= ifelse(flux_method_detail== "automated chamber", paste(site_reference, "Automatic Chamber"), site_reference)) %>%
-  filter(!nee_seasonal_interval == "06/27/2019-08/24/2019") %>%
-  filter(!ch4_flux_seasonal_interval =="05/31/2021-06/09/2021")
+  dplyr::filter(!nee_seasonal_interval == "06/27/2019-08/24/2019") %>%
+  dplyr::filter(!ch4_flux_seasonal_interval =="05/31/2021-06/09/2021")
 
 ###Roger Seco####---------------------------------------------------------------
 seco.ec <- read_csv("ABCfluxv2.vars_RogerSeco_birch.csv")
@@ -168,6 +169,12 @@ treat.ch$nee <- treat.ch$nee*0.000001/44.01*12.01
 treat.ch$reco <- treat.ch$reco*0.000001/44.01*12.01
 treat.ch$ch4_flux_total <- treat.ch$ch4_flux_total*0.000001/16.04*12.01
 
+treat.ch <- treat.ch %>% 
+  mutate(nee= ifelse(site_reference %in% c("A3","A4","A5","A6","B3","B4","B5","B6"), NA, nee)) %>%
+  mutate(reco= ifelse(site_reference %in% c("A3","A4","A5","A6","B3","B4","B5","B6"), NA, reco)) %>%
+  mutate(data_contributor_or_author= "Claire Treat, Lona van Delden, Joshua Hashemi") %>%
+  mutate(email= "claire.treat@awi.de; lona.van.delden@awi.de; joshua.hashemi@awi.de")
+
 ###Eeva-Stiina Tuittila/Elisa Männistö####--------------------------------------
 tuittila.ch <- read_csv("ABCfluxv2.vars_Siikaneva2.csv") %>%
   mutate(site_reference= ifelse(!is.na(ch4_flux_total), paste(site_reference, "ch4"), site_reference)) %>%
@@ -187,11 +194,9 @@ bjorkman.ch <- read_csv("Flux Latnjajaure.csv", na= "NA")
 
 ### Alexander Salazar ####------------------------------------------------------
 salazar.ch <- read_csv("ABCfluxv2.vars_AS.csv", na= "NA") %>% 
-    group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
-  dplyr::summarise(across(where(is.numeric), list(mean = mean)),
-                   across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
-  rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
-  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+  mutate(site_reference= ifelse(veg_detail== "Anthelia biocrust", paste(site_reference, "_biocrust", sep= ""), site_reference)) %>%
+  mutate(site_reference= ifelse(veg_detail== "Mixed of moss, lichens and anthelia biocrust", paste(site_reference, "_mixedveg", sep=""), site_reference)) %>%
+  mutate(site_reference= ifelse(veg_detail== "Bare ground", paste(site_reference, "_bareground", sep= ""), site_reference))
 
 ### Kyle Arndt ###--------------------------------------------------------------
 arndt.ec.cf <- read_csv("ABCfluxv2.vars_arndt_cf3.csv")
@@ -205,8 +210,21 @@ marushchak.ch <- read_csv("ABCfluxv2.MaijaMarushchak.csv", na= "NA")
 
 ### Haley Webb ###--------------------------------------------------------------
 webb.ch <- read_csv("ABCfluxv2vars_HWebb.csv", na= "NA") %>%
-  mutate(ch4_flux_total= as.numeric(ch4_flux_total),
-         nee= as.numeric(nee), gpp=as.numeric(gpp), reco= as.numeric(reco)) %>%
+  mutate(site_reference= paste(site_reference, str_split(site_id, "Turetsky_APEXBeta_") %>% sapply(`[`, 2), sep="_"))%>%
+  mutate(month= as.integer(factor(month, levels = month.name)))
+
+#redid unit conversions 
+webb.ch$nee <- webb.ch$nee_0/10^6 *60*60*24*12.01*days_in_month(as.yearmon(paste(webb.ch$year, webb.ch$month,sep = '-')))
+webb.ch$reco<- webb.ch$reco_0/10^6 *60*60*24*12.01*days_in_month(as.yearmon(paste(webb.ch$year, webb.ch$month,sep = '-')))
+webb.ch$gpp <- webb.ch$nee - webb.ch$reco
+webb.ch$ch4_flux_total <- webb.ch$ch4_flux_total_0/10^6*60*24*12.01*days_in_month(as.yearmon(paste(webb.ch$year, webb.ch$month,sep = '-')))
+
+webb.ch$nee_0 <- NULL
+webb.ch$reco_0 <- NULL
+webb.ch$ch4_flux_total_0 <- NULL
+
+
+webb.ch <- webb.ch %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
@@ -236,7 +254,7 @@ stpierre.ch <- read_csv("ABCfluxv2.vars_KSP.csv")
 blancbetes.ch <- read_csv("ABCflux_blanc-betes-with_ch4.csv")
 
 ### Räsänen Aleksi ###----------------------------------------------------------
-rasanen.ch <- read_csv("ABCfluxv2.vars_AR.csv")
+rasanen.ch <- read_csv("ABCfluxv2vars_AR_corrected.csv")
 
 ### Anna Virkkala ###----------------------------------------------------------
 virkkala.2017.ch <- read_csv("abcflux_kilpisjarvi_2017_co2_virkkala_march2024.csv") %>%
@@ -475,7 +493,7 @@ davidson.21.monthly <- davidson.21.monthly %>%
 
 #####Processing Dobosy_Deadhorse_NOAA-ATDD_tower_1_Kochnendorfer#####---------------------------------------------------
 dobosy.all <- read_csv("original files/CO2flux_ADC_Synthesis_Metadata_TOWER_201809_20181005_timeData.csv")
-dobosy <- dobosy.all %>% filter(Study_ID== "Dobosy_Deadhorse_NOAA-ATDD_tower_1_Kochnendorfer") %>%
+dobosy <- dobosy.all %>% dplyr::filter(Study_ID== "Dobosy_Deadhorse_NOAA-ATDD_tower_1_Kochnendorfer") %>%
   group_by(Meas_year, End_month_meas) %>%
   reframe(nee= sum(as.numeric(NEE_gC_m2), na.rm = TRUE),
                    gap_fill_perc= mean(as.numeric(`Gap_%`), na.rm = TRUE),
@@ -552,7 +570,7 @@ tagesson.ec$citation <- "Tagesson, T., Mölder, M., Mastepanov, M., Sigsgaard, C
 tagesson.ec$country <- "Greenland"
 tagesson.ec$latitude <- "74.481511"
 tagesson.ec$longitude <- "-20.555689"
-tagesson.ec$veg_detail <- "High-Arctic heterogeneous wetland area. It is a patterned fen characterized by alternatinghigh, dry heath areas, and low, wet fen areas"
+tagesson.ec$veg_detail <- "High-Arctic heterogeneous wetland area. It is a patterned fen characterized by alternating high, dry heath areas, and low, wet fen areas"
 tagesson.ec$flux_method <- "EC"
 tagesson.ec$flux_method_detail <- "CO2: EC_open CH4: Combination of the gradient and eddy covariance methods"
 tagesson.ec$flux_method_description <- "3-axis sonic anemometer (Metek, Gmbh, Elmshorn,Germany), and an open-path CO2/H2O infrared gas analyzer was installed at 3.3 m above the surface. The gas analyzer was tilted 32°from vertical next to the sonic anemometer. CH4 fluxes were thus estimated by combining gradient and EC methods. The CH4 concentrations were measured at two levels (0.70 and 2.75 m) on the tower at 1 Hz rate. The system consisted of a laser off-axis integrated cavity output spectroscopy analyzer (LGR; DLT200,Fast Methane Analyzer, repeatability 1 ppb at 0.1 Hz, Los Gatos Research, Mountain View, CA, USA"
@@ -578,7 +596,7 @@ tag.ch <- tag.ch %>% mutate(year= year(as.Date(Time, format= "%d.%m.%Y %H:%M:%S"
                             month= month(as.Date(Time, format= "%d.%m.%Y %H:%M:%S")),
                             day= day(as.Date(Time, format= "%d.%m.%Y %H:%M:%S")))
 #remove empty rows
-tag.ch <- tag.ch %>% filter(!if_all("year", ~ is.na(.)))
+tag.ch <- tag.ch %>% dplyr::filter(!if_all("year", ~ is.na(.)))
 #need to convert coordinate units
 library(sf)
 utm_data <- st_as_sf(tag.ch, coords = c("East Coordiante (UTM27x)", "North Coordiante (UTM27x)"), crs = 32627)  # Assuming UTM zone 27
@@ -732,7 +750,7 @@ vaughn.isotopes <- read_csv("NGEEdata/isotopes_concentratons_Barrow_2012_2013.cs
 vaughn <- vaughn.flux %>% full_join(vaughn.soil, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
 vaughn <- vaughn %>% full_join(vaughn.temp, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
 vaughn <- vaughn %>% full_join(vaughn.isotopes, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
-vaughn <- vaughn %>% filter(!is.na(UTM_northing))#removing empty rows
+vaughn <- vaughn %>% dplyr::filter(!is.na(UTM_northing))#removing empty rows
 #add year and month
 vaughn$date <- as.POSIXct(vaughn$date, format= "%Y-%m-%d")
 vaughn <- vaughn %>% mutate(year= year(as.POSIXct(vaughn$date, format= "%Y-%m-%d")), 
@@ -769,7 +787,7 @@ vaughn.monthly <- vaughn %>% group_by(year, month, site_reference, latitude, lon
           thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
           chamber_nr_measurement_days= n_distinct(day))
 #remove rows without flux data
-vaughn.monthly <- vaughn.monthly %>% filter(!if_all(c(nee, reco, ch4_flux_total), ~ is.na(.)))
+vaughn.monthly <- vaughn.monthly %>% dplyr::filter(!if_all(c(nee, reco, ch4_flux_total), ~ is.na(.)))
 #convert units
 vaughn.monthly$nee<- vaughn.monthly$nee*1.0368*days_in_month(as.yearmon(paste(vaughn.monthly$year, vaughn.monthly$month,sep = '-')))
 vaughn.monthly$reco<- vaughn.monthly$reco*1.0368*days_in_month(as.yearmon(paste(vaughn.monthly$year, vaughn.monthly$month,sep = '-')))
@@ -793,7 +811,7 @@ vaughn.monthly$landform <- "Polygonal features"
 
 vaughn.ch <- vaughn.monthly
 ########------COMBINE ALL----------------------------------------------------------------------------------------
-PIdat.ec <- rbindlist(list(sonnentag, pink, masa, boike, jong, sabrekov.ec, dyukarev.ec, roy, 
+PIdat.ec <- rbindlist(list(sonnentag, pirk.finse, pirk.iskoras, masa, boike, jong, sabrekov.ec, dyukarev.ec, roy, 
                            lopezblanco.ec, hung.ec, rautakoski, aurela.lett.ec, aurela.terv,
                            dobosy, tallidart.ec, tagesson.ec, sullivan.ec, hensgens.ec,
                            carey.ec, jansen.ec, seco.ec, pal.bar.ec, pal.oli.ec, 
@@ -804,7 +822,7 @@ PIdat.ec <- rbindlist(list(sonnentag, pink, masa, boike, jong, sabrekov.ec, dyuk
 PIdat.ec$extraction_source <- "User-contributed"
 #remove rows that do not contain flux data
 PIdat.ec <- PIdat.ec %>%
-  filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
+  dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
 
 PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze.ch, jassey, sabrekov.ch, dyukarev.ch, hung.ch,
                             heffernan, davidson.16.monthly, davidson.19.monthly, davidson.21.monthly,
@@ -817,7 +835,7 @@ PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze.ch, jassey, sabreko
 PIdat.ch$extraction_source <- "User-contributed"
 #remove rows that do not contain flux data
 PIdat.ch <- PIdat.ch %>%
-  filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
+  dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
 
 dupes.ec <- PIdat.ec %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method) 
 dupes.ch <- PIdat.ch %>% get_dupes(site_name, site_reference, site_id, year, month)  
