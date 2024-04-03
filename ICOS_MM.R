@@ -198,6 +198,8 @@ alldatpermonth <-alldat.wdupes %>%
   distinct(site_id, year, month, partition_method, .keep_all = TRUE)
 ##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
 
+#adding gap fill method
+alldatpermonth$gap_fill<- "MDS"
 
 ###ICOS Sweden SE-Sto####-----------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ICOS/Se-Sto")
@@ -207,11 +209,11 @@ se.sto.files.eco <- list.files(path = path,pattern = '*SE-Sto_eco_*',all.files =
 se.sto.files.meteo <- list.files(path = path,pattern = '*SE-Sto_meteo_*',all.files = T,recursive = T)
 #cycle through folders and subset for only our variables of interest
 se.sto.flux <- rbindlist(sapply(se.sto.files.flux, fread, simplify = FALSE, na.strings="NaN"), use.names = TRUE, fill= TRUE)  %>%
-  select(date, time, Fch4_f_1_1_1, Reco_f_1_1_1, GPP_f_1_1_1, Reco_1_1_1, NEE_1_1_1 ) %>% filter(!date== "dd/mm/yyyy")
+  select(date, time, Fch4_f_1_1_1, Reco_f_1_1_1, GPP_f_1_1_1, Reco_1_1_1, NEE_1_1_1 ) %>% dplyr::filter(!date== "dd/mm/yyyy")
 se.sto.eco <- rbindlist(sapply(se.sto.files.eco, fread, simplify = FALSE, na.strings="NaN"), use.names = TRUE, fill= TRUE)  %>%
-  select(date, time, starts_with("TS_"), starts_with("SWC_"), starts_with("GWL_") )%>% filter(!date== "dd/mm/yyyy")
+  select(date, time, starts_with("TS_"), starts_with("SWC_"), starts_with("GWL_") )%>% dplyr::filter(!date== "dd/mm/yyyy") 
 se.sto.meteo <- rbindlist(sapply(se.sto.files.meteo, fread, simplify = FALSE, na.strings=c("NaN", "-9999.00000")), use.names = TRUE, fill= TRUE) %>%
-  select(date, time, PPFD_IN_1_2_1, Ta_1_1_1, D_SNOW_1_1_1, P_1_1_1)%>% filter(!date== "dd/mm/yyyy")
+  select(date, time, PPFD_IN_1_2_1, Ta_1_1_1, D_SNOW_1_1_1, P_1_1_1)%>% dplyr::filter(!date== "dd/mm/yyyy")
 #consistent data column formats
 se.sto.flux$date <- as.Date(se.sto.flux$date, format= "%d/%m/%Y")
 se.sto.eco$date <- as.Date(se.sto.eco$date, format= "%d/%m/%Y")
@@ -245,7 +247,7 @@ se.sto.time <- se.sto %>% group_by(date, time) %>%
 
 #remove rows that do not contain flux data
 se.sto.time <- se.sto.time %>%
-  filter(!if_all(c(NEE_CUT_REF, RECO_CUT_REF, GPP_CUT_REF, ch4_flux_total), ~ is.na(.)))
+  dplyr::filter(!if_all(c(NEE_CUT_REF, RECO_CUT_REF, GPP_CUT_REF, ch4_flux_total), ~ is.na(.)))
 
 #create new time columns
 se.sto.time <- se.sto.time %>% mutate(year= year(date), month= month(date))
@@ -276,7 +278,7 @@ se.sto.monthly <- se.sto.monthly %>% dplyr::rename(gap_fill_perc_nee = "percent_
                                                    gap_fill_perc_ch4 = "percent_na_ch4")
 
 #remove 2020 data according to email from Jutta
-se.sto.monthly <- se.sto.monthly %>% filter(!year== 2020)
+se.sto.monthly <- se.sto.monthly %>% dplyr::filter(!year== 2020)
 
 #convert units from umol m-2 s-1 to g C m-2 day-1
 se.sto.monthly$NEE_CUT_REF <- se.sto.monthly$NEE_CUT_REF *1.0368 
@@ -302,6 +304,7 @@ se.sto.monthly$tower_corrections <- ""
 se.sto.monthly$moisture_depth <- "5"
 se.sto.monthly$tsoil_surface_depth <- "5"
 se.sto.monthly$tsoil_deep_depth <- "31"
+se.sto.monthly$gap_fill <- "REddyProc"
 
 #se.sto.monthly$ts <- as.yearmon(paste(se.sto.monthly$year, se.sto.monthly$month, sep="-"))
 #ggplot(data = subset(se.sto.monthly, se.sto.monthly$year== "2020"))+
@@ -327,8 +330,7 @@ allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF* -1
 allICOSpermonth$P_F <- allICOSpermonth$P_F *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 #data usage
 allICOSpermonth$data_usage <- "Tier 1" 
-#adding gap fill method
-allICOSpermonth$gap_fill<- "MDS"
+#flux method
 allICOSpermonth$flux_method <- "EC"
 
 
