@@ -208,7 +208,7 @@ nykanen.ch <- read_csv("Kevo-ABCfluxv_Nykänen_231120.csv")
 ### Maija E. Marushchak ###-----------------------------------------------------
 marushchak.ch <- read_csv("ABCfluxv2.MaijaMarushchak.csv", na= "NA")
 
-### Haley Webb ###--------------------------------------------------------------
+### Hailey Webb ###--------------------------------------------------------------
 webb.ch <- read_csv("ABCfluxv2vars_HWebb.csv", na= "NA") %>%
   mutate(site_reference= paste(site_reference, str_split(site_id, "Turetsky_APEXBeta_") %>% sapply(`[`, 2), sep="_"))%>%
   mutate(month= as.integer(factor(month, levels = month.name)))
@@ -223,6 +223,11 @@ webb.ch$nee_0 <- NULL
 webb.ch$reco_0 <- NULL
 webb.ch$ch4_flux_total_0 <- NULL
 
+##remove outliers
+webb.ch <- webb.ch %>%
+  mutate(ch4_flux_total= ifelse(ch4_flux_total>75, NA, ch4_flux_total)) %>%
+  mutate(nee= ifelse(nee< -500, NA, nee)) %>%
+  mutate(gpp= ifelse(gpp< -500, NA, gpp))
 
 webb.ch <- webb.ch %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
@@ -675,6 +680,12 @@ tag.ch.monthly <- tag.ch.monthly %>%
                               startsWith(site_reference,"Salix snowbed")~"Dominant",
                               startsWith(site_reference,"Vaccinium heath")~"Dominant"))
 tag.ch.monthly$other_moss_cover <- "Present"
+
+##remove extreme methane flux
+tag.ch.monthly <- tag.ch.monthly %>%
+  mutate(ch4_flux_total= ifelse(ch4_flux_total>75, NA, ch4_flux_total))
+
+
 tagesson.ch <- tag.ch.monthly
 #####Margaret Torn/ Sigrid Dengel NGEE####
 #Soil CO2 and CH4 Chamber Fluxes in Tussock Tundra, Council Road Mile Marker 71, Seward Peninsula, Alaska, 2016-2019
@@ -862,7 +873,8 @@ PIdat.ch2 <- PIdat.ch %>%
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-static <- read_csv("static.towersites.csv")
+static <- read_csv("static.towersites.csv") %>% 
+  dplyr::select(-c("tsoil_surface_depth", "tsoil_deep_depth", "tair_height", "moisture_depth", "instrumentation" ))
 #join to fill NAs
 library(rquery)
 PIdat.ec2.static <- natural_join(PIdat.ec2, static, by= "site_reference", jointype= "FULL")
