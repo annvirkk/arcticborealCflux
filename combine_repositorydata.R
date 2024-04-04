@@ -182,8 +182,8 @@ base.renamed <- base  %>% dplyr::rename("site_reference"="site_id",
 #merging
 base.renamed$year <- as.integer(base.renamed$year)
 base.renamed$month <- as.integer(base.renamed$month)
+#merge
 icos.fluxnet.AMF.euro.CH4.base.wdupes <- rbindlist(list(icos.fluxnet.AMF.euro.CH4, base.renamed), fill = TRUE)
-
 #check if there are number of  duplicates
 dupes<- icos.fluxnet.AMF.euro.CH4.base.wdupes  %>% get_dupes(site_reference, year, month) 
 dupes.base <- dupes %>% filter(dupe_count== '3')

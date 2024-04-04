@@ -120,11 +120,11 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.mar24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
-ABC.v2.mar24<- ABC.v2.mar24 %>% select(-starts_with("...")) %>% filter(!site_name== "")
+ABC.v2.apr24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+ABC.v2.apr24<- ABC.v2.apr24 %>% select(-starts_with("...")) %>% filter(!site_name== "")
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-write_csv(ABC.v2.mar24, "ABC.v2.mar24.csv")
+write_csv(ABC.v2.apr24, "ABC.v2.apr24.csv")
 
 
 
