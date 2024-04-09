@@ -51,7 +51,7 @@ group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
-  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+  rename_with(~gsub("_mean", "", .), everything())  # Remove "_mean" from column names
 
 ###Inge Althuizen ####----------------------------------------------------------
 althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv")
@@ -72,6 +72,19 @@ roy <- read_csv("ABCflux_MES.csv")
 ### Jackie Hung ####------------------------------------------------------------
 hung.ec <- read_csv("ABCfluxv2_Hung_tower.csv")
 hung.ch <- read_csv("ABCfluxv2_Hung_chamber.csv")
+hung.ch.ykd <- hung.ch %>%
+  filter(!site_name== "CBAWO wet sedge")%>%
+  mutate(site_reference= ifelse(site_name== "YKD (burned degraded plateau)", "burned degraded plateau", site_reference)) %>%
+  mutate(site_reference= ifelse(site_name== "YKD (burned shrub edge)", "burned shrub edge", site_reference)) %>%
+  mutate(site_reference= ifelse(site_name== "YKD (exposed burned soil)", "exposed burned soil", site_reference)) %>%
+  mutate(site_reference= ifelse(site_name== "YKD (unburned degraded plateau)", "unburned degraded plateau", site_reference)) %>%
+  mutate(site_reference= ifelse(site_name== "YKD (unburned shrub edge)", "unburned shrub edge", site_reference)) %>%
+  mutate(site_reference= ifelse(site_name== "YKD (unburned lichen peat plateau)", "eunburned lichen peat plateau", site_reference)) %>%
+  mutate(site_name= "YKD") %>%
+  mutate(site_reference= paste(site_reference, str_split(site_id, "Hung_YKD") %>% sapply(`[`, 2)), sep="")
+hung.ch.cbawo <- hung.ch %>%
+  filter(site_name== "CBAWO wet sedge")
+
 
 ### Liam Heffernan ####---------------------------------------------------------
 heffernan <- read_csv("ABCfluxv2.vars.liamheffernan.lutose.csv")
@@ -99,7 +112,8 @@ martikainen <- read_csv("Kaamanen aapa mire_Pertti J. Martikainen.csv")
 
 ###Pierre Tallidart#####--------------------------------------------------------
 tallidart.ec <- read_csv("ABCfluxv5_CA-BOU_tower.csv")
-tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv") 
+tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv")%>%
+  mutate(site_reference= str_split(site_id, "Bouleau_") %>% sapply(`[`, 2)) 
 
 ### Kajar Köster ####-----------------------------------------------------------
 koster.ch <- read_csv("ABCfluxv2_Koster.csv")
@@ -112,6 +126,7 @@ sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
   rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
 
+
 ###Patrick Sullivan ####--------------------------------------------------------
 sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
 
@@ -119,12 +134,14 @@ sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
 hensgens.ec <- read_csv("ABCfluxv2.KYT.csv")
 
 ###Danila Illyasov####---------------------------------------------------------
-ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%
+ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%	
+  mutate(site_reference= str_split(site_id, "Ilyasov_Mukhrino_") %>% sapply(`[`, 2)) %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
-  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+  rename_with(~gsub("_mean", "", .), everything()) %>% # Remove "_mean" from column names
+  mutate(site_reference= paste(site_reference, "agg", sep="_"))
 
 
 glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv") %>%
@@ -133,7 +150,8 @@ glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
-  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
+  rename_with(~gsub("_mean", "", .), everything()) %>% # Remove "_mean" from column names
+  mutate(site_reference= paste(site_reference, "agg", sep="_"))
 
 
 ###Joachim Jansen####-----------------------------------------------------------
@@ -234,12 +252,14 @@ webb.ch <- webb.ch %>%
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
-  rename_with(~gsub("_mean", "", .), everything()) # Remove "_mean" from column names
-
+  rename_with(~gsub("_mean", "", .), everything()) %>%# Remove "_mean" from column names
+  mutate(site_reference= paste(site_reference, "agg", sep="_"))
 
 ### Carl-Fredrik Johannesson ###------------------------------------------------
 johannesson.ch <-read_delim("MethaneData_CFJ.csv", delim = ";", escape_double = FALSE, locale = locale(decimal_mark = ",", 
                           encoding = "Latin1"), trim_ws = TRUE)[,-1]
+johannesson.ch  <- johannesson.ch %>%
+  mutate(site_reference= str_split(site_id, "Johannesson_") %>% sapply(`[`, 2), sep="_")
 
 ### David Olefeldt ###----------------------------------------------------------
 olefeldt.ch <- read_csv("ABCflux.kashakempton.lutose.2023.csv")
@@ -249,14 +269,19 @@ prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv")
 prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv")
 
 ### Matthias Goeckede/Abdullah Bolek ###----------------------------------------
-goeckede.1.ec <- read_csv("ABCfluxv2.vars_Tower1.csv")
-goeckede.2.ec <- read_csv("ABCfluxv2.vars_Tower2.csv")
+goeckede.1.ec <- read_csv("ABCfluxv2.vars_Tower1.csv") %>%
+  mutate(site_name="Cherskii")
+goeckede.2.ec <- read_csv("ABCfluxv2.vars_Tower2.csv")%>%
+  mutate(site_name="Cherskii reference")
 
 ### Kyra St.Pierre ###----------------------------------------------------------
 stpierre.ch <- read_csv("ABCfluxv2.vars_KSP.csv")
 
 ### Elena Blanc-Betes ###-------------------------------------------------------
-blancbetes.ch <- read_csv("ABCflux_blanc-betes-with_ch4.csv")
+blancbetes.ch <- read_csv("ABCflux_blanc-betes-with_ch4.csv") %>%
+  mutate(site_name= "Toolik Lake- Long-term US ITEX") %>%
+  mutate(site_reference= str_split(site_id,"Blanc-Betes_ToolikITEX_") %>% sapply(`[`, 2), sep="_")
+
 
 ### Räsänen Aleksi ###----------------------------------------------------------
 rasanen.ch <- read_csv("ABCfluxv2vars_AR_corrected.csv")
@@ -681,7 +706,7 @@ tag.ch.monthly <- tag.ch.monthly %>%
                               startsWith(site_reference,"Vaccinium heath")~"Dominant"))
 tag.ch.monthly$other_moss_cover <- "Present"
 
-##remove extreme methane flux
+##remove outlier methane flux
 tag.ch.monthly <- tag.ch.monthly %>%
   mutate(ch4_flux_total= ifelse(ch4_flux_total>75, NA, ch4_flux_total))
 
@@ -835,8 +860,8 @@ PIdat.ec$extraction_source <- "User-contributed"
 PIdat.ec <- PIdat.ec %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
 
-PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze.ch, jassey, sabrekov.ch, dyukarev.ch, hung.ch,
-                            heffernan, davidson.16.monthly, davidson.19.monthly, davidson.21.monthly,
+PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze.ch, jassey, sabrekov.ch, dyukarev.ch, hung.ch.cbawo,
+                           hung.ch.ykd, heffernan, davidson.16.monthly, davidson.19.monthly, davidson.21.monthly,
                            aurela.lett.ch, martikainen, tallidart.ch, tagesson.ch, chafe.ch, koster.ch,
                            sjogersten.ch, lopezblanco.ch, ilyasov.ch, voigt.ch, glagolev.ch, peichl.deg.ch,
                            treat.ch, tuittila.ch, anthony.ch, vaughn.ch, bjorkman.ch, salazar.ch, nykanen.ch,
@@ -848,8 +873,8 @@ PIdat.ch$extraction_source <- "User-contributed"
 PIdat.ch <- PIdat.ch %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
 
-dupes.ec <- PIdat.ec %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method) 
-dupes.ch <- PIdat.ch %>% get_dupes(site_name, site_reference, site_id, year, month)  
+dupes.ec <- PIdat.ec %>% get_dupes(site_name, site_reference,  year, month, partition_method) 
+dupes.ch <- PIdat.ch %>% get_dupes(site_name, site_reference,  year, month)  
 
 
 PIdat.ec2 <- PIdat.ec %>% 
@@ -886,4 +911,17 @@ PIdat.ec2.static <- natural_join(PIdat.ec2, static, by= "site_reference", jointy
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(PIdat.ec2.static, "PI.data.ec.csv")
 write_csv(PIdat.ch2, "PI.data.ch.csv")
+
+
+
+
+
+#### Finding dataset with both CO2 and CH4 data and gapfill percent 
+
+
+
+
+
+
+
 
