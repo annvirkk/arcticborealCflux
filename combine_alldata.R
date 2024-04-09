@@ -122,6 +122,41 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 
 ABC.v2.apr24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
 ABC.v2.apr24<- ABC.v2.apr24 %>% select(-starts_with("...")) %>% filter(!site_name== "")
+#x<- ABC.v2.apr24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
+
+###preliminary cleaning of site names
+ABC.v2.apr24 <- ABC.v2.apr24 %>% 
+  mutate(site_name= ifelse(site_name %in% c("Utqia?vik", "Utqiaġvik"),"Utqiagvik" , site_name) ) %>%
+  mutate(site_name= ifelse(site_name %in% c("Utqia?vik North", "Utqiaġvik North"), "Utqiagvik North", site_name) ) %>%
+  mutate(site_name= ifelse(site_name %in% c("Utqia?vik South", "Utqiaġvik South"), "Utqiagvik South", site_name) ) %>%
+  mutate(site_name= ifelse(site_name %in% c("Utqia?vik Central", "Utqiaġvik Central"), "Utqiagvik Central", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Alberta - Western Peatland - LaBiche River,Black Spruce/Larch Fen", "Alberta - Western Peatland - LaBiche River,Black Spruce,Larch Fen", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Lac Le Caron (hereafter referred to as LLC) peatland, an ombrotrophic bog\xa0", "Lac Le Caron peatland, an ombrotrophic bog", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Knott\xe5sen" , "Knottasen" , site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Särkkä", "Sarkka", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "NyÅlesund, Spitzbergen", "Nyalesund, Spitzbergen", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Sodankylä", "Sodankyla", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Ränskälänkorpi", "Ranskalankorpi", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Ränskälänkorpi, Continuous cover forestry treatment", "Ranskalankorpi, Continuous cover forestry treatment", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Hälsingfors", "Halsingfors", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Hålmyran", "Halmyran", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Stortjärn", "Stortjarn", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Blæsedalen", "Blaesedalen", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Degerö", "Degero", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Värriö", "Varrio", site_name) ) %>%
+  mutate(site_name= ifelse(site_name == "Iškoras", "Iskoras", site_name) ) 
+
+ABC.v2.apr24 <- ABC.v2.apr24 %>% 
+  mutate(site_reference= ifelse(site_reference == "Värriö_Grazed", "Varrio_Grazed" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_reference == "Värriö_non-grazed", "Varrio_non-grazed" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_reference == "Värriö_Fire45", "Varrio_Fire45" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_reference == "Värriö_Fire65", "Varrio_Fire65" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_reference == "Värriö_Fire155", "Varrio_Fire155" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_reference == "Värriö_Fire5", "Varrio_Fire5" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_name == "Svalbard", "Bjornedalen" , site_reference) ) %>%
+  mutate(site_reference= ifelse(site_reference == "Utqiaġvik plots aggregated", "Utqiagvik plots aggregated" , site_reference) ) 
+  
+
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
 write_csv(ABC.v2.apr24, "ABC.v2.apr24.csv")
