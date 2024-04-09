@@ -25,6 +25,16 @@ CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM
 ###  Adding gap_fill_perc####
 CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc_ch4= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
                                                              FCH4_F_ANNOPTLM_QC %in% 1 ~0))
+
+##some extreme partitiioned fluxes that we want to remove
+CH4fluxnet <- CH4fluxnet %>%
+  mutate(GPP_DT= ifelse(GPP_DT> 1000, NA, GPP_DT)) %>%
+  mutate(GPP_NT= ifelse(GPP_NT> 1000, NA, GPP_NT)) %>%
+  mutate(RECO_DT= ifelse(RECO_DT> 1000, NA, RECO_DT)) %>%
+  mutate(RECO_NT= ifelse(RECO_NT> 1000, NA, RECO_NT))
+
+
+
 #add month and year columns
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
