@@ -71,13 +71,12 @@ setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/Brown lemming herbiv
 fluxes <- read_csv("Plein_et_al__Carbon_Flux_Data.csv")
 enviro <- read_csv("Plein_et_al__Environmental_Data.csv") #has mutliple "date" columns so we'll split into 2 dfs
 TDSM <- enviro %>% select('Year', 'Plot set', 'Treatment', 'Date_TDSM', 'Thaw Depth (cm)','Soil Moisture (%)') %>%
-  dplyr::rename(Date = Date_TDSM)
+  dplyr::rename("Date" = "Date_TDSM")
 STAT <- enviro %>% select('Year', 'Plot set', 'Treatment', 'Date_STAT', 'Soil Temp. (°C)', 'Air Temp. (°C)')%>%
-  dplyr::rename(Date = Date_STAT)
+  dplyr::rename("Date" = "Date_STAT")
 ndvi <- read_csv("Plein_et_al__NDVI_Data.csv")
 #merge data files
-dflist <- list(fluxes, STAT, TDSM, ndvi)
-pleindat <- dflist %>% reduce(full_join, by= c("Year", "Plot set", "Treatment", "Date"))
+pleindat <- rbindlist(list(fluxes, STAT, TDSM, ndvi), fill = TRUE)
 pleindat <- pleindat %>% filter(Treatment== "Control") %>% # we only want control plots
   mutate(year= year(as.Date(Date, format= "%d-%b-%y")), #adding year and month columns
          month= month(as.Date(Date, format= "%d-%b-%y")))
@@ -93,7 +92,7 @@ pleindat <- pleindat %>%
                 soil_moisture="Soil Moisture (%)" )
 #summarize by month
 pleindat.monthly <- pleindat %>% group_by(year, month) %>%
-  summarise(ch4_flux_total= mean(ch4_flux_total, na.rm = TRUE),
+  dplyr::summarise(ch4_flux_total= mean(ch4_flux_total, na.rm = TRUE),
             nee= mean(nee, na.rm = TRUE),
             gpp= mean(gpp, na.rm = TRUE),
             reco= mean(reco, na.rm = TRUE),
@@ -105,7 +104,7 @@ pleindat.monthly <- pleindat %>% group_by(year, month) %>%
 #convert units 
 pleindat.monthly$ch4_flux_total <- pleindat.monthly$ch4_flux_total /1000 * 24 *days_in_month(as.yearmon(paste(pleindat.monthly$year,pleindat.monthly$month,sep = '-')))
 pleindat.monthly$nee <- pleindat.monthly$nee * 24 *days_in_month(as.yearmon(paste(pleindat.monthly$year,pleindat.monthly$month,sep = '-')))
-pleindat.monthly$gpp <- pleindat.monthly$gpp * 24 *days_in_month(as.yearmon(paste(pleindat.monthly$year,pleindat.monthly$month,sep = '-')))
+pleindat.monthly$gpp <- pleindat.monthly$gpp * 24 *-1 *days_in_month(as.yearmon(paste(pleindat.monthly$year,pleindat.monthly$month,sep = '-')))
 pleindat.monthly$reco <- pleindat.monthly$reco * 24 *days_in_month(as.yearmon(paste(pleindat.monthly$year,pleindat.monthly$month,sep = '-')))
 
 ##adding in other vars
@@ -238,7 +237,7 @@ tutakoke <- tutakoke %>% mutate( year = '2015',
                                  month= month(as.Date(doy, origin= "2014-12-31")),
                                  day= day(as.Date(doy, origin= "2014-12-31"))) #add in time vars
 tutakoke.monthly <- tutakoke %>% group_by(year, month, ID3) %>% #summarise by month and group by plot veg type
-  summarise(nee= mean(Flux[lt_dk=='0'], na.rm = TRUE),
+  dplyr::summarise(nee= mean(Flux[lt_dk=='0'], na.rm = TRUE),
             reco= mean(Flux[lt_dk=='1'], na.rm = TRUE),
             ch4_flux_total= mean(CH4flux, na.rm = TRUE),
             tsoil_surface= mean(SoilT, na.rm = TRUE),
@@ -262,11 +261,12 @@ climate <- read_csv("TutakokeWeatherData2015.csv")
 climate <- climate %>% dplyr::rename(year= Year) %>%
   mutate(month= month(as.Date(Date_Time, format= "%m/%d/%y")))
 climate.monthly <- climate %>% group_by(year, month) %>%
-  summarise(tair= mean(Ave_AirT_DegC, na.rm = TRUE),
+  dplyr::summarise(tair= mean(Ave_AirT_DegC, na.rm = TRUE),
             ppfd= mean(`PAR_Avg_umol/s/m^2`, na.rm = TRUE),
             precip= sum(Rain_mm))
 climate.monthly <- climate.monthly %>% filter(!month==8)
-climate.monthly <-climate.monthly %>% mutate(year= as.character(year))
+climate.monthly <-climate.monthly %>% mutate(year= as.numeric(year))
+tutakoke.monthly <- tutakoke.monthly %>% mutate(year= as.numeric(year))
 tutakoke.monthly <- full_join(tutakoke.monthly, climate.monthly)
 #Adding in static vars
 tutakoke.monthly$site_name <- "Tutakoke Field Site"
@@ -302,7 +302,7 @@ barrow <- barrow %>% mutate(year= year(as.Date(date, format= "%m/%d/%y")),
 barrow <- barrow[!is.na(barrow$ch4.rep1.flux.ug.m2.hour),]
 #summarise
 barrow.monthly <- barrow %>% group_by(year, month, chamber.type) %>%
-  summarise(ch4_flux_total= mean(c(ch4.rep1.flux.ug.m2.hour, ch4.rep2.flux.ug.m2.hour), na.rm= TRUE),
+ dplyr::summarise(ch4_flux_total= mean(c(ch4.rep1.flux.ug.m2.hour, ch4.rep2.flux.ug.m2.hour), na.rm= TRUE),
             thaw_depth= mean(thaw.depth.cm, na.rm = TRUE),
             water_table_depth= mean(water.table.cm, na.rm = TRUE),
             latitude= mean(dgps.lat),
@@ -343,9 +343,10 @@ friedman.monthly <- friedman %>% filter(Collar=="Control") %>%
          month= month(as.Date(Date, format= "%m/%d/%y")),
          day= day(as.Date(Date, format= "%m/%d/%y"))) %>% 
   dplyr::rename(site_reference= Polygon) %>%
-  group_by(year, month, site_reference) %>% summarise(ch4_flux_total= mean(CH4_Flux, na.rm = TRUE),
-                                               nee= mean(C02_Flux, na.rm = TRUE),
-                                               chamber_nr_measurement_days= n_distinct(day))
+  group_by(year, month, site_reference) %>% 
+  dplyr::summarise(ch4_flux_total= mean(CH4_Flux, na.rm = TRUE),
+                   nee= mean(C02_Flux, na.rm = TRUE),
+                   chamber_nr_measurement_days= n_distinct(day))
 #change units from mgC/m2/h to gC/m2/month
 friedman.monthly$ch4_flux_total <- friedman.monthly$ch4_flux_total/1000*24*days_in_month(as.yearmon(paste(friedman.monthly$year, friedman.monthly$month,sep = '-')))
 friedman.monthly$nee <- friedman.monthly$nee/1000*24*days_in_month(as.yearmon(paste(friedman.monthly$year, friedman.monthly$month,sep = '-')))
