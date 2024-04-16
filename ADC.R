@@ -9,6 +9,8 @@ library(tidyr)
 library(vctrs)
 library(gdata)
 library(tidyverse)
+library(DataCombine)
+library(janitor)
 ###Carbon dioxide fluxes by the AmeriFlux network (dat1) COMPLETED####
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
 path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
@@ -391,25 +393,32 @@ wilkman <- FindReplace(data = as.data.frame(wilkman), Var = "Depth", replaceData
                                          from = "from", to = "to", exact = FALSE)
 #summarise soil info by month 
 wilkman.soilmonthly <- wilkman %>% group_by(year, month, Depth) %>%
-  summarise(soil_moisture= mean(Saturation, na.rm = TRUE),
+  dplyr::summarise(soil_moisture= mean(Saturation, na.rm = TRUE),
             tsoil= mean(Temperature, na.rm = TRUE),
             thaw_depth= mean(Thaw, na.rm = TRUE))%>%
   mutate(tsoil_surface= case_when(Depth %in% c("0","10","7")~ tsoil),
          tsoil_deep= case_when(Depth %in% c("30","15","20","40")~ tsoil),
          tsoil_surface_depth= case_when(Depth %in% c("0","10","7")~ Depth),
-         tsoil_deep_depth= case_when(Depth %in% c("30","15","20","40")~ Depth))
+         tsoil_deep_depth= case_when(Depth %in% c("30","15","20","40")~ Depth))%>% 
+  group_by(year, month) %>%
+  dplyr::summarise(soil_moisture= mean(soil_moisture, na.rm = TRUE),
+                   tsoil_surface= mean(tsoil_surface, na.rm = TRUE),
+                   tsoil_surface_depth= mean(tsoil_surface_depth, na.rm = TRUE),
+                   tsoil_deep= mean(tsoil_deep, na.rm = TRUE),
+                   tsoil_deep_depth= mean(tsoil_deep_depth, na.rm = TRUE),
+                   thaw_depth= mean(thaw_depth, na.rm = TRUE))
 wilkman.soilmonthly$Depth <- NULL
 wilkman.soilmonthly$tsoil <- NULL
 #summarise flux by month 
 wilkman.monthly <- wilkman %>% group_by(year, month) %>%
-  summarise(nee= mean(CO2_flx_gC_d, na.rm = TRUE),
-            percent_na = (sum(is.na(CO2_flx_gC_d))/n()*100))
+  dplyr::summarise(nee= mean(CO2_flx_gC_d, na.rm = TRUE),
+            percent_na_nee = (sum(is.na(CO2_flx_gC_d))/n()*100))
 #merge together
 wilkman.monthly <- merge(wilkman.monthly, wilkman.soilmonthly, by= c("year", "month"))
 
 #adding static info
-wilkman.monthly$site_id <- "US-Bes"
-wilkman.monthly$site_name <- "Barrow-Biocomplexity Experiment South"
+wilkman.monthly$site_reference <- "US-Bes"
+wilkman.monthly$site_name <- "Barrow-BES"
 wilkman.monthly$email <- "ewilkman-w@sdsu.edu"
 wilkman.monthly$data_contributor_or_author <- "Eric Wilkman"
 wilkman.monthly$citation <- "doi:10.18739/A20P0WR91"
@@ -445,15 +454,16 @@ names(zona.2)<- substr(files2, 1,3)
 zona.dat <- bind_rows(zona.2, .id = "site_id")
 #monthly means
 zona.monthly <- group_by(zona.dat, year, month, site_id) %>% 
-  dplyr::summarise( ch4_flux_total = mean(ch4_flux, na.rm = TRUE),
+  dplyr::summarise( ch4_flux_total = mean(as.numeric(ch4_flux), na.rm = TRUE),
                     percent_na_ch4 = (sum(is.na(ch4_flux))/n()*100),
-                    nee = mean(co2_flux, na.rm = TRUE),
+                    nee = mean(as.numeric(co2_flux), na.rm = TRUE),
                     percent_na_nee = (sum(is.na(co2_flux))/n()*100),
-                    tair = mean(air_temperature, na.rm = TRUE))
+                    tair = mean(as.numeric(air_temperature), na.rm = TRUE))
 #remove rows without flux data
 zona.monthly <- zona.monthly %>% filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
+#time formats
 #convert units umol m-2 s-1 to g C m-2 month-1
-zona.monthly$nee <- zona.monthly$nee *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month,sep = '-')))
+zona.monthly$nee <- zona.monthly$nee *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month ,sep = '-')))
 zona.monthly$ch4_flux_total <- zona.monthly$ch4_flux_total *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month,sep = '-')))
 zona.monthly$tair <- zona.monthly$tair -273.15
 #Change site_id names
@@ -543,7 +553,7 @@ meteo.monthly <- group_by( meteo, year, month, site_id) %>%
   dplyr::summarise( ppfd = mean(ppfd, na.rm = FALSE),
                     tsoil_surface = mean(tsoil_surface, na.rm = FALSE),
                     tsoil_deep = mean(tsoil_deep, na.rm = FALSE),
-                    tair = mean(tair, na.rm = FALSE),
+                    #tair = mean(tair, na.rm = FALSE), tair from zona.monthly is more gapfilled
                     precip = sum(precip, na.rm = FALSE),
                     soil_moisture = mean(soil_moisture, na.rm = TRUE),
                     snow_depth = mean(snow_depth, na.rm = TRUE),
@@ -551,17 +561,27 @@ meteo.monthly <- group_by( meteo, year, month, site_id) %>%
                     tsoil_deep_depth = mean(as.numeric(tsoil_deep_depth), na.rm = TRUE),
                     moisture_depth = mean(as.numeric(moisture_depth), na.rm = FALSE)) 
 
+
+zona.dat.full <- full_join(zona.monthly, meteo.monthly, by= c("site_id", "year", "month")) %>%
+  dplyr::rename("site_reference"= "site_id")
+
 ###Merging for gapfilling exercise####
-zona.dat <- zona.dat %>%  mutate(site_id= case_when(site_id %in% 'ATQ'~ "US-Atq",
-                                                     site_id %in% 'BES'~ "US-Bes",
-                                                     site_id %in% 'BEO'~ "US-Beo",
-                                                     site_id %in% 'CMD'~ "US-Brw",
-                                                     site_id %in% 'IVO'~ "US-Ivo")) %>%
-  mutate(air_temperature = as.integer(air_temperature)-273.15)
+# zona.dat <- zona.dat %>%  mutate(site_id= case_when(site_id %in% 'ATQ'~ "US-Atq",
+#                                                      site_id %in% 'BES'~ "US-Bes",
+#                                                      site_id %in% 'BEO'~ "US-Beo",
+#                                                      site_id %in% 'CMD'~ "US-Brw",
+#                                                      site_id %in% 'IVO'~ "US-Ivo")) %>%
+#   mutate(air_temperature = as.integer(air_temperature)-273.15)
+# 
+# zona.HH <- left_join(zona.dat, meteo, by=c('site_id', 'year', 'month'))
+#adding static info
+zona.dat.full$email <- "dzona@mail.sdsu.edu"
+zona.dat.full$data_contributor_or_author <- "Donatella Zona"
+zona.dat.full$citation <- "doi:10.18739/A20Z70Z1H"
 
-zona.HH <- left_join(zona.dat, meteo, by=c('site_id', 'year', 'month'))
 
-dat2 <- left_join(zona.monthly, meteo.monthly, by=c('site_id', 'year', 'month'))
+
+dat2 <- zona.dat.full
 
 
 
@@ -569,9 +589,15 @@ dat2 <- left_join(zona.monthly, meteo.monthly, by=c('site_id', 'year', 'month'))
 
 
 ####FINAL COMBINE######-----------------------------
-#ADC.ec <- rbindlist(list(dat1, dat2, dat10 ), fill = TRUE)   DATA IS NOT GAPFILLED
-#ADC.ec$extraction_source <- "Arctic Data Center"
-#ADC.ec$data_usage <- "Tier 1"
+ADC.ec <- rbindlist(list( dat2, dat10 ), fill = TRUE) 
+#turn NaN into NA
+ADC.ec<- ADC.ec  %>% mutate_all(~ifelse(is.nan(.), NA, .))
+#remove rows that do not contain flux data
+ADC.ec  <- ADC.ec %>% filter(!if_all(c(nee, ch4_flux_total), ~ is.na(.)))
+
+ADC.ec$extraction_source <- "Arctic Data Center"
+ADC.ec$data_usage <- "Tier 1"
+ADC.ec$dataentry_person <- "Isabel"
 ADC.ch <- rbindlist(list(dat3, dat4, dat5, dat6, dat7, dat8), fill = TRUE)
 ADC.ch$extraction_source <- "Arctic Data Center"
 ADC.ch$dataentry_person <- "Isabel"
@@ -588,7 +614,17 @@ ADC.ch<- ADC.ch %>%
 
 
 
+ADC.ec<- ADC.ec %>% 
+  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
+  mutate(citation_co2 = ifelse(!is.na(nee) , citation, NA)) %>%
+  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total), extraction_source, NA)) %>%
+  mutate(extraction_source_co2 = ifelse(!is.na(nee), extraction_source, NA)) %>%
+  mutate(citation = NULL, extraction_source= NULL)
+
+
+dupes<- ADC.ec %>% get_dupes(site_reference, year, month)
+#no dupes 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
-#write_csv(ADC.ec, "ADC.ec.csv")
+write_csv(ADC.ec, "ADC.ec.csv")
 write_csv(ADC.ch, "ADC.ch.csv")
