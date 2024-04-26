@@ -312,6 +312,9 @@ barrow.monthly <- barrow %>% group_by(year, month, chamber.type) %>%
             chamber_nr_measurement_days= n_distinct(day))
 #change units from ug m-2 hr-1
 barrow.monthly$ch4_flux_total <- barrow.monthly$ch4_flux_total*24*0.000001*days_in_month(as.yearmon(paste(barrow.monthly$year, barrow.monthly$month,sep = '-')))
+#change units from mm to cm
+barrow.monthly$thaw_depth <- barrow.monthly$thaw_depth/100
+barrow.monthly$water_table_depth <- barrow.monthly$water_table_depth/100
 #chambers are grouped by location (chamber.type) this will be site_reference
 barrow.monthly <- barrow.monthly %>% dplyr::rename(site_reference= chamber.type)
 barrow.monthly$site_reference[barrow.monthly$site_reference == "fc"] <- "Flat Center"
@@ -401,12 +404,12 @@ wilkman.soilmonthly <- wilkman %>% group_by(year, month, Depth) %>%
          tsoil_surface_depth= case_when(Depth %in% c("0","10","7")~ Depth),
          tsoil_deep_depth= case_when(Depth %in% c("30","15","20","40")~ Depth))%>% 
   group_by(year, month) %>%
-  dplyr::summarise(soil_moisture= mean(soil_moisture, na.rm = TRUE),
-                   tsoil_surface= mean(tsoil_surface, na.rm = TRUE),
-                   tsoil_surface_depth= mean(tsoil_surface_depth, na.rm = TRUE),
-                   tsoil_deep= mean(tsoil_deep, na.rm = TRUE),
-                   tsoil_deep_depth= mean(tsoil_deep_depth, na.rm = TRUE),
-                   thaw_depth= mean(thaw_depth, na.rm = TRUE))
+  dplyr::summarise(soil_moisture= mean(as.numeric(soil_moisture), na.rm = TRUE),
+                   tsoil_surface= mean(as.numeric(tsoil_surface), na.rm = TRUE),
+                   tsoil_surface_depth= mean(as.numeric(tsoil_surface_depth), na.rm = TRUE),
+                   tsoil_deep= mean(as.numeric(tsoil_deep), na.rm = TRUE),
+                   tsoil_deep_depth= mean(as.numeric(tsoil_deep_depth), na.rm = TRUE),
+                   thaw_depth= mean(as.numeric(thaw_depth), na.rm = TRUE))
 wilkman.soilmonthly$Depth <- NULL
 wilkman.soilmonthly$tsoil <- NULL
 #summarise flux by month 
@@ -415,6 +418,8 @@ wilkman.monthly <- wilkman %>% group_by(year, month) %>%
             percent_na_nee = (sum(is.na(CO2_flx_gC_d))/n()*100))
 #merge together
 wilkman.monthly <- merge(wilkman.monthly, wilkman.soilmonthly, by= c("year", "month"))
+#convert units
+wilkman.monthly$nee <- wilkman.monthly$nee *days_in_month(as.yearmon(paste(wilkman.monthly$year, wilkman.monthly$month,sep = '-')))
 
 #adding static info
 wilkman.monthly$site_reference <- "US-Bes"
@@ -452,6 +457,14 @@ zona.2 <- lapply(zona.2, function(df) df %>%
 #turn list  into one df
 names(zona.2)<- substr(files2, 1,3) 
 zona.dat <- bind_rows(zona.2, .id = "site_id")
+
+#remove outliers
+zona.dat <- zona.dat %>%
+  mutate(co2_flux= ifelse(as.numeric(co2_flux) >1000, NA, co2_flux),
+         ch4_flux= ifelse(as.numeric(ch4_flux) >100, NA, ch4_flux)) %>%
+  mutate(co2_flux= ifelse(as.numeric(co2_flux) < -1000, NA, co2_flux),
+         ch4_flux= ifelse(as.numeric(ch4_flux) < -100, NA, ch4_flux),
+         air_temperature= ifelse(as.numeric(air_temperature) >500, NA, air_temperature))
 #monthly means
 zona.monthly <- group_by(zona.dat, year, month, site_id) %>% 
   dplyr::summarise( ch4_flux_total = mean(as.numeric(ch4_flux), na.rm = TRUE),
@@ -459,6 +472,7 @@ zona.monthly <- group_by(zona.dat, year, month, site_id) %>%
                     nee = mean(as.numeric(co2_flux), na.rm = TRUE),
                     percent_na_nee = (sum(is.na(co2_flux))/n()*100),
                     tair = mean(as.numeric(air_temperature), na.rm = TRUE))
+
 #remove rows without flux data
 zona.monthly <- zona.monthly %>% filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
 #time formats
@@ -466,6 +480,8 @@ zona.monthly <- zona.monthly %>% filter(if_any(c('nee', 'ch4_flux_total'), ~ !is
 zona.monthly$nee <- zona.monthly$nee *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month ,sep = '-')))
 zona.monthly$ch4_flux_total <- zona.monthly$ch4_flux_total *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month,sep = '-')))
 zona.monthly$tair <- zona.monthly$tair -273.15
+
+
 #Change site_id names
 zona.monthly <- zona.monthly %>%
   mutate(site_id= case_when(site_id %in% 'ATQ'~ "US-Atq",
@@ -476,27 +492,27 @@ zona.monthly <- zona.monthly %>%
 #####adding in meteorological vars
 ##There is not a consistent naming format for these data between sites
 #ATQ 
-ATQ1 <- read_csv("ATQ_meteo_2013-2017.csv") #these two have the same format so I'll process them together
-ATQ3 <- read_csv("ATQ_meteo_2019_2022.csv")
-ATQ1.3 <- bind_rows(ATQ1, ATQ3) %>% 
+ATQ1 <- read_csv("ATQ_meteo_2013-2017.csv", na= c("-6999", "-9999", "6999")) #these two have the same format so I'll process them together
+ATQ3 <- read_csv("ATQ_meteo_2019_2022.csv", na= c("-6999", "-9999", "6999"))
+ATQ1.3 <- rbindlist(list(ATQ1, ATQ3), fill= TRUE )%>% 
   select(year, month, `PAR_AVG  L`,  `Soil_1_AVG  L`,`Soil_2_AVG  L`, 
          `Air_T_AVG  L`, `PPT_TOT  L`, `SWC_1_AVG  L`, `SnowDepth  L`) %>%
   dplyr::rename(ppfd=`PAR_AVG  L`, tsoil_surface= `Soil_1_AVG  L`,
                 tsoil_deep = `Soil_2_AVG  L`, tair=`Air_T_AVG  L`, precip= `PPT_TOT  L`, 
                 soil_moisture= `SWC_1_AVG  L`, snow_depth = `SnowDepth  L`)
-ATQ2 <- read_csv("ATQ_meteo_2018_2019.csv") %>% 
+ATQ2 <- read_csv("ATQ_meteo_2018_2019.csv", na= c("-6999", "-9999", "6999")) %>% 
   select(year, month, PAR_AVG_L, Soil_1_AVG_L, Soil_2_AVG_L, Air_T_AVG_L, 
          PPT_TOT_L, SWC_1_AVG_L, SnowDepth_L) %>%
   dplyr::rename(ppfd= PAR_AVG_L, tsoil_surface=Soil_1_AVG_L, 
                 tsoil_deep= Soil_2_AVG_L, tair= Air_T_AVG_L, precip= PPT_TOT_L,
                 soil_moisture=SWC_1_AVG_L, snow_depth=SnowDepth_L ) 
-ATQ <- bind_rows(ATQ1.3, ATQ2) %>%  
+ATQ <- rbindlist(list(ATQ1.3, ATQ2), fill= TRUE)%>%  
   mutate(tsoil_surface_depth= '5', tsoil_deep_depth= '15', moisture_depth= '5', site_id= 'US-Atq')
 #BEO 
-BEO1 <- read_csv("BEO_meteo_2013_2017.csv") #all have same format
-BEO2 <- read_csv("BEO_meteo_2017_2019.csv")
-BEO3 <- read_csv("BEO_meteo_2019_2022.csv")
-BEO <- bind_rows(list(BEO1, BEO2, BEO3)) %>%
+BEO1 <- read_csv("BEO_meteo_2013_2017.csv", na= c("-999999", "99999") ) #all have same format
+BEO2 <- read_csv("BEO_meteo_2017_2019.csv", na= c("-999999", "99999"))
+BEO3 <- read_csv("BEO_meteo_2019_2022.csv", na= c("-999999", "99999"))
+BEO <- rbindlist(list(BEO1, BEO2, BEO3), fill= TRUE) %>%
   select(year, month, PAR_Up_AVG, HMP_AirT_AVG, ST_1_AVG, ST_2_AVG, 
          Rain_tot, `Snow depth sensor`, `SCW_High-10cm`) %>%
   dplyr::rename(ppfd= PAR_Up_AVG, tair= HMP_AirT_AVG, 
@@ -504,34 +520,34 @@ BEO <- bind_rows(list(BEO1, BEO2, BEO3)) %>%
                 soil_moisture= `SCW_High-10cm`, snow_depth=`Snow depth sensor`) %>%
   mutate(tsoil_surface_depth= '10', tsoil_deep_depth= '20', moisture_depth= '10', site_id= 'US-Beo')
 #BES 
-BES1 <- read_csv("BES_meteo_2013_2017.csv") #these two have the same format so I'll process them together
-BES3 <- read_csv("BES_meteo_2017_2019.csv")
-BES1.3 <- bind_rows(BES1, BES3) %>%
+BES1 <- read_csv("BES_meteo_2013_2017.csv", na= c("-999999", "99999")) #these two have the same format so I'll process them together
+BES3 <- read_csv("BES_meteo_2017_2019.csv", na= c("-999999", "99999"))
+BES1.3 <- rbindlist(list(BES1, BES3), fill= TRUE )%>%
  select(year, month, PAR_Up_AVG, HMP_AirT_AVG, ST_1_AVG, ST_2_AVG,
          Rain_tot, `Snow depth sensor`, `SCW_High-10cm`)%>%
   dplyr::rename(ppfd= PAR_Up_AVG, tair= HMP_AirT_AVG, 
                 tsoil_surface= ST_1_AVG, tsoil_deep= ST_2_AVG, precip= Rain_tot,
                 soil_moisture= `SCW_High-10cm`, snow_depth=`Snow depth sensor`) 
-BES2 <- read_csv("BES_meteo_2019_2022.csv") %>%
+BES2 <- read_csv("BES_meteo_2019_2022.csv", na= c("-999999", "99999")) %>%
   select(year, month, HMP_AirT_AVG, SoilD_T_1_AVG, SoilD_T_2_AVG, PAR_In_AVG, VWC_1_AVG) %>%
   dplyr::rename(ppfd= PAR_In_AVG, tair= HMP_AirT_AVG, tsoil_surface=  SoilD_T_1_AVG, 
                 tsoil_deep= SoilD_T_2_AVG, soil_moisture= VWC_1_AVG)
-BES <- bind_rows(list(BES1.3, BES2)) %>%
+BES <- rbindlist(list(BES1.3, BES2), fill= TRUE) %>%
   mutate(tsoil_surface_depth= '10', tsoil_deep_depth= '20', moisture_depth= '10', site_id= 'US-Bes')
 #CMDL
-CMDL1 <- read_csv("CMDL_meteo_2013-2017.csv",locale=locale(encoding="latin1")) 
-CMDL3 <- read_csv("CMDL_meteo_2019_2022.csv",locale=locale(encoding="latin1"))
-CMDL1.3 <- bind_rows(CMDL1, CMDL3) %>%
+CMDL1 <- read_csv("CMDL_meteo_2013-2017.csv",locale=locale(encoding="latin1"), na= c("-6999", "-9999") )
+CMDL3 <- read_csv("CMDL_meteo_2019_2022.csv",locale=locale(encoding="latin1"), na= c("-6999", "-9999"))
+CMDL1.3 <- rbindlist(list(CMDL1, CMDL3), fill= TRUE) %>%
   select(year, month, PAR_AVG, Air_T_AVG, tsoil_surface, tsoil_deep, soil_moisture, PPT) %>%
   #note: I had to change column names in excel bc R wouldn't recognize original names
   #soil_moisture= "SWC1_0_5_AVG  L", tsoil_surface= "SoilT1_5_AVG  L", tsoil_deep= "SoilT1_15_AVG  L"
   dplyr::rename(ppfd= PAR_AVG, tair= Air_T_AVG, precip= PPT)
-CMDL2 <- read_csv("CMDL_meteo_2018_2019.csv") %>%
+CMDL2 <- read_csv("CMDL_meteo_2018_2019.csv", na= c("-6999", "-9999") )%>%
   select(year, month, PAR_AVG, Air_T_AVG, PPT, SWC1_0_10_AVG_L, SoilT1_5_AVG_L,
          SoilT1_15_AVG_L,SnowDepth_AVG ) %>%
   dplyr::rename(ppfd= PAR_AVG, tair= Air_T_AVG, precip= PPT, soil_moisture= SWC1_0_10_AVG_L,
                 tsoil_surface= SoilT1_5_AVG_L, tsoil_deep= SoilT1_15_AVG_L, snow_depth= SnowDepth_AVG) 
-CMDL <- bind_rows(CMDL1.3, CMDL2) %>%
+CMDL <- rbindlist(list(CMDL1.3, CMDL2) , fill= TRUE)%>%
   mutate(tsoil_surface_depth= '5', tsoil_deep_depth= '15', moisture_depth= '10', site_id= "US-Brw")
 #IVO
 IVO1 <- read_csv("IVO_meteo_2013_2017.csv") 
@@ -547,20 +563,28 @@ IVO <- bind_rows(IVO1.1, IVO2.1, IVO3.1) %>%
                 tsoil_deep= SoilT1_15_Avg, soil_moisture= `P1_5.cm`, snow_depth= Snow_Depth_Avg ) %>%
   mutate(tsoil_surface_depth= '5', tsoil_deep_depth= '15', moisture_depth= '5', site_id= "US-Ivo")
 
-meteo <- bind_rows(ATQ, BES, BEO, CMDL, IVO)
+meteo <- rbindlist(list(ATQ, BES, BEO, CMDL, IVO), fill= TRUE)
 
+#remove outliers
+meteo <- meteo %>%
+  mutate(tsoil_surface= ifelse(as.numeric(tsoil_surface)< -20, NA, tsoil_surface)) %>%
+  mutate(tsoil_surface= ifelse(as.numeric(tsoil_surface)> 30, NA, tsoil_surface)) %>%  
+  mutate(tsoil_deep= ifelse(as.numeric(tsoil_deep)< -20, NA, tsoil_deep)) %>%
+  mutate(tsoil_deep= ifelse(as.numeric(tsoil_deep)> 30, NA, tsoil_deep)) %>% 
+  mutate(soil_moisture= ifelse(as.numeric(soil_moisture) <0, NA, soil_moisture)) %>% 
+  mutate(snow_depth= ifelse(as.numeric(snow_depth) <0, NA, snow_depth))
+  
 meteo.monthly <- group_by( meteo, year, month, site_id) %>% 
-  dplyr::summarise( ppfd = mean(ppfd, na.rm = FALSE),
-                    tsoil_surface = mean(tsoil_surface, na.rm = FALSE),
-                    tsoil_deep = mean(tsoil_deep, na.rm = FALSE),
+  dplyr::summarise( ppfd = mean(as.numeric(ppfd), na.rm = FALSE),
+                    tsoil_surface = mean(as.numeric(tsoil_surface), na.rm = FALSE),
+                    tsoil_deep = mean(as.numeric(tsoil_deep), na.rm = FALSE),
                     #tair = mean(tair, na.rm = FALSE), tair from zona.monthly is more gapfilled
-                    precip = sum(precip, na.rm = FALSE),
-                    soil_moisture = mean(soil_moisture, na.rm = TRUE),
-                    snow_depth = mean(snow_depth, na.rm = TRUE),
+                    precip = sum(as.numeric(precip), na.rm = FALSE),
+                    soil_moisture = mean(as.numeric(soil_moisture), na.rm = TRUE),
+                    snow_depth = mean(as.numeric(snow_depth), na.rm = TRUE),
                     tsoil_surface_depth= mean(as.numeric(tsoil_surface_depth), na.rm = TRUE),
                     tsoil_deep_depth = mean(as.numeric(tsoil_deep_depth), na.rm = TRUE),
                     moisture_depth = mean(as.numeric(moisture_depth), na.rm = FALSE)) 
-
 
 zona.dat.full <- full_join(zona.monthly, meteo.monthly, by= c("site_id", "year", "month")) %>%
   dplyr::rename("site_reference"= "site_id")
