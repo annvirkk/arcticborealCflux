@@ -161,8 +161,8 @@ icos.fluxnet.AMF.euro.CH4 <- icos.fluxnet.AMF.euro.CH4.wdupes %>%
 icos.fluxnet.AMF.euro.CH4 <- icos.fluxnet.AMF.euro.CH4 %>%
   unite("ch4_flux_total", c(ch4_flux_total, ch4_flux_total.x, ch4_flux_total.y), na.rm= TRUE, remove= TRUE)%>% 
   unite("gap_fill_perc_ch4", c(gap_fill_perc_ch4, gap_fill_perc_ch4.x, gap_fill_perc_ch4.y), na.rm= TRUE, remove= TRUE)%>% 
-  unite("citation_ch4", c(citation_ch4.y , citation_ch4.x), na.rm= TRUE, remove= TRUE) %>%
-  unite("extraction_source_ch4", c(extraction_source_ch4.y, extraction_source_ch4.x), na.rm= TRUE, remove= TRUE)
+  unite("citation_ch4", c(citation_ch4, citation_ch4.y , citation_ch4.x), na.rm= TRUE, remove= TRUE) %>%
+  unite("extraction_source_ch4", c(extraction_source_ch4, extraction_source_ch4.y, extraction_source_ch4.x), na.rm= TRUE, remove= TRUE)
 
 ###AMERIFLUX BASE#####-----------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
@@ -186,14 +186,15 @@ base.renamed$month <- as.integer(base.renamed$month)
 icos.fluxnet.AMF.euro.CH4.base.wdupes <- rbindlist(list(icos.fluxnet.AMF.euro.CH4, base.renamed), fill = TRUE)
 #check if there are number of  duplicates
 dupes<- icos.fluxnet.AMF.euro.CH4.base.wdupes  %>% get_dupes(site_reference, year, month) 
-dupes.base <- dupes %>% filter(dupe_count== '3')
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 #write.csv(dupes.base , "icos.fluxnet.AMF.euro.CH4.base.dupes.csv")
 
 #Identify duplicates by dupes= 3 and source= Ameriflux BASE
-to.remove <- dupes %>% filter(extraction_source_co2== 'AAmeriflux BASE' & dupe_count== '3')
+to.remove <- dupes %>% dplyr::filter(extraction_source_co2 %in% 'AAmeriflux BASE' | 
+                                       extraction_source_ch4 %in% 'AAmeriflux BASE')
 icos.fluxnet.AMF.euro.CH4.base <- anti_join(icos.fluxnet.AMF.euro.CH4.base.wdupes, to.remove, 
-                                            by = c("year", "month", "site_reference", "extraction_source_co2"))
+                                            by = c("year", "month", "site_reference", "extraction_source_co2",
+                                                   "extraction_source_ch4"))
 
 ### ASIAFLUX #####-----------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
@@ -206,25 +207,55 @@ asiaflux.renamed <- asiaflux  %>% dplyr::rename("site_reference"= "site_id",
 icos.fluxnet.AMF.euro.CH4.base.asia <- icos.fluxnet.AMF.euro.CH4.base %>%
   full_join(asiaflux.renamed)
 
+### ARCTIC DATA CENTER #####-----------------------------------------------------------------
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+ADC <- read_csv("ADC.ec.csv")
+ADC$year <- as.integer(ADC$year)
+ADC$month <- as.integer(ADC$month)
+colnames(ADC)
+ADC.renamed <- ADC  %>% dplyr::rename("gap_fill_perc_nee"= "percent_na_nee",
+                                      "gap_fill_perc_ch4"= "percent_na_ch4")
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes <- rbindlist(list(icos.fluxnet.AMF.euro.CH4.base.asia, ADC.renamed), fill = TRUE) 
+
+#check if there are duplicates
+dupes<- icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes  %>% get_dupes(site_reference, year, month) 
+
+#Identify ADC duplicates and removed since these are not gapfilled 
+to.remove <- dupes %>% filter(extraction_source_co2 %in% 'Arctic Data Center' | 
+                                extraction_source_ch4 %in% 'Arctic Data Center')
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- anti_join(icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes, to.remove, 
+                                            by = c("year", "month", "site_reference", "extraction_source_co2",
+                                                   "extraction_source_ch4"))
+
+
+#--------------------------------------------------------------------------------------------------------------
 #fix column names
-colnames(icos.fluxnet.AMF.euro.CH4.base.asia)
-icos.fluxnet.AMF.euro.CH4.base.asia <- icos.fluxnet.AMF.euro.CH4.base.asia %>% 
+colnames(icos.fluxnet.AMF.euro.CH4.base.asia.ADC)
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC %>% 
   mutate(gap_fill= paste("CO2:", gap_fill, "CH4:", gap_fill_ch4, sep = " ")) %>%
   mutate(data_usage= paste("CO2:", data_usage, "CH4:", data_usage_ch4, sep = " ")) %>%
   mutate(data_version= paste("CO2:", data_version, "CH4:", data_version_ch4, sep = " ")) %>%
   mutate(gap_fill_ch4= NULL, data_usage_ch4= NULL, data_version_ch4= NULL)
 
-
 #replacing extraction source names to be more clear where data came from
-icos.fluxnet.AMF.euro.CH4.base.asia <- icos.fluxnet.AMF.euro.CH4.base.asia %>% 
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC %>% 
   mutate(extraction_source_co2= ifelse(extraction_source_co2== "amerifluxdf","Ameriflux", extraction_source_co2))%>%
   mutate(extraction_source_co2= ifelse(extraction_source_co2== "betaamerifluxdf", "Ameriflux- beta ONEFLUX", extraction_source_co2))%>%
   mutate(extraction_source_co2= ifelse(extraction_source_co2== "ICOS icosdat","ICOS Ecosystem Thematic Centre", extraction_source_co2))%>%
   mutate(extraction_source_co2= ifelse(extraction_source_co2== "ICOS wwdat","ICOS Warm Winters", extraction_source_co2))%>%
+  mutate(extraction_source_co2= ifelse(extraction_source_co2== "Arctic Data Center","AArctic Data Center", extraction_source_co2))%>% # used for merging purposes
   mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "amerifluxdf","Ameriflux", extraction_source_ch4))%>%
   mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "betaamerifluxdf", "Ameriflux- beta ONEFLUX", extraction_source_ch4))%>%
   mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "ICOS icosdat","ICOS Ecosystem Thematic Centre", extraction_source_ch4))%>%
-  mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "ICOS wwdat","ICOS Warm Winters", extraction_source_ch4))
+  mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "ICOS wwdat","ICOS Warm Winters", extraction_source_ch4)) %>%
+  mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "Arctic Data Center","AArctic Data Center", extraction_source_ch4))# used for merging purposes
+
+
+
+
+
+#check if there are duplicates
+x<- icos.fluxnet.AMF.euro.CH4.base.asia.ADC  %>% get_dupes(site_reference, year, month, partition_method) 
 
 
 #####Thaw depth and water table data from arctic data center for Barrow, Aquasuk, and Ivotuk--------------------
@@ -241,11 +272,12 @@ tdwt.permonth <- tdwt %>% group_by(year, month, site) %>%
 tdwt.permonth$year <- as.integer(tdwt.permonth$year)
 tdwt.permonth$month <- as.integer(tdwt.permonth$month)
 tdwt.permonth$notes <- "water_table_depth and thaw_depth data from doi:10.18739/A26H4CQ8J"
-icos.fluxnet.AMF.euro.CH4.base.asia <-full_join(icos.fluxnet.AMF.euro.CH4.base.asia, tdwt.permonth,
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC <-full_join(icos.fluxnet.AMF.euro.CH4.base.asia.ADC, tdwt.permonth,
                                         by = c("year", "month", "site_reference"))
-icos.fluxnet.AMF.euro.CH4.base.asia <- icos.fluxnet.AMF.euro.CH4.base.asia %>%
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC %>%
   unite("water_table_depth", c( water_table_depth.y , water_table_depth.x), na.rm= TRUE, remove= TRUE) %>%
-  unite("notes", c( notes.y , notes.x), na.rm= TRUE, remove= TRUE) 
+  unite("notes", c( notes.y , notes.x), na.rm= TRUE, remove= TRUE)  %>%
+  unite("thaw_depth", c( thaw_depth.y , thaw_depth.x), na.rm= TRUE, remove= TRUE) 
 
 
 #save
@@ -261,7 +293,7 @@ icos.fluxnet.AMF.euro.CH4.base.asia <- icos.fluxnet.AMF.euro.CH4.base.asia %>%
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 static <- read_csv("static.towersites.csv")
 #join to fill NAs
-icos.fluxnet.AMF.euro.CH4.base.asia.static <- natural_join(icos.fluxnet.AMF.euro.CH4.base.asia, static,
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static <- natural_join(icos.fluxnet.AMF.euro.CH4.base.asia.ADC, static,
                                           by= "site_reference", jointype= "FULL")
 
 
@@ -288,22 +320,22 @@ icos.fluxnet.AMF.euro.CH4.base.asia.static <- natural_join(icos.fluxnet.AMF.euro
 # #Kaamanen
 # icos.fluxnet.AMF.euro.CH4.base.asia.static <- icos.fluxnet.AMF.euro.CH4.base.asia.static %>%
 #   mutate(site_name= ifelse(site_reference== "FI-Kaa", "Kaamanen", site_name))
-#Svalbard and Jan Mayen
-icos.fluxnet.AMF.euro.CH4.base.asia.static <- icos.fluxnet.AMF.euro.CH4.base.asia.static %>%
+#Svalbard and Jan Mayen 
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static %>%
   mutate(country= ifelse(country== "Svalbard and Jan Mayen", "Norway", country))
 #United States
-icos.fluxnet.AMF.euro.CH4.base.asia.static <- icos.fluxnet.AMF.euro.CH4.base.asia.static %>%
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static %>%
   mutate(country= ifelse(country== "United States", "USA", country))
 
 ####save###----------------------------------------------------------------------
-icos.fluxnet.AMF.euro.CH4.base.asia.static$dataentry_person <- "Isabel"
-icos.fluxnet.AMF.euro.CH4.base.asia.static$flux_method <- "EC"
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static$dataentry_person <- "Isabel"
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static$flux_method <- "EC"
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-write_csv(icos.fluxnet.AMF.euro.CH4.base.asia.static, "towerrepositorydata.static.csv")
+write_csv(icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static, "towerrepositorydata.static.csv")
 
 
 
-colnames(icos.fluxnet.AMF.euro.CH4.base.asia.static)
+colnames(icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static)
 
 
 
