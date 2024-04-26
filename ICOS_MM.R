@@ -269,9 +269,9 @@ se.sto.monthly <- se.sto.time %>% group_by(year, month) %>%
             PPFD_IN = mean(PPFD_IN, na.rm= TRUE),
             P_F= mean(P_F, na.rm= TRUE),
             snow_depth= sum(snow_depth, na.rm= TRUE),
-            water_table_depth= mean(water_table_depth, na.rm= TRUE))
+            #water_table_depth= mean(water_table_depth, na.rm= TRUE)
+  )
 
-#keep only months with 98% of data present
 se.sto.monthly <- se.sto.monthly %>% dplyr::rename(gap_fill_perc_nee = "percent_na_nee",
                                                    gap_fill_perc_reco = "percent_na_reco",
                                                    gap_fill_perc_gpp = "percent_na_gpp",
@@ -285,6 +285,7 @@ se.sto.monthly$NEE_CUT_REF <- se.sto.monthly$NEE_CUT_REF *1.0368
 se.sto.monthly$RECO_CUT_REF <- se.sto.monthly$RECO_CUT_REF *1.0368
 se.sto.monthly$GPP_CUT_REF <- se.sto.monthly$GPP_CUT_REF *1.0368 
 se.sto.monthly$ch4_flux_total <- se.sto.monthly$ch4_flux_total *1.0368
+se.sto.monthly$P_F <- se.sto.monthly$P_F *100 #units online say mm but I suspect its cm so converting
 
 #clarifying partition method because they used Lasslop for GPP fluxes and Reichstein for RECO
 se.sto.monthly.gpp <- se.sto.monthly %>% mutate(partition_method= "Lasslop") %>%
