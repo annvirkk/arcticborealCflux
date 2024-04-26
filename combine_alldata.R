@@ -66,9 +66,12 @@ ABC.ec  <- ABC.ec.wdupes  %>%
 #fix Ameriflux BASE name
 ABC.ec <- ABC.ec %>% 
   mutate(extraction_source_co2= ifelse(extraction_source_co2== "AAmeriflux BASE","Ameriflux BASE", extraction_source_co2))%>%
-  mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "AAmeriflux BASE","Ameriflux BASE", extraction_source_ch4))
+  mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "AAmeriflux BASE","Ameriflux BASE", extraction_source_ch4)) %>%
+  mutate(extraction_source_co2= ifelse(extraction_source_co2== "AArctic Data Center","Arctic Data Center", extraction_source_co2))%>%
+  mutate(extraction_source_ch4= ifelse(extraction_source_ch4== "AArctic Data Center","Arctic Data Center", extraction_source_ch4))
 
 
+dupes.ec <-ABC.ec %>% get_dupes(site_name, site_reference, year, month, partition_method) 
 #save
 #setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 #towersites <- as.data.frame(unique(ABC.ec$site_reference) )
@@ -106,17 +109,12 @@ ABC.ch.wdupes <- ABC.ch.wdupes %>%
                    ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
 
 #find number of  duplicates
-dupes<- ABC.ch.wdupes %>% get_dupes(site_name, site_reference, site_id, year, month) 
-dupes$na_count <- rowSums(is.na(dupes))
-#dupes are okay for now
+dupes<- ABC.ch.wdupes %>% get_dupes(site_name, site_reference, year, month) 
 
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 #write_csv(ABC.ch.wdupes, "ABCv2.ch.csv")
-
-
-
   
 ####################Combining EC and chamber data ################################
 
@@ -160,6 +158,13 @@ ABC.v2.apr24 <- ABC.v2.apr24 %>%
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
 write_csv(ABC.v2.apr24, "ABC.v2.apr24.csv")
+
+
+
+
+
+
+
 
 
 
