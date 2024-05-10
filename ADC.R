@@ -472,14 +472,17 @@ zona.monthly <- group_by(zona.dat, year, month, site_id) %>%
                     nee = mean(as.numeric(co2_flux), na.rm = TRUE),
                     percent_na_nee = (sum(is.na(co2_flux))/n()*100),
                     tair = mean(as.numeric(air_temperature), na.rm = TRUE))
-
 #remove rows without flux data
-zona.monthly <- zona.monthly %>% filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
+zona.monthly <- zona.monthly %>% dplyr::filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
 #time formats
 #convert units umol m-2 s-1 to g C m-2 month-1
 zona.monthly$nee <- zona.monthly$nee *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month ,sep = '-')))
 zona.monthly$ch4_flux_total <- zona.monthly$ch4_flux_total *1.0368*days_in_month(as.yearmon(paste(zona.monthly$year,zona.monthly$month,sep = '-')))
 zona.monthly$tair <- zona.monthly$tair -273.15
+#remove NEE fluxes less than -10 for Dec- Feb
+zona.monthly <- zona.monthly %>%
+  mutate(nee= ifelse(nee < -10 & month %in% c(12,1,2), NA, nee)) 
+
 
 
 #Change site_id names
@@ -581,13 +584,23 @@ meteo.monthly <- group_by( meteo, year, month, site_id) %>%
                     #tair = mean(tair, na.rm = FALSE), tair from zona.monthly is more gapfilled
                     precip = sum(as.numeric(precip), na.rm = FALSE),
                     soil_moisture = mean(as.numeric(soil_moisture), na.rm = TRUE),
-                    snow_depth = mean(as.numeric(snow_depth), na.rm = TRUE),
                     tsoil_surface_depth= mean(as.numeric(tsoil_surface_depth), na.rm = TRUE),
                     tsoil_deep_depth = mean(as.numeric(tsoil_deep_depth), na.rm = TRUE),
                     moisture_depth = mean(as.numeric(moisture_depth), na.rm = FALSE)) 
 
 zona.dat.full <- full_join(zona.monthly, meteo.monthly, by= c("site_id", "year", "month")) %>%
   dplyr::rename("site_reference"= "site_id")
+
+#Removing strange data
+#removing air temp
+zona.monthly <- zona.monthly %>%
+  mutate(tair= ifelse(year %in% c(2020, 2021, 2022)& site_id %in% c("US-Bes","US-Brw"), NA, tair)) %>%
+  mutate(tair= ifelse(site_id %in% c("US-Beo", "US-Ivo", "US-Atq"), NA, tair)) %>%
+  mutate(tsoil= ifelse(site_id %in% c("US-Atq"), NA, tsoil)) %>%
+  mutate(tsoil= ifelse(site_id %in% c("US-Brw") & year < 2017, NA, tsoil))
+
+
+
 
 ###Merging for gapfilling exercise####
 # zona.dat <- zona.dat %>%  mutate(site_id= case_when(site_id %in% 'ATQ'~ "US-Atq",
