@@ -54,8 +54,7 @@ group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %
   rename_with(~gsub("_mean", "", .), everything())  # Remove "_mean" from column names
 
 ###Inge Althuizen ####----------------------------------------------------------
-althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.csv")
-  #filter(nee %in% ifelse(is.na(gpp), NA, nee)) ### NEE suspiciously high when lacking gpp
+althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.vars_updateApril2024.csv")
 
 ### Christopher Schulze####-----------------------------------------------------
 schulze.ch <- read_csv("ABCflux_SMC_STR_LUT_vCS_2023-12-25.csv") %>% mutate(reco= as.numeric(reco)) #to remove soil respiration data
@@ -73,7 +72,7 @@ roy <- read_csv("ABCflux_MES.csv")
 hung.ec <- read_csv("ABCfluxv2_Hung_Minions_tower.csv")
 hung.ch <- read_csv("ABCfluxv2_Hung_Minions_chamber.csv")
 hung.ch.ykd <- hung.ch %>%
-  filter(!site_name %in% "CBAWO wet sedge")%>%
+  dplyr::filter(!site_name %in% "CBAWO wet sedge")%>%
   mutate(site_reference= ifelse(site_name== "YKD (burned degraded plateau)", "burned degraded plateau", site_reference)) %>%
   mutate(site_reference= ifelse(site_name== "YKD (burned shrub edge)", "burned shrub edge", site_reference)) %>%
   mutate(site_reference= ifelse(site_name== "YKD (exposed burned soil)", "exposed burned soil", site_reference)) %>%
@@ -83,7 +82,7 @@ hung.ch.ykd <- hung.ch %>%
   mutate(site_name= "YKD") %>%
   mutate(site_reference= paste(site_reference, str_split(site_id, "Hung_YKD") %>% sapply(`[`, 2)), sep="")
 hung.ch.cbawo <- hung.ch %>%
-  filter(site_name %in% "CBAWO wet sedge")
+  dplyr::filter(site_name %in% "CBAWO wet sedge")
 
 
 ### Liam Heffernan ####---------------------------------------------------------
@@ -145,7 +144,7 @@ ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%
 
  glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv") %>%
   mutate(ch4_flux_total= as.numeric(ch4_flux_total)) %>% 
-   mutate(water_table_depth= )
+   mutate(water_table_depth= as.numeric(water_table_depth)) %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
@@ -586,7 +585,7 @@ tag.meteo <- full_join(tag.meteo.07, tag.meteo.08) %>% full_join(tag.meteo.09)
 tag.meteo.monthly <- tag.meteo %>% group_by(year, month) %>%
   dplyr::summarise(tair= mean(tair, na.rm = T),
                    precip= max(precip, na.rm = T),
-                  # par= mean(par, na.rm = T),
+                   ppfd= mean(par, na.rm = T),
                    snow_depth= mean(snow_depth, na.rm = T),
                    tsoil_surface= mean(c(tsoil_0, tsoil_5), na.rm = T),
                    tsoil_deep= mean(c(tsoil_20, tsoil_60, tsoil_100), na.rm = T))
@@ -911,17 +910,6 @@ PIdat.ec2.static <- natural_join(PIdat.ec2, static, by= "site_reference", jointy
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(PIdat.ec2.static, "PI.data.ec.csv")
 write_csv(PIdat.ch2, "PI.data.ch.csv")
-
-
-
-
-
-# NEW data-------------------------------------------------------------------
-setwd("/Users/iwargowsky/Desktop/Data from PIs") 
-
-
-
-
 
 
 
