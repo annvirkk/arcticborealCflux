@@ -126,7 +126,7 @@ setwd("/Users/iwargowsky/Desktop/Fluxnet2015/FLX_AA-Flx_BIF_ALL_20200501")
 meta <- read_xlsx("FLX_AA-Flx_BIF_MM_20200501.xlsx")
 #filter for sites of interest
 names <- unique(fluxnetdf$site_id)
-meta <- meta %>% filter(SITE_ID %in% names)
+meta <- meta %>% dplyr::filter(SITE_ID %in% names)
 #more to better format and group by site
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),

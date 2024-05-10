@@ -57,7 +57,7 @@ ceip.gfmonthly <- ceip.gf %>% mutate(gapfill = case_when(NEE_or_fMDSqc %in% c(1,
 ceip.all <- merge(ceip.gfmonthly, ceip.renamed, by= c("site_reference", "year", "month"))  
 
 #remove rows that do not contain flux data
-ceip.all <-ceip.all %>% filter(if_all(c("nee", "gpp", "reco"), ~ !is.na(.)))
+ceip.all <-ceip.all %>% dplyr::filter(if_all(c("nee", "gpp", "reco"), ~ !is.na(.)))
 
 #add data policy according http://www.europe-fluxdata.eu/home/data/data-policy
 ceip.all <- ceip.all %>%

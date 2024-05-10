@@ -75,7 +75,7 @@ setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 meta <- read_csv("FLX_AA-Flx_CH4-META_20201112135337801132.csv")
 #filter for sites of interest
 names <- unique(CH4fluxnet.permonth$site_id)
-meta <- meta %>% filter(SITE_ID %in% names)
+meta <- meta %>% dplyr::filter(SITE_ID %in% names)
 colnames(meta)
 #keep relevant columns
 meta.2 <- meta %>% select(SITE_ID, COUNTRY, SOIL_TEMP_PROBE_DEPTHS,

@@ -198,7 +198,7 @@ setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET")
 meta <- read_xlsx("AMF_AA-Net_BIF_LEGACY_20230331.xlsx")
 #filter for sites of interest
 names <- unique(ameriflux.fluxnetall$site_id)
-meta <- meta %>% filter(SITE_ID %in% names)
+meta <- meta %>% dplyr::filter(SITE_ID %in% names)
 #move to better format and group by site
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),

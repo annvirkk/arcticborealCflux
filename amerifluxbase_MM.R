@@ -306,21 +306,22 @@ base[[43]] <- base[[43]] %>% group_by(year, month) %>%
                    RECO= mean(RECO_PI, na.rm=TRUE))
 
 ###US-Brw####---------------------------------------------------------------------------
-colnames(base[[44]])
-base[[44]] <- base[[44]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
-                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100),
-                   TA= mean(TA, na.rm=TRUE),
-                   NEE= mean(NEE_PI, na.rm=TRUE),
-                   TS= mean(TS_1, na.rm=TRUE),
-                   P= sum(P, na.rm=TRUE),
-                   SWC= mean(SWC_1, na.rm=TRUE),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   RECO= mean(RECO_PI, na.rm=TRUE))
+# colnames(base[[44]])
+# base[[44]] <- base[[44]] %>% group_by(year, month) %>%
+#   dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
+#                    percent_na_reco = (sum(is.na(RECO_PI))/n()*100),
+#                    TA= mean(TA, na.rm=TRUE),
+#                    NEE= mean(NEE_PI, na.rm=TRUE),
+#                    TS= mean(TS_1, na.rm=TRUE),
+#                    P= sum(P, na.rm=TRUE),
+#                    SWC= mean(SWC_1, na.rm=TRUE),
+#                    PPFD= mean(PPFD_IN, na.rm=TRUE),
+#                    RECO= mean(RECO_PI, na.rm=TRUE))
 
 #RECO column is empty
 #Not gapfilled 
 #Arctic data center is also not gapfilled and same dates
+#Anna said to remove this whole time series 4/30/24
 ###US-BZB####---------------------------------------------------------------------------
 colnames(base[[45]])
 base[[45]] <- base[[45]] %>% group_by(year, month) %>%
@@ -662,7 +663,7 @@ base[[68]] <- base[[68]] %>% group_by(year, month) %>%
 ####Consolidate data###_--------------------------------------------------------------
 names(base)<- files #name each df
 #remove dfs that do not have our variables of interest or dates are covered by another database
-base2 <- base[-c(1,2,4,6:18,20,21,23:28,30:34,37:39,50,61:63)]
+base2 <- base[-c(1,2,4,6:18,20,21,23:28,30:34,37:39,44,50,61:63)]
 #turn list  into one df
 base.monthly <- bind_rows(base2, .id = "site_id")
 #turn NaNs into NAs
@@ -694,7 +695,7 @@ base.monthly$FCH4 <- base.monthly$FCH4*0.0010368 * days_in_month(base.monthly$ts
 base.monthly$ts <- NULL
 #remove rows that do not contain flux data
 base.monthly2 <- base.monthly %>%
-  filter(if_any(c("NEE", "GPP", "RECO","FCH4"), ~ !is.na(.)))
+  dplyr::filter(if_any(c("NEE", "GPP", "RECO","FCH4"), ~ !is.na(.)))
 #adding data usage policies
 base.monthly2  <- base.monthly2  %>% 
   mutate(data_usage= ifelse(site_id %in% c("CA-NS8","CA-Ojp","CA-Qc2","CA-SJ3","CA-WP1","CA-WP2","CA-WP3",
@@ -708,7 +709,7 @@ setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE")
 meta <- read_xlsx("AMF_AA-Net_BIF_LEGACY_20221208.xlsx")
 #filter for sites of interest
 names <- unique(base.monthly2$site_id)
-meta <- meta %>% filter(SITE_ID %in% names)
+meta <- meta %>% dplyr::filter(SITE_ID %in% names)
 #make better format and group by site
 meta.wide <- meta %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
 meta.bysite <- meta.wide %>% group_by(SITE_ID) %>% dplyr::summarise(citation = na.omit(DOI),

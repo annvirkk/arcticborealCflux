@@ -24,7 +24,7 @@ kenzie.bawld$dataentry_person <- "McKenzie"
 
 #Combine all 
 bawld.dat <- rbindlist(list( isabel.bawld, anna.bawld, kenzie.bawld), fill = TRUE)
-bawld.dat <- bawld.dat %>% filter(!site_name=="") #removing blank rows
+bawld.dat <- bawld.dat %>% dplyr::filter(!site_name=="") #removing blank rows
 
 bawld.dat <- bawld.dat %>% 
   mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
@@ -71,7 +71,7 @@ ikw.co2.ec $extraction_source <- "Publication"
 
 #Combine all 
 bawld.ec.dat <- rbindlist(list( ikw.co2.ec, anna.bawld.ec ), fill = TRUE)
-bawld.ec.dat <- bawld.ec.dat %>% filter(!site_name=="") #removing blank rows
+bawld.ec.dat <- bawld.ec.dat %>% dplyr::filter(!site_name=="") #removing blank rows
 bawld.ec.dat <- bawld.ec.dat %>% 
   mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
   mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), citation, NA)) %>%
