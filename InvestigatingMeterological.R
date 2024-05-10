@@ -6,8 +6,8 @@ library(zoo)
 library(ggplot2)
 
 
-setwd("/Users/iwargowsky/Desktop/ABCflux v2")  
-abc <- read_csv("ABC.v2.apr24.full.csv") %>%
+setwd("/Users/iwargowsky/Desktop/arcticborealCflux")  
+abc <- read_csv("ABC.v2.apr24.csv") %>%
   mutate(tair= as.numeric(tair))
 
 abc$ts <- as.yearmon(paste(abc$year, abc$month,sep = '-')) #add timestamp
@@ -224,3 +224,65 @@ abc.x <- abc.x %>% group_by(site_name, month) %>%
 
 ggplot(abc.x)+
   geom_point(aes(month, thaw_depth))
+
+
+
+### snow depth
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+
+abc.x <- abc %>% dplyr::filter(!(is.na(snow_depth)))
+
+lapply(unique(abc.x$site_name), function(site) {
+  p <- ggplot(subset(abc.x, site_name == site)) +
+    geom_line( aes(x = ts, y = as.numeric(snow_depth), color= extraction_source)) +
+    geom_point( aes(x = ts, y = as.numeric(snow_depth), color= extraction_source))+
+    labs(title = paste("snow_depth", site),
+         x = "Date",
+         y = "snow_depth(cm)") +
+    theme_minimal()
+  
+  # Save the plot to a file
+  ggsave(filename = paste("Met variables/snow_depth_", site, ".jpeg"),
+         plot = p, width = 10, height = 6)
+  
+  return(p)
+})
+
+abc.x <- abc.x %>% group_by(site_name, month) %>%
+  dplyr::summarise(snow_depth= mean(as.numeric(snow_depth), na.rm= T))
+
+ggplot(abc.x)+
+  geom_point(aes(month, snow_depth))
+
+
+### ppfd
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+
+abc.x <- abc %>% dplyr::filter(!(is.na(ppfd)))
+
+lapply(unique(abc.x$site_name), function(site) {
+  p <- ggplot(subset(abc.x, site_name == site)) +
+    geom_line( aes(x = ts, y = as.numeric(ppfd), color= extraction_source)) +
+    geom_point( aes(x = ts, y = as.numeric(ppfd), color= extraction_source))+
+    labs(title = paste("ppfd", site),
+         x = "Date",
+         y = "ppfd") +
+    theme_minimal()
+  
+  # Save the plot to a file
+  ggsave(filename = paste("Met variables/ppfd_", site, ".jpeg"),
+         plot = p, width = 10, height = 6)
+  
+  return(p)
+})
+
+abc.x <- abc.x %>% group_by(site_name, month) %>%
+  dplyr::summarise(ppfd= mean(as.numeric(ppfd), na.rm= T))
+
+ggplot(abc.x)+
+  geom_point(aes(month, ppfd))
+
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+
+abc.x <- abc %>% dplyr::filter(!(is.na(ppfd)))
+
