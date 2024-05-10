@@ -83,7 +83,7 @@ dat.v2 <- dat.v2 %>%
   mutate(site_name= ifelse(site_reference == "US-ICs", "Imnavait Creek Watershed Wet Sedge Tundra", site_name) )%>%
   mutate(site_name= ifelse(site_reference == "US-ICt", "Imnavait Creek Watershed Tussock Tundra", site_name) )
 #removing RU-Murk since this data was given to us by Aleksandr Sabrekov
-dat.v2 <- dat.v2 %>% filter(!site_reference %in% "RU-Murk")
+dat.v2 <- dat.v2 %>% dplyr::filter(!site_reference %in% "RU-Murk")
 #Zackenberg specifying names
 dat.v2 <- dat.v2 %>% 
   mutate(site_name= ifelse(site_reference == "GL-ZaH", "Zackenberg Heath", site_name) )%>%
@@ -244,7 +244,7 @@ dat.v2$site_unique <- NULL
 ### Fixing duplicates NULL### Fixing duplicates ####
 #remove rows without flux data
 dat.v2 <- dat.v2 %>%
-  filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
+  dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
                    ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
                    ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
 #find number of  duplicates
