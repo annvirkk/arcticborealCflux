@@ -96,6 +96,13 @@ all.monthly$notes <- "tsoil_surface, tsoil_deep, soil_moisture data comes from n
 all.monthly$gap_fill <- "MDS ReddyProc"
 all.monthly$partition_method <- "Reichstein"
 
+
+#Renaming RU-YLF to RU-SkP because they are the same site
+all.monthly <- all.monthly %>%
+  mutate(site_id= ifelse(site_id %in% "RU-YLF", "RU-SkP", site_id)) %>%
+  mutate(notes = ifelse(site_id %in% "RU-SkP", paste(notes, " AsiaFlux site code is YLF", sep = ";"), notes))
+
+
 #save off
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(all.monthly, "asia.monthly.csv")
