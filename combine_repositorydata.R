@@ -221,7 +221,7 @@ icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes <- rbindlist(list(icos.fluxnet.AM
 dupes<- icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes  %>% get_dupes(site_reference, year, month) 
 
 #Identify ADC duplicates and removed since these are not gapfilled 
-to.remove <- dupes %>% filter(extraction_source_co2 %in% 'Arctic Data Center' | 
+to.remove <- dupes %>% dplyr::filter(extraction_source_co2 %in% 'Arctic Data Center' | 
                                 extraction_source_ch4 %in% 'Arctic Data Center')
 icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- anti_join(icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes, to.remove, 
                                             by = c("year", "month", "site_reference", "extraction_source_co2",
@@ -263,6 +263,9 @@ setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads")
 tdwt <- read_csv("tdwt.csv")#adding year and month columns
 tdwt <- tdwt %>% mutate(year= as.integer(year(as.Date(date, format= "%m/%d/%Y"))), 
                         month= as.character(month(as.Date(date, format= "%m/%d/%Y"))) ) 
+
+tdwt <- tdwt %>% mutate(water_table= ifelse(site %in% c("US-Bes", "US-Beo", "US-Atq") & water_table < 0, NA, water_table ))
+
 tdwt.permonth <- tdwt %>% group_by(year, month, site) %>%
   dplyr::summarise(thaw_depth = mean(thaw_depth, na.rm = TRUE) *-1,
             water_table_depth= mean(water_table, na.rm = TRUE)*-1)%>%
@@ -275,7 +278,6 @@ tdwt.permonth$notes <- "water_table_depth and thaw_depth data from doi:10.18739/
 icos.fluxnet.AMF.euro.CH4.base.asia.ADC <-full_join(icos.fluxnet.AMF.euro.CH4.base.asia.ADC, tdwt.permonth,
                                         by = c("year", "month", "site_reference"))
 icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC %>%
-  unite("water_table_depth", c( water_table_depth.y , water_table_depth.x), na.rm= TRUE, remove= TRUE) %>%
   unite("notes", c( notes.y , notes.x), na.rm= TRUE, remove= TRUE)  %>%
   unite("thaw_depth", c( thaw_depth.y , thaw_depth.x), na.rm= TRUE, remove= TRUE) 
 

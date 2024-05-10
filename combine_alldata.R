@@ -8,8 +8,8 @@ library(zoo)
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
 abcflux.v1 <- read.csv("ABCfluxv1.v2format.csv") #ABCflux v1 in v2 format
 #separate EC and chamber measurements
-abcflux.v1.EC <- abcflux.v1 %>% filter(flux_method=="EC")
-abcflux.v1.Ch <- abcflux.v1 %>% filter(!flux_method=="EC")
+abcflux.v1.EC <- abcflux.v1 %>% dplyr::filter(flux_method=="EC")
+abcflux.v1.Ch <- abcflux.v1 %>% dplyr::filter(!flux_method=="EC")
 
 ###Eddy covariance tower data####---------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
@@ -22,7 +22,7 @@ ABC.ec.wdupes <- ABC.ec.wdupes %>% mutate(year= as.integer(ABC.ec.wdupes$year)) 
                                    mutate(month= as.integer(ABC.ec.wdupes$month))
 
 #remove rows that do not contain flux data
-ABC.ec.wdupes <- ABC.ec.wdupes %>% filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
+ABC.ec.wdupes <- ABC.ec.wdupes %>% dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
                                                     ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
                                                     ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
 
@@ -104,7 +104,7 @@ ABC.ch.wdupes <- ABC.ch.wdupes %>%
 
 #remove rows that do not contain flux data
 ABC.ch.wdupes <- ABC.ch.wdupes %>%
-  filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
+  dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
                    ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
                    ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
 
@@ -118,12 +118,12 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.apr24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
-ABC.v2.apr24<- ABC.v2.apr24 %>% select(-starts_with("...")) %>% filter(!site_name== "")
-#x<- ABC.v2.apr24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
+ABC.v2.may24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+ABC.v2.may24<- ABC.v2.may24 %>% select(-starts_with("...")) %>% dplyr::filter(!site_name== "")
+#x<- ABC.v2.may24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
 
 ###preliminary cleaning of site names
-ABC.v2.apr24 <- ABC.v2.apr24 %>% 
+ABC.v2.may24 <- ABC.v2.may24 %>% 
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik", "Utqiaġvik"),"Utqiagvik" , site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik North", "Utqiaġvik North"), "Utqiagvik North", site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik South", "Utqiaġvik South"), "Utqiagvik South", site_name) ) %>%
@@ -144,7 +144,7 @@ ABC.v2.apr24 <- ABC.v2.apr24 %>%
   mutate(site_name= ifelse(site_name == "Värriö", "Varrio", site_name) ) %>%
   mutate(site_name= ifelse(site_name == "Iškoras", "Iskoras", site_name) ) 
 
-ABC.v2.apr24 <- ABC.v2.apr24 %>% 
+ABC.v2.may24 <- ABC.v2.may24 %>% 
   mutate(site_reference= ifelse(site_reference == "Värriö_Grazed", "Varrio_Grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_non-grazed", "Varrio_non-grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_Fire45", "Varrio_Fire45" , site_reference) ) %>%
@@ -157,7 +157,7 @@ ABC.v2.apr24 <- ABC.v2.apr24 %>%
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-write_csv(ABC.v2.apr24, "ABC.v2.apr24.csv")
+write_csv(ABC.v2.may24, "ABC.v2.may24.csv")
 
 
 
