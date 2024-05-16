@@ -7,7 +7,7 @@ library(ggplot2)
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")  
-abc <- read_csv("ABC.v2.apr24.csv") %>%
+abc <- read_csv("ABC.v2.may24.cleanish.nodupes.csv") %>%
   mutate(nee= as.numeric(nee),
          gpp= as.numeric(gpp),
          reco= as.numeric(reco))
@@ -49,6 +49,7 @@ abc.co2.ch.multi <- abc.co2.ch %>% dplyr::filter(n>1)
 abc.co2.ch.solo <- abc.co2.ch %>% dplyr::filter(n==1)
 
 
+
 # Plotting CO2 EC and saving each plot
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 lapply(unique(abc.co2.ec$site_name), function(site) {
@@ -74,9 +75,30 @@ lapply(unique(abc.co2.ec$site_name), function(site) {
 
 
 
+abc.co2.ec.x <- abc.co2.ec %>% group_by(site_name, month) %>%
+  dplyr::summarise(nee= mean(as.numeric(nee), na.rm= T))
+
+ggplot(abc.co2.ec.x )+
+  geom_point(aes(month, nee))
+
+abc.co2.ec.x <- abc.co2.ec %>% group_by(site_name, month) %>%
+  dplyr::summarise(gpp= mean(as.numeric(gpp), na.rm= T))
+
+ggplot(abc.co2.ec.x )+
+  geom_point(aes(month, gpp))
+
+abc.co2.ec.x <- abc.co2.ec %>% group_by(site_name, month) %>%
+  dplyr::summarise(reco= mean(as.numeric(reco), na.rm= T))
+
+ggplot(abc.co2.ec.x )+
+  geom_point(aes(month, reco))
+
+
+
+
 # Plotting NEE Chamber and saving each plot
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-abc.co2.ch.multi.x <- abc.co2.ch.multi %>% filter(!is.na(nee))
+abc.co2.ch.multi.x <- abc.co2.ch.multi %>% dplyr::filter(!is.na(nee))
 lapply(unique(abc.co2.ch.multi.x$site_name), function(site) {
   p <- ggplot(subset(abc.co2.ch.multi.x, site_name == site), aes(x = ts, y = nee, color = site_reference )) +
     geom_line() +
@@ -94,7 +116,7 @@ lapply(unique(abc.co2.ch.multi.x$site_name), function(site) {
 })
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-abc.co2.ch.solo.x <- abc.co2.ch.solo %>% filter(!is.na(nee))
+abc.co2.ch.solo.x <- abc.co2.ch.solo %>% dplyr::filter(!is.na(nee))
 lapply(unique(abc.co2.ch.solo.x$site_name), function(site) {
   p <- ggplot(subset(abc.co2.ch.solo.x, site_name == site), aes(x = ts, y = nee)) +
     geom_line() +
