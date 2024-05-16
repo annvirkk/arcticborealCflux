@@ -83,7 +83,7 @@ PIdat.ch <- read_csv("PI.data.ch.csv")
 ADC.ch <- read_csv("ADC.ch.csv")
 Zenodo.ch <- read_csv("Zenodo.ch.csv")
 bawld.ch.dat <- read_csv("bawld.ch.dat.csv")
-ikw.co2.ch <- read_csv("IKW.CO2.dataextractions.ch.csv")
+ikw.co2.ch <- read_csv("chamber data extractions/IKW.CO2.dataextractions.ch.csv")
 
 ABC.ch.wdupes <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch, bawld.ch.dat, ikw.co2.ch), fill = TRUE)
 ABC.ch.wdupes <- ABC.ch.wdupes %>% mutate(year= as.integer(ABC.ch.wdupes$year)) %>% 
@@ -154,6 +154,8 @@ ABC.v2.may24 <- ABC.v2.may24 %>%
   mutate(site_reference= ifelse(site_name == "Svalbard", "Bjornedalen" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Utqiaġvik plots aggregated", "Utqiagvik plots aggregated" , site_reference) ) 
   
+ABC.v2.may24 <- ABC.v2.may24 %>% 
+  dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
