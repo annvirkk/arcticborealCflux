@@ -89,7 +89,7 @@ write.csv(dupes, "icos.fluxnet.AMF.dupes.csv")
 
 #remove duplicates
 icos.fluxnet.AMF <- icos.fluxnet.AMF.wdupes %>%  
-  arrange(extraction_source_co2) %>%  #give preference to rows with more flux data
+  arrange(desc(extraction_source_co2)) %>%  #give preference to rows with more flux data
   distinct(site_reference, year, month, partition_method, .keep_all = TRUE)
 ##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
 
