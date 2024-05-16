@@ -256,6 +256,8 @@ abc <- abc %>%
 
 abc <- abc %>% natural_join(special.thaw_depth, by= c("site_name", "site_reference", "year"), jointype = "FULL" )
 
+
+
 ### THAW DEPTH#####_------------------------------------------------
 unique(abc$thaw_depth)
 abc <- abc %>%
@@ -288,6 +290,7 @@ abc <- abc %>%
   mutate(snow_depth= ifelse(site_name %in% "Adventdalen", NA, snow_depth )) %>%
   mutate(snow_depth= ifelse(site_name %in% "Adventdalen, Svalbard" & data_contributor_or_author %in% c("Mats P. Bjoerkman", "Elke Morgner", "Philipp R. Semenchuk"), NA, snow_depth)) %>%
   mutate(snow_depth= ifelse(site_name %in% "North Star Yedoma", NA, snow_depth )) %>%
+  mutate(snow_depth= ifelse(site_name %in% "ARM-NSA- Olitok", NA, snow_depth )) %>%
   mutate(snow_depth= ifelse(site_name %in% "Stordalen Palsa Bog (ICOS)" &
                               year %in% c(2018:2022), NA, snow_depth ))
 
@@ -811,6 +814,17 @@ abc <- abc %>%
   
 
 
+### More cleaning by Isabel ###-----------------------------------------------------------
+
+unique(abc$year) #okay
+unique(abc$month) #okay
+
+unique(abc$notes) #okay
+
+### removing winter data that is entirely gapfilled ### ---------------------------
+
+x <- abc %>%
+  mutate(nongrow_gapfill_perc = mean())
 
 
 ### removing weird fluxes #####_-----------------------------------------------
@@ -843,7 +857,7 @@ abc <- abc %>% dplyr::filter(!(site_name== "Ontario - Groundhog River, Boreal Mi
                                  extraction_source_co2== "Fluxnet2015" &
                                  year %in% c(2003, 2014)))
 
-abc <- abc %>% dplyr::filter(!(site_name== "Poker Flat Research Range Black Spruce Forest"&
+abc <- abc %>% dplyr::filter(!(site_name== "Poker Flat Research Range Black Spruce Forest" &
                                  extraction_source_co2== "Fluxnet2015" &
                                  year == 2010))
 
@@ -897,6 +911,12 @@ abc <- abc %>% dplyr::filter(!(site_name== "UCI-1998 burn site" & year < 2002)) 
                dplyr::filter(!(site_name== "UCI-1998 burn site" & year == 2003 & month < 6))
 
 abc <- abc %>% dplyr::filter(!(site_name== "UCI-1989 burn site" & year < 2002))
+
+abc <- abc %>% dplyr::filter(!(site_name== "Hyytiala" & year < 1997))
+
+abc <- abc %>% dplyr::filter(!(site_name== "Norunda" & year > 2022))
+
+abc <- abc %>% dplyr::filter(!(site_name== "Cherskii" & year == 2002 & month <7))
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
  write_csv(abc, "ABC.v2.may24.cleanish.wdupes.csv")
