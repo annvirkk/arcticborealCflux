@@ -16,34 +16,52 @@ files <- list.files(path= "/Users/iwargowsky/Desktop/Data from PIs",
                     pattern = "*Sonnentag_",all.files = T,recursive = T)
 sonnentag <- files %>%
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999", "NaN")))          
-sonnentag <- sonnentag %>% dplyr::filter(!site_name=="") #removing blank rows
+sonnentag <- sonnentag %>% 
+  dplyr::filter(!site_name=="") %>% #removing blank rows
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+
 
 ###Norbert Pirk####-------------------------------------------------------------
-pirk.finse <- read_csv("ABCfluxv2_finse.csv")
+pirk.finse <- read_csv("ABCfluxv2_finse.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+
 pirk.iskoras <- read_csv("ABCfluxv2_iskoras.csv")
 
 ###Masahito Ueyama####----------------------------------------------------------
 masa <- read_csv("Arctic_Boreal_CO2_Flux_ueyama_V2_2024.03.11.csv")
 
 ###Julia Boike####--------------------------------------------------------------
-boike <- read_csv("ABCfluxv2.varsAWI_Bayelva.csv")
+boike <- read_csv("ABCfluxv2.varsAWI_Bayelva.csv")%>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 #changing site name to be consistent with fluxnet name for tower 
 # Bayelva, Svalbard -> Bayelva, Spitsbergen
 boike$site_name <- "Bayelva, Spitsbergen" 
 
 ###Sang Jong####----------------------------------------------------------------
-jong <- read_csv("ABCfluxv2.vars_US-KOC_Sangjong.csv")
+jong <- read_csv("ABCfluxv2.vars_US-KOC_Sangjong.csv")%>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ###Aleksandr Sabrekov####-------------------------------------------------------
-sabrekov.ec <- read_csv("Russian data/Lapshina CO2 tower.csv")
-sabrekov.ch <- read_csv("Russian data/Sabrekov methane chambers.csv")
+sabrekov.ec <- read_csv("Russian data/Lapshina CO2 tower.csv")%>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+sabrekov.ch <- read_csv("Russian data/Sabrekov methane chambers.csv")%>%
+  dplyr::rename("gap_fill_perc_ch4"= "gap_fill_perc",
+                "chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days")
 
 ###Egor Dyukarev####------------------------------------------------------------
-dyukarev.ec <- read_csv("Russian data/ABCfluxv2_vars - Dyukarev-Veretennikova.tower.csv")
-dyukarev.ch <- read_csv("Russian data/ABCfluxv2_vars - Dyukarev-Veretennikova.chamber.csv")
+dyukarev.ec <- read_csv("Russian data/ABCfluxv2_vars - Dyukarev-Veretennikova.tower.csv") %>%
+  mutate(gpp= ifelse(site_reference %in% "RU-Plt", gpp *-1, gpp)) %>%#fixing because gpp is not negative for this site
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+dyukarev.ch <- read_csv("Russian data/ABCfluxv2_vars - Dyukarev-Veretennikova.chamber.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")%>%
+  mutate(chamber_nr_measurement_days_co2= ifelse(is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_ch4= ifelse(is.na(nee), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days = NULL)
 
 ###Mike Peacock####-------------------------------------------------------------
-peacock <- read_csv("ABCfluxv2.vars_Mike_Peacock_terrestrialchamber.csv")
+peacock <- read_csv("ABCfluxv2.vars_Mike_Peacock_terrestrialchamber.csv") %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days") #chamber that was used measures both CO2 and CH4
 
 ###Ji Young Jung####------------------------------------------------------------
 jung <- read_csv("ABCfluxv2.vars_JYJ_230639.csv") %>% 
@@ -51,22 +69,29 @@ group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
-  rename_with(~gsub("_mean", "", .), everything())  # Remove "_mean" from column names
+  rename_with(~gsub("_mean", "", .), everything()) %>%  # Remove "_mean" from column names
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days") 
 
 ###Inge Althuizen ####----------------------------------------------------------
-althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.vars_updateApril2024.csv")
+althuizen <- read_csv("ABCfluxv2_Iskoras_IngeAlthuizen.vars_updateApril2024.csv") %>%
+  dplyr::filter(!nee< -1000)
 
 ### Christopher Schulze####-----------------------------------------------------
-schulze.ch <- read_csv("ABCflux_SMC_STR_LUT_vCS_2023-12-25.csv") %>% mutate(reco= as.numeric(reco)) #to remove soil respiration data
-schulze.lut.ec <- read_csv("ABCflux_LUT_vCS_2023-12-25.csv")
-schulze.str.ec <- read_csv("ABCflux_STR_vCS_2023-12-25.csv")
+schulze.ch <- read_csv("ABCflux_SMC_STR_LUT_vCS_2023-12-25.csv") %>% 
+  mutate(reco= as.numeric(reco))#to remove soil respiration data
+schulze.lut.ec <- read_csv("ABCflux_LUT_vCS_2023-12-25.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+schulze.str.ec <- read_csv("ABCflux_STR_vCS_2023-12-25.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ### Vincent Jassey ####---------------------------------------------------------
-jassey <- read_csv("ABCfluxv2.vars_JASSEY.csv")
+jassey <- read_csv("ABCfluxv2.vars_JASSEY.csv") %>%
+  dplyr::rename("chamber_nr_measurement_days_nee"= "chamber_nr_measurement_days") 
 jassey <- jassey %>% dplyr::filter(!site_name %in% 'Lapazeuil')
 
 ### Alexandre Roy ####----------------------------------------------------------
-roy <- read_csv("ABCflux_MES.csv")
+roy <- read_csv("ABCflux_MES.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ### Jackie Hung ####------------------------------------------------------------
 hung.ec <- read_csv("ABCfluxv2_Hung_Minions_tower.csv")
@@ -91,23 +116,30 @@ heffernan <- read_csv("ABCfluxv2.vars.liamheffernan.lutose.csv")
 ### Helena Rautakoski###--------------------------------------------------------
 rautakoski <- read_csv("ABCfluxv2_Ranskala.csv")
 rautakoski <- rautakoski %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")%>%
   mutate(site_name= ifelse(notes=="Treatment: Area that will be harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment", site_name))%>%
   mutate(site_name= ifelse(notes=="Treatment: Continuous cover forestry treatment. Area harvested in the end of March 2021", "Ränskälänkorpi, Continuous cover forestry treatment", site_name)) %>%
   mutate(site_reference= ifelse(site_name=="Ränskälänkorpi, Continuous cover forestry treatment", "FI-Ran forestry treatment", site_reference))
 
 
 ### Efren Lopez-Blanco###-------------------------------------------------------
-lopezblanco.ec <- read_csv("ABCflux_GEM2022data_upto2022.tower.csv", na = "-9999")
+lopezblanco.ec <- read_csv("ABCflux_GEM2022data_upto2022.tower.csv", na = "-9999") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 lopezblanco.ch <- read_csv("ABCflux_GEM2022data_upto2022.ch.csv", na = "-9999")
-lopezblanco.ch$chamber_nr_measurement_days <- "Continuous" #automatic chambers
+lopezblanco.ch$chamber_nr_measurement_days_ch4 <- "Continuous" #automatic chambers
 
 ### Mika Aurela####-------------------------------------------------------------
-aurela.terv <- read_csv("ABCfluxv2_tervalaminsuotower.csv")
-aurela.lett.ec <- read_csv("ABCfluxv2_lettosuo.vars.tower.csv")
-aurela.lett.ch <- read_csv("ABCfluxv2_lettosuo.vars.chamber.csv")
+aurela.terv <- read_csv("ABCfluxv2_tervalaminsuotower.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+aurela.lett.ec <- read_csv("ABCfluxv2_lettosuo.vars.tower.csv")%>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+aurela.lett.ch <- read_csv("ABCfluxv2_lettosuo.vars.chamber.csv")%>%
+  dplyr::rename("gap_fill_perc_ch4"= "gap_fill_perc")
 
 ###Pertti J. Martikainen#####---------------------------------------------------
-martikainen <- read_csv("Kaamanen aapa mire_Pertti J. Martikainen.csv")
+martikainen <- read_csv("Kaamanen aapa mire_Pertti J. Martikainen.csv") %>%
+  dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days") 
+  
 
 ###Pierre Tallidart#####--------------------------------------------------------
 tallidart.ec <- read_csv("ABCfluxv5_CA-BOU_tower.csv")
@@ -129,7 +161,8 @@ sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
 sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
 
 ###Geert Hensgens####-----------------------------------------------------------
-hensgens.ec <- read_csv("ABCfluxv2.KYT.csv")
+hensgens.ec <- read_csv("ABCfluxv2.KYT.csv") %>%
+  mutate(gpp=  gpp *-1) #fixing because gpp is not negative
 
 ###Danila Illyasov####---------------------------------------------------------
 ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%	
@@ -139,7 +172,9 @@ ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
   rename_with(~gsub("_mean", "", .), everything()) %>% # Remove "_mean" from column names
-  mutate(site_reference= paste(site_reference, "agg", sep="_"))
+  mutate(site_reference= paste(site_reference, "agg", sep="_")) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days") 
+  
 
 
  glagolev.ch <- read_csv("ABCfluxv2_var_Dorokhovo_Glagolev_Runkov_Mochenov.ch.csv") %>%
@@ -150,23 +185,29 @@ ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
   rename_with(~gsub("_mean", "", .), everything()) %>% # Remove "_mean" from column names
-  mutate(site_reference= paste(site_reference, "agg", sep="_"))
+  mutate(site_reference= paste(site_reference, "agg", sep="_"))%>%
+   dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days") 
 
 
 ###Joachim Jansen####-----------------------------------------------------------
 jansen.ec <- read_csv("ABCfluxv2_vars_SE-St1_qcJV_ter_tower.csv")
 
 ###Sean Carey####---------------------------------------------------------------
-carey.ec <- read_csv("ABCfluxv2.vars_Carey_Dec20.csv")
+carey.ec <- read_csv("ABCfluxv2.vars_Carey_Dec20.csv")%>%
+   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+ #manually switched gpp and reco for Wolf_creek_SparseShrub and Wolf_creek_Buckbrush because i believe it was a data entry error
 
 ###Carolina Voigt####-----------------------------------------------------------
 voigt.ch <- read_csv("ABCfluxv2_CarolinaVoigt.csv") %>% 
   mutate(site_reference= ifelse(flux_method_detail== "automated chamber", paste(site_reference, "Automatic Chamber"), site_reference)) %>%
   dplyr::filter(!(nee_seasonal_interval %in% "06/27/2019-08/24/2019")) %>%
-  dplyr::filter(!(ch4_flux_seasonal_interval %in% "05/31/2021-06/09/2021"))
+  dplyr::filter(!(ch4_flux_seasonal_interval %in% "05/31/2021-06/09/2021"))%>%
+   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc") %>%
+   dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days") 
 
 ###Roger Seco####---------------------------------------------------------------
-seco.ec <- read_csv("ABCfluxv2.vars_RogerSeco_birch.csv")
+seco.ec <- read_csv("ABCfluxv2.vars_RogerSeco_birch.csv")%>%
+   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ###Sujan Pal and Ryan Sullivan####----------------------------------------------
 pal.bar.ec <- read_csv("BAR_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")%>% 
@@ -177,10 +218,13 @@ pal.oli.ec <- read_csv("OLI_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")
 peichl.deg.ch <- read_csv("ABCfluxv2.vars_SE-Deg_ch.csv")
 peichl.hlf.ec <- read_csv("ABCfluxv2.vars_SE-Hlf.csv")
 peichl.hlm.ec <- read_csv("ABCfluxv2.vars_SE-Hlm.csv")
-peichl.stj.ec <- read_csv("ABCfluxv2.vars_SE-Stj.csv")
+peichl.stj.ec <- read_csv("ABCfluxv2.vars_SE-Stj.csv") %>%
+  mutate(gpp= gpp *-1) #fixing because gpp is not negative for this site
 
 ###Claire Treat, Lona van Delden####--------------------------------------------
-treat.ch <- read_csv("ABCfluxv2_Siikaneva2022.csv")
+treat.ch <- read_csv("ABCfluxv2_Siikaneva2022.csv") %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days") #chamber that was used measures both CO2 and CH4
 #fix units from ug CO2/CH4 to g C 
 treat.ch$nee <- treat.ch$nee*0.000001/44.01*12.01
 treat.ch$reco <- treat.ch$reco*0.000001/44.01*12.01
@@ -196,7 +240,10 @@ treat.ch <- treat.ch %>%
 tuittila.ch <- read_csv("ABCfluxv2.vars_Siikaneva2.csv") %>%
   mutate(site_reference= ifelse(!is.na(ch4_flux_total), paste(site_reference, "ch4"), site_reference)) %>%
   mutate(site_reference= ifelse(!is.na(nee), paste(site_reference, "nee"), site_reference)) %>%
-  mutate(site_reference= ifelse(!is.na(reco), paste(site_reference, "reco"), site_reference)) 
+  mutate(site_reference= ifelse(!is.na(reco), paste(site_reference, "reco"), site_reference)) %>%
+  mutate(chamber_nr_measurement_days_ch4= ifelse(is.na(nee) & is.na(reco), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_co2= ifelse(is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days= NULL)
 
 
 ###Kuno Kasak####---------------------------------------------------------------
@@ -213,14 +260,21 @@ bjorkman.ch <- read_csv("Flux Latnjajaure.csv", na= "NA")
 salazar.ch <- read_csv("ABCfluxv2.vars_AS.csv", na= "NA") %>% 
   mutate(site_reference= ifelse(veg_detail== "Anthelia biocrust", paste(site_reference, "_biocrust", sep= ""), site_reference)) %>%
   mutate(site_reference= ifelse(veg_detail== "Mixed of moss, lichens and anthelia biocrust", paste(site_reference, "_mixedveg", sep=""), site_reference)) %>%
-  mutate(site_reference= ifelse(veg_detail== "Bare ground", paste(site_reference, "_bareground", sep= ""), site_reference))
+  mutate(site_reference= ifelse(veg_detail== "Bare ground", paste(site_reference, "_bareground", sep= ""), site_reference)) %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days") #chamber that was used measures both CO2 and CH4
 
 ### Kyle Arndt ###--------------------------------------------------------------
 arndt.ec.cf <- read_csv("ABCfluxv2.vars_arndt_cf3.csv")
-arndt.ec.iq <- read_csv("ABCfluxv2.vars_IQ1.csv")
+arndt.ec.iq <- read_csv("ABCfluxv2.vars_IQ1.csv")%>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ### Hannu Nykanen ###-----------------------------------------------------------
-nykanen.ch <- read_csv("Kevo-ABCfluxv_Nykänen_231120.csv")
+nykanen.ch <- read_csv("Kevo-ABCfluxv_Nykänen_231120.csv")%>%
+  mutate(chamber_nr_measurement_days_co2= ifelse(is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days_ch4= ifelse(is.na(nee), chamber_nr_measurement_days, NA)) %>%
+  mutate(chamber_nr_measurement_days = NULL)
+
 
 ### Maija E. Marushchak ###-----------------------------------------------------
 marushchak.ch <- read_csv("ABCfluxv2.MaijaMarushchak.csv", na= "NA")
@@ -258,14 +312,20 @@ webb.ch <- webb.ch %>%
 johannesson.ch <-read_delim("MethaneData_CFJ.csv", delim = ";", escape_double = FALSE, locale = locale(decimal_mark = ",", 
                           encoding = "Latin1"), trim_ws = TRUE)[,-1]
 johannesson.ch  <- johannesson.ch %>%
-  mutate(site_reference= str_split(site_id, "Johannesson_") %>% sapply(`[`, 2), sep="_")
+  mutate(site_reference= str_split(site_id, "Johannesson_") %>% sapply(`[`, 2), sep="_") %>%
+  dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days")
 
 ### David Olefeldt ###----------------------------------------------------------
-olefeldt.ch <- read_csv("ABCflux.kashakempton.lutose.2023.csv")
+olefeldt.ch <- read_csv("ABCflux.kashakempton.lutose.2023.csv")%>%
+  dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days")
+
 
 ### Anatoly Prokushkin ###------------------------------------------------------
-prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv") 
-prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv")
+prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv") %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
+
+prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv") %>%
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ### Matthias Goeckede/Abdullah Bolek ###----------------------------------------
 goeckede.1.ec <- read_csv("ABCfluxv2.vars_Tower1.csv") %>%
@@ -274,7 +334,9 @@ goeckede.2.ec <- read_csv("ABCfluxv2.vars_Tower2.csv")%>%
   mutate(site_name="Cherskii reference")
 
 ### Kyra St.Pierre ###----------------------------------------------------------
-stpierre.ch <- read_csv("ABCfluxv2.vars_KSP.csv")
+stpierre.ch <- read_csv("ABCfluxv2.vars_KSP.csv")%>%
+  dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days")
+
 
 ### Elena Blanc-Betes ###-------------------------------------------------------
 blancbetes.ch <- read_csv("ABCflux_blanc-betes-with_ch4.csv") %>%
@@ -283,13 +345,16 @@ blancbetes.ch <- read_csv("ABCflux_blanc-betes-with_ch4.csv") %>%
 
 
 ### Räsänen Aleksi ###----------------------------------------------------------
-rasanen.ch <- read_csv("ABCfluxv2vars_AR_corrected.csv")
+rasanen.ch <- read_csv("ABCfluxv2vars_AR_corrected.csv") %>%
+  dplyr::rename("chamber_nr_measurement_days_ch4"= "chamber_nr_measurement_days")
 
 ### Anna Virkkala ###----------------------------------------------------------
 virkkala.2017.ch <- read_csv("abcflux_kilpisjarvi_2017_co2_virkkala_march2024.csv") %>%
-  mutate(site_reference= str_extract(site_id, "chamber_\\d+"))
+  mutate(site_reference= str_extract(site_id, "chamber_\\d+"))%>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
 virkkala.2018.ch <- read_csv("abcflux_kilpisjarvi_2018_ch4_virkkala_march2024.csv") %>%
-  mutate(site_reference= str_extract(site_id, "chamber_\\d+"))
+  mutate(site_reference= str_extract(site_id, "chamber_\\d+"))%>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
 
 
 ## PROCESSING DATA FROM PIs #############################################################################
@@ -417,6 +482,9 @@ davidson.16.monthly <- davidson.16.monthly %>%
                             site_name %in% "Atqasuk"~ "",
                             site_name %in% "Ivotuk"~ ""))
 davidson.16.monthly$site_id <- paste("Davidson_",davidson.16.monthly$site_reference,"_agg", sep = "")
+davidson.16.monthly <- davidson.16.monthly   %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
 
 #####Processing davidson.19####
 davidson.19 <- read_excel("Davidson/Davidson et al. 2019 Biogeosciences_data.xlsx", sheet= 2)
@@ -428,7 +496,8 @@ davidson.19.monthly <- davidson.19 %>%
   group_by(year, month, site_reference, Site,`Peatland type` ) %>%
   dplyr::summarise(ch4_flux_total= mean(`mg CH4 m2 d1`, na.rm = TRUE),
             water_table_depth= mean(`Water table (cm) below ground surface`, na.rm = TRUE),
-            chamber_nr_measurement_days= n_distinct(day))
+            chamber_nr_measurement_days_ch4= n_distinct(day))
+
 #change units
 davidson.19.monthly$ch4_flux_total <- davidson.19.monthly$ch4_flux_total /1000* days_in_month(as.yearmon(paste(davidson.19.monthly$year,davidson.19.monthly$month,sep = '-')))
 #rename columns
@@ -469,7 +538,7 @@ davidson.21 <- davidson.21 %>% mutate(year= year(as.Date(Date, format= "%m/%d/%Y
 davidson.21.monthly <- davidson.21 %>% group_by(Site, site_reference, year, month ) %>%
   group_by(year, month, Site, site_reference, Veg_type ) %>%
   dplyr::summarise(gpp= mean(GPP, na.rm=TRUE),
-            chamber_nr_measurement_days= n_distinct(day))
+            chamber_nr_measurement_days_co2= n_distinct(day))
 #change unit
 davidson.21.monthly$gpp <- davidson.21.monthly$gpp *days_in_month(as.yearmon(paste(davidson.21.monthly$year,davidson.21.monthly$month,sep = '-')))
 #rename
@@ -525,7 +594,7 @@ dobosy.all <- read_csv("original files/CO2flux_ADC_Synthesis_Metadata_TOWER_2018
 dobosy <- dobosy.all %>% dplyr::filter(Study_ID %in% "Dobosy_Deadhorse_NOAA-ATDD_tower_1_Kochnendorfer") %>%
   group_by(Meas_year, End_month_meas) %>%
   reframe(nee= sum(as.numeric(NEE_gC_m2), na.rm = TRUE),
-                   gap_fill_perc= mean(as.numeric(`Gap_%`), na.rm = TRUE),
+                   gap_fill_perc_nee= mean(as.numeric(`Gap_%`), na.rm = TRUE),
                    tair= mean(as.numeric(Tair_int_C), na.rm = TRUE),
                    tsoil_surface= mean(as.numeric(Tsoil_C), na.rm = TRUE),
                    soil_moisture= mean(as.numeric(`Soil_moisture_%`), na.rm = TRUE),
@@ -548,15 +617,13 @@ dobosy$veg_detail <- "Wet sedge"
 dobosy$thaw_depth <- "20 - 50 cm"
 
 
-
-
 #####Torbern Tagesson####
 #tower data
 sheet <- excel_sheets("Torbern Tagesson/Flux_data_tower_2008_2009.xlsx") 
 tag.ec  <- bind_rows(lapply(setNames(sheet, sheet),  
                     function(x) read_excel("Torbern Tagesson/Flux_data_tower_2008_2009.xlsx", sheet=x, na=c("NA","9999"))) )
 tag.ec.monthly <- tag.ec %>%
-  mutate(year= year(as.Date(Time) ), month= month(as.Date(Time))) %>%
+  mutate(year= year(as.Date(Time) ), month= month(as.Date(Time)), day= day(as.Date(Time))) %>%
   group_by(year, month) %>%
   dplyr::summarise( ch4_flux_total= mean(`GAP FILLED CH4 FLUX (mg CH4 m-2 h-1)`, na.rm= T),
                     gpp= mean(`GAPfilled GPP (umol CO2 m-2 s-1)`, na.rm= T),
@@ -656,8 +723,10 @@ tag.ch.monthly <- tag.ch %>%
                    reco= mean(`RESP (mg CO2 m−2 h−1)`, na.rm = T),
                    gpp= mean(`GPP (mg CO2 m−2 h−1)`, na.rm = T),
                    tair= mean(`AirTemp(200cm)(C)`, na.rm = T),
-                   chamber_nr_measurement_days= n_distinct(day))
-#change units
+                   chamber_nr_measurement_days= n_distinct(day)) %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
+
 tag.ch.monthly$ch4_flux_total<- tag.ch.monthly$ch4_flux_total/1000/16.04*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
 tag.ch.monthly$nee<- tag.ch.monthly$nee/1000/44.01*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
 tag.ch.monthly$gpp<- tag.ch.monthly$gpp/1000/44.01*12.01*24*days_in_month(as.yearmon(paste(tag.ch.monthly$year, tag.ch.monthly$month,sep = '-')))
@@ -741,7 +810,10 @@ chafe.monthly <- chafe %>% group_by(year, month, site_reference, latitude, longi
           tair= mean(as.numeric(air_temp), na.rm = TRUE),
           thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
           soil_moisture= mean(as.numeric(VWC), na.rm = TRUE),
-          chamber_nr_measurement_days= n_distinct(day))
+          chamber_nr_measurement_days= n_distinct(day)) %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
+
 #convert units
 chafe.monthly$nee<- chafe.monthly$nee*1.0368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
 chafe.monthly$reco<- chafe.monthly$reco*1.0368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
@@ -821,7 +893,10 @@ vaughn.monthly <- vaughn %>% group_by(year, month, site_reference, latitude, lon
           soil_moisture= mean(as.numeric(VWC), na.rm = TRUE),
           tair= mean(as.numeric(air_temp), na.rm = TRUE),
           thaw_depth= mean(as.numeric(thawdepth), na.rm = TRUE),
-          chamber_nr_measurement_days= n_distinct(day))
+          chamber_nr_measurement_days= n_distinct(day)) %>%
+  mutate(chamber_nr_measurement_days_ch4= chamber_nr_measurement_days) %>%
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
+
 #remove rows without flux data
 vaughn.monthly <- vaughn.monthly %>% dplyr::filter(!if_all(c(nee, reco, ch4_flux_total), ~ is.na(.)))
 #convert units
@@ -889,9 +964,7 @@ PIdat.ch2 <- PIdat.ch %>%
   mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal),  citation, NA)) %>%
   mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), extraction_source, NA)) %>%
   mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal), extraction_source, NA)) %>%
-  mutate(chamber_nr_measurement_days_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), chamber_nr_measurement_days, NA)) %>%
-  mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal), chamber_nr_measurement_days, NA)) %>%
-  mutate(citation = NULL, extraction_source= NULL, chamber_nr_measurement_days= NULL)
+  mutate(citation = NULL, extraction_source= NULL)
 
 
 
