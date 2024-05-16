@@ -64,14 +64,16 @@ ggplot(data=dat, aes(x= variable, y=Percent.data.present , fill= variable)) +
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 anna.bawld.ec <- read_excel("chamber data extractions/ABCfluxv2.vars_AV_0502_2024.xlsx", sheet= 5)[-(1:3),-1] %>% select(-`...78`) # remove blank column
 anna.bawld.ec$extraction_source <- "BAWLD-CH4-Publication"
+anna.bawld.ec$dataentry_person <- "Anna"
 
-ikw.co2.ec <- read_csv("IKW.CO2.dataextractions.tower.csv") %>% select(-`...77`) # remove blank column
+ikw.co2.ec <- read_csv("chamber data extractions/IKW.CO2.dataextractions.tower.csv") %>% select(-`...77`) # remove blank column
 ikw.co2.ec $extraction_source <- "Publication"
+ikw.co2.ec$dataentry_person <- "Isabel"
 
 
 #Combine all 
 bawld.ec.dat <- rbindlist(list( ikw.co2.ec, anna.bawld.ec ), fill = TRUE)
-bawld.ec.dat <- bawld.ec.dat %>% dplyr::filter(!site_name=="") #removing blank rows
+bawld.ec.dat <- bawld.ec.dat %>% dplyr::filter(!site_name=="") 
 bawld.ec.dat <- bawld.ec.dat %>% 
   mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total), citation, NA)) %>%
   mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), citation, NA)) %>%
