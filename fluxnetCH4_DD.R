@@ -22,11 +22,17 @@ CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM
                                              P_F, D_SNOW_F, TS_1, SWC_F, GPP_NT, GPP_DT,
                                              RECO_NT, RECO_DT, PPFD_IN_F, NEE_F_ANNOPTLM,
                                              data_version, FCH4_F_ANNOPTLM_QC)
-###  Adding gap_fill_perc####
-CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc_ch4= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
-                                                             FCH4_F_ANNOPTLM_QC %in% 1 ~0))
+# ###  Adding gap_fill_perc####
+# CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc_ch4= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
+#                                                              FCH4_F_ANNOPTLM_QC %in% 1 ~0))
 
-##some extreme partitiioned fluxes that we want to remove
+# 5/21/24 no gaps loger than 2 months
+CH4fluxnet <- CH4fluxnet %>%
+  mutate(FCH4_F_ANNOPTLM= ifelse(FCH4_F_ANNOPTLM_QC %in% 3, NA, FCH4_F_ANNOPTLM))
+
+
+
+##some extreme partitioned fluxes that we want to remove
 CH4fluxnet <- CH4fluxnet %>%
   mutate(GPP_DT= ifelse(GPP_DT> 1000, NA, GPP_DT)) %>%
   mutate(GPP_NT= ifelse(GPP_NT> 1000, NA, GPP_NT)) %>%
@@ -39,18 +45,23 @@ CH4fluxnet <- CH4fluxnet %>%
 CH4fluxnet$year <- substr(CH4fluxnet$TIMESTAMP,1,4)
 CH4fluxnet$month <- substr(CH4fluxnet$TIMESTAMP,5,6)
 #get cumulative NEE, GPP, and RECO for each month
-CH4fluxnet.permonth<-  group_by(CH4fluxnet, year, month, site_id, data_version) %>% 
-  dplyr::summarise(FCH4_F = sum(FCH4_F_ANNOPTLM, na.rm= FALSE),
+CH4fluxnet.permonth<- CH4fluxnet %>% group_by(year, month, site_id, data_version) %>% 
+  dplyr::summarise(percent_na_ch4 = (sum(is.na(FCH4_F_ANNOPTLM))/n()*100),
+                   percent_na_nee = (sum(is.na(NEE_F_ANNOPTLM))/n()*100),
+                   percent_na_gpp.dt = (sum(is.na(GPP_DT))/n()*100),
+                   percent_na_reco.dt = (sum(is.na(RECO_DT))/n()*100),
+                   percent_na_gpp.nt = (sum(is.na(GPP_NT))/n()*100),
+                   percent_na_reco.nt = (sum(is.na(RECO_NT))/n()*100),
+                   FCH4_F = sum(FCH4_F_ANNOPTLM, na.rm= TRUE),
                    TA_F = mean(TA_F, na.rm= TRUE),
                    P_F = sum(P_F, na.rm= TRUE),
                    D_SNOW_F = mean(D_SNOW_F, na.rm= TRUE),
                    TS_1 = mean(TS_1, na.rm= TRUE),
                    SWC_F= mean(SWC_F, na.rm= TRUE),
                    PPFD_IN_F = mean(PPFD_IN_F, na.rm= TRUE),
-                   GPP_NT= sum(GPP_NT, na.rm=FALSE), GPP_DT=sum(GPP_DT, na.rm= FALSE),
-                   RECO_NT= sum(RECO_NT, na.rm= FALSE), RECO_DT=sum(RECO_DT, na.rm= FALSE),
-                   NEE_F= sum(NEE_F_ANNOPTLM, na.rm= FALSE),
-                   gap_fill_perc_ch4= mean(gap_fill_perc_ch4, na.rm= TRUE))
+                   GPP_NT= sum(GPP_NT, na.rm=TRUE), GPP_DT=sum(GPP_DT, na.rm= TRUE),
+                   RECO_NT= sum(RECO_NT, na.rm= TRUE), RECO_DT=sum(RECO_DT, na.rm= TRUE),
+                   NEE_F= sum(NEE_F_ANNOPTLM, na.rm= TRUE))
 
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
@@ -104,6 +115,46 @@ CH4fluxnetALL$gap_fill <- "ANNOPTLM"
 #-----------------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
+
+x <- CH4fluxnet.permonth %>% dplyr::filter(percent_na_ch4 ==100)
+
+CH4fluxnetALL$ts <- as.yearmon(paste(CH4fluxnetALL$year, CH4fluxnetALL$month,sep = '-')) #add timestamp
+
+ggplot(data = subset(CH4fluxnetALL,CH4fluxnetALL$site_id=='US-EML'))+theme_bw()+ggtitle('US-EML')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,FCH4_F, group= site_id))+
+  geom_point(aes(ts,FCH4_F, color= percent_na_ch4))+
+  scale_color_gradient(low="blue", high="green")
+
+
+
+ggplot(CH4fluxnetALL, aes(x = ts, y = GPP, color= percent_na_gpp)) +
+  geom_point()+
+  geom_smooth(method = "lm")+
+  labs( x = "Date",
+        y = "GPP g C m-2 month-1") +
+  theme_minimal()
+
+ggplot(CH4fluxnetALL, aes(x = ts, y = RECO, color= percent_na_reco)) +
+  geom_point()+
+  geom_smooth(method = "lm")+
+  labs( x = "Date",
+        y = "RECO g C m-2 month-1") +
+  theme_minimal()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ####extract list of sites and dates covered###
