@@ -5,8 +5,8 @@ library(readr)
 library(zoo)
 library(ggplot2)
 
-setwd("/Users/iwargowsky/Desktop/ABCFlux v2")  
-abc <- read_csv("ABC.v2.apr24.full.csv")
+setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
+abc <- read_csv("ABC.v2.may24.cleanish.nodupes.csv")
 
 abc.ch4 <- abc %>% filter(!is.na(ch4_flux_total)) #filter for rows with methane fluxs
 
@@ -113,5 +113,55 @@ abc.ch4.condense.seasonal <- abc.ch4.seasonal %>%
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(abc.ch4.condense.seasonal, "abc.ch4.seasonal.landcover.csv")
+
+
+
+
+
+
+
+abc.ch4.ch <- abc.ch4.ch %>%
+  dplyr::filter(!is.na(biome))%>%
+  dplyr::filter(!biome=="Temperate")%>%
+  mutate(region= case_when(country %in% "USA"~ "Alaskan",
+                           country %in% "Canada" ~ "Canadian",
+                           country %in% c("Finland","Greenland", "Iceland", "Norway",
+                                          "Sweden", "Estonia")~ "Northern European",
+                           country %in% c("Russia", "Mongolia") ~ "Russian")) %>% 
+  mutate( Region.Biome = paste(region, biome))
+
+
+
+
+ggplot(abc.ch4.ch ) + 
+  geom_point(aes(ts, ch4_flux_total, color= Region.Biome), size=3)+
+  ggtitle("Chamber CH4 by Region and Biome (days>4)") +
+  labs(x= NULL, y = expression(paste("CH4 (gC m"^"-2", "month"^"-1",")")))+
+  geom_hline(yintercept = 0)+ scale_color_brewer(palette = "Paired")+
+  theme_bw(base_size = 12) + theme(legend.position = "bottom")+
+  scale_y_continuous(expand= c(0,0), limits = c(-10,85))  
+
+
+
+%>% dplyr::filter(chamber_nr_measurement_days_ch4 > 4 | is.na(chamber_nr_measurement_days_ch4)) %>% 
+  dplyr::filter(chamber_nr_measurement_days> 4 | is.na(chamber_nr_measurement_days))
+
+
+
+x <- abc.ch4.ch %>% select(site_name, year, month, ch4_flux_total, Region.Biome)
+
+
+abc.ch4.ch <- abc.ch4.ch %>% 
+  dplyr::filter(!is.na(ch4_flux_total)) 
+
+
+x<- abc.ch4.ch %>%
+  dplyr::filter(as.numeric(chamber_nr_measurement_days_ch4) > 4 | is.na(chamber_nr_measurement_days_ch4)|chamber_nr_measurement_days_ch4 %in% "Continuous" ) %>% 
+  dplyr::filter(as.numeric(chamber_nr_measurement_days)> 4 | is.na(chamber_nr_measurement_days))
+
+
+
+
+
 
 

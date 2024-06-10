@@ -213,3 +213,109 @@ lapply(unique(abc.co2.ch.solo.x$site_name), function(site) {
 
   return(p)
 })
+
+
+abc.co2.ch <- abc.co2.ch %>%
+  dplyr::filter(!is.na(biome))%>%
+  dplyr::filter(!biome=="Temperate")%>%
+  mutate(region= case_when(country %in% "USA"~ "Alaskan",
+                             country %in% "Canada" ~ "Canadian",
+                             country %in% c("Finland","Greenland", "Iceland", "Norway",
+                                            "Sweden", "Estonia")~ "Northern European",
+                             country %in% c("Russia", "Mongolia") ~ "Russian")) %>% 
+  mutate( Region.Biome = paste(region, biome))
+
+
+
+
+ggplot(abc.co2.ch #%>% dplyr::filter(chamber_nr_measurement_days_co2> 4 | is.na(chamber_nr_measurement_days_co2)) %>% 
+         #dplyr::filter(chamber_nr_measurement_days> 4 | is.na(chamber_nr_measurement_days))
+       ) + 
+  geom_point(aes(ts, nee, color= Region.Biome), size=3)+
+  ggtitle("Chamber NEE by Region and Biome") +
+  labs(x= NULL, y = expression(paste("NEE (gC m"^"-2", "month"^"-1",")")))+
+  geom_hline(yintercept = 0)+ scale_color_brewer(palette = "Paired")+
+  theme_bw(base_size = 12) + theme(legend.position = "bottom")+
+  scale_y_continuous(expand= c(0,0), limits = c(-500,300))  
+
+
+
+
+
+x <- abc.co2.ch %>% select(site_name, year, month, nee, Region.Biome)
+
+
+
+
+ 
+
+setwd("/Users/iwargowsky/Desktop/arcticborealCflux")  
+abc.nogaps <- read_csv("ABC.v2.may24.cleanish.nodupes.nogapfilled.csv") %>%
+  mutate(nee= as.numeric(nee),
+         gpp= as.numeric(gpp),
+         reco= as.numeric(reco))
+abc.nogaps$extraction_source <- paste("CO2:", abc.nogaps$extraction_source_co2, "CH4:", abc.nogaps$extraction_source_ch4, sep= " ")
+
+###looking at just CO2
+abc.co2.nogaps <- abc.nogaps %>% 
+  dplyr::filter(!if_all(c(nee, gpp, reco, nee_seasonal, co2_flux_storage, co2_flux_storage_bubble), ~ is.na(.)))
+
+abc.co2.nogaps$ts <- as.yearmon(paste(abc.co2.nogaps$year, abc.co2.nogaps$month,sep = '-')) #add timestamp
+
+abc.co2.ec.nogaps <- abc.co2.nogaps %>% dplyr::filter(flux_method== "EC") #filter for EC towers
+
+
+
+
+
+abc.co2.ec.x <- gdata::combine(abc.co2.ec , abc.co2.ec.nogaps)
+
+
+
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+lapply(unique(abc.co2.ec$site_name), function(site) {
+  # Subset the data for the current site
+  site_data <- abc.co2.ec.x %>% dplyr::filter(site_name == site)
+  
+  # Create the plot
+  p <- ggplot(site_data) +
+    geom_line(data = site_data %>% dplyr::filter(source == 'abc.co2.ec.nogaps'), aes(x = ts, y = nee), color= "blue") +
+    geom_point(data = site_data %>% dplyr::filter(source == 'abc.co2.ec.nogaps'), aes(x = ts, y = nee)) +
+    geom_line(data = site_data %>% dplyr::filter(source == 'abc.co2.ec'), aes(x = ts, y = nee), linetype= "dashed") +
+    geom_point(data = site_data %>% dplyr::filter(source == 'abc.co2.ec'), aes(x = ts, y = nee, color = gap_fill_perc_nee)) +
+    theme(legend.position = "bottom") +
+    scale_color_gradient(low="green", high="red")+
+    geom_hline(yintercept = 0) +
+    labs(title = paste("EC ", site),
+         x = "Date",
+         y = "g C m-2 month-1")
+  
+  # Save the plot to a file
+  ggsave(filename = paste0("CO2_EC2gapfill.eitheror/EC_", site, ".jpeg"), plot = p, width = 10, height = 6)
+  
+  return(p)
+})
+
+#look at specific sites
+ggplot(data = subset(abc.co2.ec, abc.co2.ec$site_name=='Tombstone_slavin'))+theme_bw()+ggtitle('Tombstone_slavin')+
+  geom_hline(yintercept = 0)+
+  geom_line(aes(ts,nee, group= site_name))+
+  geom_point(aes(ts,nee, color= gap_fill_perc_nee))+
+  scale_color_gradient(low="green", high="red")
+
+
+
+
+abc.co2.ch <- abc.co2.ch %>% 
+  dplyr::filter(!is.na(nee)) 
+
+
+x<- abc.co2.ch %>%
+  dplyr::filter(as.numeric(chamber_nr_measurement_days_co2) > 3 | is.na(chamber_nr_measurement_days_co2)|chamber_nr_measurement_days_co2 %in% "Continuous" ) %>% 
+  dplyr::filter(as.numeric(chamber_nr_measurement_days)> 3 | is.na(chamber_nr_measurement_days))
+
+
+  
+
+
+
