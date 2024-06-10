@@ -4,9 +4,10 @@ library(readr)
 library(rquery)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-abc <- read_csv("ABC.v2.may24.csv")
+abc <- read_csv("ABC.v2.jun24.csv")
 abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
 
+abc <- abc %>% mutate_all(~ifelse(is.nan(.), NA, .))
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
@@ -29,7 +30,8 @@ kuhn_landcover_disturb <- kuhn_landcover_disturb %>%
 
 x <- kuhn_landcover_disturb %>% get_dupes(site_reference, site_name)
 
-abc <- abc %>% left_join( kuhn_landcover_disturb, by= c("site_reference", "site_name"))
+abc <- abc %>% left_join( kuhn_landcover_disturb, by= c("site_reference", "site_name")) %>%
+  unite("Disturbance_Category", c(Disturbance_Category.x, Disturbance_Category.y), na.rm= TRUE, remove= TRUE)
 
 
 #specifying that if disturbance is NA then Disturbance_Category should also be NA
@@ -233,12 +235,14 @@ abc <- abc %>%
 
 ### ACTIVE LAYER THICKNESS#####_-----------------------------------------------------
 unique(abc$alt)
+hist(as.numeric(abc$alt))
 abc <- abc %>%
   mutate(alt= ifelse(alt %in% c("NaN", "-", "N/A"), NA, alt )) %>%
   mutate(alt= ifelse(alt %in% "> 150", 150, alt )) %>%
   mutate(alt= ifelse(alt %in% "50- 100", 75, alt )) %>%
   mutate(alt= ifelse(alt %in% "40-80", 60, alt )) %>%
   mutate(alt= ifelse(alt %in% "20 to 50", 35, alt ))
+
 #fixing sites where alt was really thaw_depth (but max thaw_depth should be alt)
 special.thaw_depth <- abc %>%
   dplyr::filter(site_name %in% c("Eight Mile Lake", "Stordalen Mire", "Zackenberg Fen")) %>%
@@ -256,17 +260,27 @@ abc <- abc %>%
 
 abc <- abc %>% natural_join(special.thaw_depth, by= c("site_name", "site_reference", "year"), jointype = "FULL" )
 
+#find sites where they give thaw_depth but not ALT, and make max value from thaw_depth ALT
+x <- abc %>% dplyr::filter(is.na(alt)) %>% #data without alt
+  dplyr::filter(!is.na(thaw_depth)) %>% #data with thaw_depth
+  mutate(thaw_depth= ifelse(as.numeric(thaw_depth)<0 , as.numeric(thaw_depth)*-1, thaw_depth)) %>%
+  group_by(year, site_name, site_reference)%>%
+  slice(which.max(thaw_depth)) %>%
+  dplyr::filter(month>6) %>% #ensure measurement comes from late in the season
+  group_by(year, site_name, site_reference)%>%
+  dplyr::summarise(alt= max(as.numeric(thaw_depth), na.rm=T)) 
+
+abc <- abc %>% natural_join(x, by= c("site_name", "site_reference", "year"), jointype = "FULL" )
+
 
 
 ### THAW DEPTH#####_------------------------------------------------
-unique(abc$thaw_depth)
+unique(abc$thaw_depth) 
 abc <- abc %>%
   mutate(thaw_depth= ifelse(thaw_depth %in% c("NaN", "N/A", "NA"), NA, thaw_depth )) %>%
   mutate(thaw_depth= ifelse(thaw_depth %in% "> 150", 150, thaw_depth )) %>%
   mutate(thaw_depth= ifelse(thaw_depth %in% "> 60", 60, thaw_depth )) %>%
-  mutate(thaw_depth= ifelse(thaw_depth %in% "20 - 50 cm", 35, thaw_depth ))
- 
-abc <- abc %>%
+  mutate(thaw_depth= ifelse(thaw_depth %in% "20 - 50 cm", 35, thaw_depth )) %>%
   mutate(notes = ifelse(thaw_depth %in% "5 to 9 m thick talik", "5 to 9 m thick talik", notes)) %>%
   mutate(notes = ifelse(thaw_depth %in% "5 to 9 m", "5 to 9 m", notes)) %>%
   mutate(notes = ifelse(thaw_depth %in% "Ice lens at depth of 40 cm in strings (below no frost)", "Ice lens at depth of 40 cm in strings (below no frost)", notes)) %>%
@@ -276,8 +290,10 @@ abc <- abc %>%
                                               "5 to 9 m",
                                               "Ice lens at depth of 40 cm in strings (below no frost)",
                                               "frozen at the surface, unfrozen between 67 and 150",
-                                              "frozen at the surface, unfrozen between 47 and 150"), NA, thaw_depth ))
-
+                                              "frozen at the surface, unfrozen between 47 and 150"), NA, thaw_depth )) %>%
+  mutate(thaw_depth= ifelse(as.numeric(thaw_depth)<0 , as.numeric(thaw_depth)*-1, thaw_depth))
+  
+summary(as.numeric(abc$thaw_depth))
 ### SNOW DEPTH #####_------------------------------------------------
 unique(abc$snow_depth)
 abc <- abc %>%
@@ -292,17 +308,17 @@ abc <- abc %>%
   mutate(snow_depth= ifelse(site_name %in% "North Star Yedoma", NA, snow_depth )) %>%
   mutate(snow_depth= ifelse(site_name %in% "ARM-NSA- Olitok", NA, snow_depth )) %>%
   mutate(snow_depth= ifelse(site_name %in% "Stordalen Palsa Bog (ICOS)" &
-                              year %in% c(2018:2022), NA, snow_depth ))
+                              year %in% c(2018:2022), NA, snow_depth )) %>%
+  mutate(snow_depth= ifelse(as.numeric(snow_depth)<0, NA, snow_depth ))
 
-
+summary(as.numeric(abc$snow_depth))
 ################ KENZIE'S CODE #-----------------------------------------------
 #Fixing country
 
 unique(abc$country)
 
 abc  <- abc %>%
-  mutate(country = ifelse(country %in% c("Greenland (Denmark)" ), 
-                          "Greenland", country)) %>%
+  mutate(country = ifelse(country %in% c("Greenland (Denmark)" ), "Greenland", country)) %>%
   mutate(country= ifelse(country %in% "Southwest Sweden", "Sweden", country)) %>%
   mutate(country = ifelse(country %in% "US", "USA", country)) %>%
   mutate(country = ifelse(country %in% "CA", "Canada", country)) %>%
@@ -815,16 +831,44 @@ abc <- abc %>%
 
 
 ### More cleaning by Isabel ###-----------------------------------------------------------
+#check lat long coords
 
-unique(abc$year) #okay
-unique(abc$month) #okay
+# # Load world country borders
+# world <- ne_countries(scale = 110, returnclass = "sf") %>% dplyr::filter(subregion %in% c("Northern America", "Central Asia", "Eastern Europe",
+#                                                   "Northern Europe", "Western Europe", "Southern Asia",
+#                                                   "Southern Europe", "Eastern Asia", "Western Asia"))
+# # Read additional spatial data
+# setwd("/Users/iwargowsky/Desktop/ABCFlux v2/Figures/AGU") 
+# permafrost <- st_read("UiO_PEX_PERZONES_5.0_20181128_2000_2016_NH") %>% dplyr::rename("Permafrost zone"= "EXTENT")
+# 
+# listofsites <- abc %>% 
+#   group_by(site_name, flux_method, country) %>%
+#   dplyr::summarise(latitude = mean(latitude, na.rm=T), longitude = mean(longitude, na.rm=T)) %>%
+# 
+# # Convert to sf object
+# sites <- st_as_sf(listofsites, coords = c("longitude", "latitude"), crs = st_crs("+proj=longlat +datum=WGS84"))
+# 
+# # Plot the map
+# ggplot() +
+#   geom_sf(data = permafrost, aes(fill = `Permafrost zone`), color = "NA") +
+#   scale_fill_brewer(palette = "Blues", direction = -1)+
+#   geom_sf(data = world, color = "black", fill = NA , size= 1) +
+#   geom_sf(data = sites, aes(color = country), fill = "black", size = 1) +
+#   scale_color_brewer(palette = "Set3")
+# 
+#Isabel:I found a few mistakes but fixed errors directly in excel for 5 sites (Blaesedalen, Hospitaldalen, Mellemlandet, Skarvefjed, UaF)
 
-unique(abc$notes) #okay
+### gap_fill_perc_ #####
+abc <- abc %>%
+  mutate(gap_fill_perc_nee = str_remove(gap_fill_perc_nee, "%"),
+         gap_fill_perc_nee = as.numeric(gap_fill_perc_nee)) %>%
+  mutate(gap_fill_perc_ch4 = str_remove(gap_fill_perc_ch4, "%"),
+         gap_fill_perc_ch4 = as.numeric(gap_fill_perc_ch4)) %>%
+  mutate(gap_fill_perc_gpp = str_remove(gap_fill_perc_gpp, "%"),
+         gap_fill_perc_gpp = as.numeric(gap_fill_perc_gpp)) %>%
+  mutate(gap_fill_perc_reco = str_remove(gap_fill_perc_reco, "%"),
+         gap_fill_perc_reco = as.numeric(gap_fill_perc_reco)) 
 
-### removing winter data that is entirely gapfilled ### ---------------------------
-
-x <- abc %>%
-  mutate(nongrow_gapfill_perc = mean())
 
 
 ### removing weird fluxes #####_-----------------------------------------------
@@ -919,7 +963,7 @@ abc <- abc %>% dplyr::filter(!(site_name== "Norunda" & year > 2022))
 abc <- abc %>% dplyr::filter(!(site_name== "Cherskii" & year == 2002 & month <7))
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
- write_csv(abc, "ABC.v2.may24.cleanish.wdupes.csv")
+write_csv(abc, "ABC.v2.jun24.cleanish.wdupes.csv")
 
 ### duplicate fluxes #####_--------------------------------------------------------
 abc <- abc %>%
@@ -979,10 +1023,42 @@ dupes <- abc.nodupes %>% get_dupes(site_name, site_reference, year, month, flux_
 #woo
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.may24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.jun24.cleanish.nodupes.csv")
 
 
 
+###removing data that is entirely gapfilled-------------------------------------
+
+update_nee <- function(df) {
+  df %>%
+    mutate(gap_fill_perc_nee= as.numeric(gap_fill_perc_nee ))%>%
+    arrange(site_name, site_reference,  year, month, partition_method) %>% # Ensure data is ordered by site, year, and month
+    group_by(site_name, site_reference) %>% # Group by site to handle each site separately
+    mutate(
+      nee = if_else(
+        (!is.na(gap_fill_perc_nee) & gap_fill_perc_nee > 50) &
+          !is.na(lag(gap_fill_perc_nee, 1)) & !is.na(lead(gap_fill_perc_nee, 1)) & # Ensure the next row's gap_fill_perc_nee is not NA
+          (lag(gap_fill_perc_nee, 1) == 100 | lead(gap_fill_perc_nee, 1) == 100), # Check the previous or next month's gap_fill_perc_nee is 100
+        NA, # Set nee to NA if all conditions are met
+        nee
+      )
+    ) %>%
+    ungroup() # Ungroup after the operation
+}
+abc.nodupes.nogapfilled <- update_nee(abc.nodupes)
+
+
+
+# 
+setwd("/Users/iwargowsky/Desktop/arcticborealCflux")
+write_csv(abc.nodupes.nogapfilled, "ABC.v2.may24.cleanish.nodupes.nogapfilled.csv")
+
+
+
+
+x <- abc.nodupes %>% dplyr::filter(!is.na(nee))%>% dplyr::filter(!(gap_fill_perc_nee== 100))
+
+x <- abc.nodupes.nogapfilled %>% dplyr::filter(!(is.na(nee)))%>% dplyr::filter(!(gap_fill_perc_nee== 100))
 
 
 
