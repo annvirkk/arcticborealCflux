@@ -210,7 +210,7 @@ ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%
 
 
 ###Joachim Jansen####-----------------------------------------------------------
-jansen.ec <- read_csv("ABCfluxv2_vars_SE-St1_qcJV_ter_tower.csv")
+jansen.ec <- read_csv("ABCfluxv2_vars_SE-St1_v3.csv")
 
 ###Sean Carey####---------------------------------------------------------------
 carey.ec <- read_csv("ABCfluxv2.vars_Carey_Dec20.csv")%>%
@@ -240,7 +240,8 @@ peichl.deg.ch <- read_csv("ABCfluxv2.vars_SE-Deg_ch.csv")%>%
   mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee), chamber_nr_measurement_days_ch4, NA))
 peichl.hlf.ec <- read_csv("ABCfluxv2.vars_SE-Hlf.csv")%>%
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")%>%
-  mutate(gap_fill_perc_ch4= gap_fill_perc_nee)
+  mutate(gap_fill_perc_ch4= gap_fill_perc_nee) %>%
+  mutate(site_reference= "SE-Hfm")
 peichl.hlm.ec <- read_csv("ABCfluxv2.vars_SE-Hlm.csv")%>%
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")%>%
   mutate(gap_fill_perc_ch4= gap_fill_perc_nee)
@@ -297,10 +298,8 @@ anthony.ec <- anthony.ec %>%
   natural_join(anthony.met, by= c("year", "month"), jointype= "FULL")
 
 ### Mats Bjorkman####-----------------------------------------------------------
-bjorkman.ch <- read_csv("Flux Latnjajaure.csv", na= "NA") %>%
-  mutate(site_name= case_when(site_name %in% "TT"~ "Tussock Tundra",
-                              site_name %in% "MW"~ "Wet Meadow",
-                              site_name %in% "MD"~ "Dry Meadow"))
+bjorkman.ch <- read_csv("Flux Latnjajaure.csv", na= "NA")
+
 
 ### Alexander Salazar ####------------------------------------------------------
 salazar.ch <- read_csv("ABCfluxv2.vars_AS.csv", na= "NA") %>% 
@@ -979,6 +978,7 @@ PIdat.ec <- rbindlist(list(sonnentag, pirk.finse, pirk.iskoras, masa, boike, jon
                            goeckede.2.ec), 
                       fill = TRUE)
 PIdat.ec$extraction_source <- "User-contributed"
+PIdat.ec$dataentry_person <- "Wargowsky"
 #remove rows that do not contain flux data
 PIdat.ec <- PIdat.ec %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
@@ -992,6 +992,7 @@ PIdat.ch <- rbindlist(list(peacock, jung, althuizen, schulze.ch, jassey, sabreko
                            blancbetes.ch, rasanen.ch, virkkala.2017.ch, virkkala.2018.ch), 
                       fill = TRUE)
 PIdat.ch$extraction_source <- "User-contributed"
+PIdat.ch$dataentry_person <- "Wargowsky"
 #remove rows that do not contain flux data
 PIdat.ch <- PIdat.ch %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.)))
@@ -1014,7 +1015,12 @@ PIdat.ch2 <- PIdat.ch %>%
   mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal), extraction_source, NA)) %>%
   mutate(citation = NULL, extraction_source= NULL)
 
+#check to make sure chamber_nr_measurement_days and gap_fill_perc were fixed
+unique(PIdat.ch2$chamber_nr_measurement_days) #should be NA
+PIdat.ch2$chamber_nr_measurement_days <- NULL
 
+unique(PIdat.ec$gap_fill_perc) #should be NA
+PIdat.ec$gap_fill_perc <- NULL
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
