@@ -130,19 +130,17 @@ CH4fluxnet.renamed <- CH4fluxnet %>% dplyr::rename("site_reference"="site_id",
                                                    "nee"= "NEE_F",
                                                    "data_usage_ch4"="FLUXNET.CH4_DATA_POLICY",
                                                    "citation_ch4"= "citation",
-                                                   "data_version_ch4"= "data_version",
-                                                   "gap_fill_ch4"= "gap_fill")
+                                                   "data_version_ch4"= "data_version")
 CH4fluxnet.renamed$data_usage<- CH4fluxnet.renamed$data_usage_ch4
 CH4fluxnet.renamed$citation_co2 <- CH4fluxnet.renamed$citation_ch4
 CH4fluxnet.renamed$data_version <- CH4fluxnet.renamed$data_version_ch4
-CH4fluxnet.renamed$gap_fill <- CH4fluxnet.renamed$gap_fill_ch4
 #have to convert month column from character
 CH4fluxnet.renamed$year <- as.integer(CH4fluxnet.renamed$year)
 CH4fluxnet.renamed$month <- as.integer(CH4fluxnet.renamed$month)
 #some sites have ch4 flux along with nee, gpp, and reco so we'll separate ch4 fluxes and merge them with our df first
 CH4fluxnet.renamedCH4 <- CH4fluxnet.renamed %>%
-  select (year, month, site_reference, ch4_flux_total, data_usage_ch4, gap_fill_perc_ch4, data_version_ch4, 
-          citation_ch4, extraction_source_ch4, gap_fill_ch4 )
+  select (year, month, site_reference, ch4_flux_total, data_usage_ch4, data_version_ch4, 
+          citation_ch4, extraction_source_ch4)
 #merge methane fluxes with dataframe
 icos.fluxnet.AMF.euro.CH4 <- left_join(icos.fluxnet.AMF.euro, CH4fluxnet.renamedCH4,
                                    by= c('site_reference', 'year', 'month'))
@@ -160,7 +158,6 @@ icos.fluxnet.AMF.euro.CH4 <- icos.fluxnet.AMF.euro.CH4.wdupes %>%
 #merge ch4_flux_total columns (only methane flux not coming from fluxnet-ch4 is for SE-Sto which is not in fluxnet-ch4)
 icos.fluxnet.AMF.euro.CH4 <- icos.fluxnet.AMF.euro.CH4 %>%
   unite("ch4_flux_total", c(ch4_flux_total, ch4_flux_total.x, ch4_flux_total.y), na.rm= TRUE, remove= TRUE)%>% 
-  unite("gap_fill_perc_ch4", c(gap_fill_perc_ch4, gap_fill_perc_ch4.x, gap_fill_perc_ch4.y), na.rm= TRUE, remove= TRUE)%>% 
   unite("citation_ch4", c(citation_ch4, citation_ch4.y , citation_ch4.x), na.rm= TRUE, remove= TRUE) %>%
   unite("extraction_source_ch4", c(extraction_source_ch4, extraction_source_ch4.y, extraction_source_ch4.x), na.rm= TRUE, remove= TRUE)
 
@@ -330,7 +327,7 @@ icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static <- icos.fluxnet.AMF.euro.CH4.base
   mutate(country= ifelse(country== "United States", "USA", country))
 
 ####save###----------------------------------------------------------------------
-icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static$dataentry_person <- "Isabel"
+icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static$dataentry_person <- "Wargowsky"
 icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static$flux_method <- "EC"
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static, "towerrepositorydata.static.csv")

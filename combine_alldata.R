@@ -121,7 +121,7 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 ####################Combining EC and chamber data ################################
 
 ABC.v2.jun24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
-ABC.v2.jun24<- ABC.v2.jun24 %>% select(-starts_with("...")) %>% dplyr::filter(!site_name== "")
+ABC.v2.jun24<- ABC.v2.jun24 %>% dplyr::select(-starts_with("...")) %>% dplyr::filter(!site_name== "")
 #x<- ABC.v2.may24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
 
 ###preliminary cleaning of site names
