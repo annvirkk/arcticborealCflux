@@ -6,10 +6,10 @@ library(readxl)
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2/chamber data extractions")
 #Data from intentsive data extraction
 isabel.bawld <- read_excel("Isabel.bawld.data.xlsx", sheet= 1)[-(1:3),]
-isabel.bawld$dataentry_person <- "Isabel"
+isabel.bawld$dataentry_person <- "Wargowsky"
 isabel.bawld$extraction_source <- "BAWLD-CH4-Publication"
 anna.bawld <- read_excel("ABCfluxv2.vars_AV_0502_2024.xlsx", sheet= 4)[-(1:3),-1]
-anna.bawld$dataentry_person <- "Anna"
+anna.bawld$dataentry_person <- "Virkkala"
 anna.bawld$extraction_source <- paste("BAWLD-CH4-", anna.bawld$extraction_source, sep="")
 
 #Kenzies files
@@ -19,7 +19,7 @@ kenzie.bawld <- data.frame()
 for (file in terrestrial_files) { 
   sheet <- readxl::read_excel(file, sheet = 5)[-(1:3),-1]
   kenzie.bawld <- rbind(kenzie.bawld, sheet)}
-kenzie.bawld$dataentry_person <- "McKenzie"
+kenzie.bawld$dataentry_person <- "Kuhn"
 
 
 #Combine all 
@@ -64,11 +64,11 @@ ggplot(data=dat, aes(x= variable, y=Percent.data.present , fill= variable)) +
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 anna.bawld.ec <- read_excel("chamber data extractions/ABCfluxv2.vars_AV_0502_2024.xlsx", sheet= 5)[-(1:3),-1] %>% select(-`...78`) # remove blank column
 anna.bawld.ec$extraction_source <- "BAWLD-CH4-Publication"
-anna.bawld.ec$dataentry_person <- "Anna"
+anna.bawld.ec$dataentry_person <- "Virkkala"
 
 ikw.co2.ec <- read_csv("chamber data extractions/IKW.CO2.dataextractions.tower.csv") %>% select(-`...77`) # remove blank column
 ikw.co2.ec $extraction_source <- "Publication"
-ikw.co2.ec$dataentry_person <- "Isabel"
+ikw.co2.ec$dataentry_person <- "Wargowsky"
 
 
 #Combine all 
@@ -101,7 +101,7 @@ ikw.co2.ch  <- ikw.co2.ch %>%
   mutate(chamber_nr_measurement_days_ch4 = ifelse(!is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
   mutate(chamber_nr_measurement_days_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), chamber_nr_measurement_days, NA)) %>%
   mutate(citation = NULL, extraction_source= NULL, chamber_nr_measurement_days= NULL)
-
+ikw.co2.ch$dataentry_person <- "Wargowsky"
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
