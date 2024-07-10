@@ -2,10 +2,13 @@
 library(dplyr)
 library(readr)
 library(rquery)
+library(stringr)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
 abc <- read_csv("ABC.v2.jun24.csv")
 abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
+abc$citation <- paste("CO2:", abc$citation_co2, "CH4:", abc$citation_ch4, sep= " ")
+
 
 abc <- abc %>% mutate_all(~ifelse(is.nan(.), NA, .))
 
@@ -24,7 +27,7 @@ kuhn_landcover_disturb <- kuhn_landcover_disturb %>%
 
 
 kuhn_landcover_disturb <- kuhn_landcover_disturb %>%
-  select(site_name, site_reference, land_cover_bawld_Kuhn, Disturbance_Category)%>% 
+  dplyr::select(site_name, site_reference, land_cover_bawld_Kuhn, Disturbance_Category)%>% 
   distinct()
 
 
@@ -678,7 +681,7 @@ abc <- abc %>%
 # methane seasonal fluxes 
 #two sites are high, check and make sure they are a fen/marsh etc
 
-hist(abc$ch4_flux_seasonal)
+#hist(abc$ch4_flux_seasonal)
 
 unique(abc$ch4_flux_seasonal)
 
@@ -870,6 +873,11 @@ abc <- abc %>%
          gap_fill_perc_reco = as.numeric(gap_fill_perc_reco)) 
 
 
+### removing blank columns #####_-----------------------------------------------
+colnames(abc)
+unique(abc$chamber_nr_measurement_days)
+
+
 
 ### removing weird fluxes #####_-----------------------------------------------
 
@@ -962,6 +970,10 @@ abc <- abc %>% dplyr::filter(!(site_name== "Norunda" & year > 2022))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Cherskii" & year == 2002 & month <7))
 
+#removing these columns since we no longer need them
+abc$extraction_source_co2 <- NULL
+abc$extraction_source_ch4 <- NULL
+
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
 write_csv(abc, "ABC.v2.jun24.cleanish.wdupes.csv")
 
@@ -1022,10 +1034,23 @@ abc.nodupes$pref1 <- NULL
 dupes <- abc.nodupes %>% get_dupes(site_name, site_reference, year, month, flux_method)
 #woo
 
+
+
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
 write_csv(abc.nodupes, "ABC.v2.jun24.cleanish.nodupes.csv")
 
+#carbon stock for Richard
+x <- abc.nodupes %>%
+  dplyr::filter(is.na(c_stock)) %>%
+  dplyr::filter(flux_method== "EC") %>%
+  group_by(site_name, site_reference, latitude, longitude, veg_detail, land_cover, land_cover_bawld, c_stock, stock_depth, soil_depth, soil_per_c) %>%
+  summarise(n= n())
 
+x$source <- ""
+
+
+setwd("/Users/iwargowsky/Desktop")   
+write_csv(x, "sites.wo.c_stock.csv")
 
 ###removing data that is entirely gapfilled-------------------------------------
 
