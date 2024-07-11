@@ -120,12 +120,12 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.jun24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
-ABC.v2.jun24<- ABC.v2.jun24 %>% dplyr::select(-starts_with("...")) %>% dplyr::filter(!site_name== "")
+ABC.v2.jul24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE)
+ABC.v2.jul24<- ABC.v2.jul24 %>% dplyr::select(-starts_with("...")) %>% dplyr::filter(!site_name== "")
 #x<- ABC.v2.may24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
 
 ###preliminary cleaning of site names
-ABC.v2.jun24 <- ABC.v2.jun24 %>% 
+ABC.v2.jul24 <- ABC.v2.jul24 %>% 
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik", "Utqiaġvik"),"Utqiagvik" , site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik North", "Utqiaġvik North"), "Utqiagvik North", site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik South", "Utqiaġvik South"), "Utqiagvik South", site_name) ) %>%
@@ -146,7 +146,7 @@ ABC.v2.jun24 <- ABC.v2.jun24 %>%
   mutate(site_name= ifelse(site_name == "Värriö", "Varrio", site_name) ) %>%
   mutate(site_name= ifelse(site_name == "Iškoras", "Iskoras", site_name) ) 
 
-ABC.v2.jun24 <- ABC.v2.jun24 %>% 
+ABC.v2.jul24 <- ABC.v2.jul24 %>% 
   mutate(site_reference= ifelse(site_reference == "Värriö_Grazed", "Varrio_Grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_non-grazed", "Varrio_non-grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_Fire45", "Varrio_Fire45" , site_reference) ) %>%
@@ -156,12 +156,12 @@ ABC.v2.jun24 <- ABC.v2.jun24 %>%
   mutate(site_reference= ifelse(site_name == "Svalbard", "Bjornedalen" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Utqiaġvik plots aggregated", "Utqiagvik plots aggregated" , site_reference) ) 
   
-ABC.v2.jun24 <- ABC.v2.jun24 %>% 
+ABC.v2.jul24 <- ABC.v2.jul24 %>% 
   dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-write_csv(ABC.v2.jun24, "ABC.v2.jun24.csv")
+write_csv(ABC.v2.jul24, "ABC.v2.jul24.csv")
 
 
 
@@ -174,7 +174,7 @@ write_csv(ABC.v2.jun24, "ABC.v2.jun24.csv")
 
   
 ####extract list of sites and dates covered##
-ECsites.datescovered <- ABC.v2.mar24 %>% 
+ECsites.datescovered <- ABC.v2.jul24 %>% 
   filter(flux_method== "EC" ) %>%
   mutate(ts= as.yearmon(paste(year, month,sep = '-'))) %>%
   group_by(site_name, site_reference) %>% 
