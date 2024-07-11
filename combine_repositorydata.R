@@ -139,7 +139,7 @@ CH4fluxnet.renamed$year <- as.integer(CH4fluxnet.renamed$year)
 CH4fluxnet.renamed$month <- as.integer(CH4fluxnet.renamed$month)
 #some sites have ch4 flux along with nee, gpp, and reco so we'll separate ch4 fluxes and merge them with our df first
 CH4fluxnet.renamedCH4 <- CH4fluxnet.renamed %>%
-  select (year, month, site_reference, ch4_flux_total, data_usage_ch4, data_version_ch4, 
+  dplyr::select (year, month, site_reference, ch4_flux_total, data_usage_ch4, data_version_ch4, 
           citation_ch4, extraction_source_ch4)
 #merge methane fluxes with dataframe
 icos.fluxnet.AMF.euro.CH4 <- left_join(icos.fluxnet.AMF.euro, CH4fluxnet.renamedCH4,
