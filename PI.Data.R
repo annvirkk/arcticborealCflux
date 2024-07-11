@@ -685,16 +685,16 @@ tag.ec.monthly$nee <- tag.ec.monthly$reco + tag.ec.monthly$gpp
 tag.meteo.07 <- read_excel("Torbern Tagesson/Zackenberg_klimatdatabase.xlsx", sheet = 1) %>%
   dplyr::rename("year"= "Year", "month"= "Month", "tair"= "AirTemp(200cm)(C)...9", "precip"= "Precipitation(150cm)(mm)...26",
                 "par"= "PAR(200cm)(my-mol*m-2s-1)...32", "snow_depth"= "Snow depth") %>%
-  select(year, month, tair, precip, par, snow_depth)
+  dplyr::select(year, month, tair, precip, par, snow_depth)
 tag.meteo.08 <- read_excel("Torbern Tagesson/Zackenberg_klimatdatabase.xlsx", sheet = 2) %>%
   dplyr::rename("year"= "Year", "month"= "Month", "tair"= "AirTemp(200cm)(C)...9", "precip"= "Precipitation(150cm)(mm)...26",
                 "par"= "PAR(200cm)(my-mol*m-2s-1)...32", "snow_depth"= "Snow depth") %>%
-  select(year, month, tair, precip, par, snow_depth)
+  dplyr::select(year, month, tair, precip, par, snow_depth)
 tag.meteo.09 <- read_excel("Torbern Tagesson/Zackenberg_klimatdatabase.xlsx", sheet = 3)  %>%
   mutate(month= month(as.Date(DateTime)), year= year(as.Date(DateTime)))%>%
   dplyr::rename("tsoil_0"= "Soil temp 0cm_°C", "tsoil_5" = "Soil temp 5cm_°C", "tsoil_20"= "Soil temp 20cm_°C",
                 "tsoil_60" = "Soil temp 60cm_°C", "tsoil_100" = "Soil temp 100cm_°C", "tair"= "Air temp_°C", "precip"= "Precipitation Pluvio") %>%
-  select(year, month, tsoil_0, tsoil_5, tsoil_20, tsoil_60, tsoil_100, tair, precip)
+  dplyr::select(year, month, tsoil_0, tsoil_5, tsoil_20, tsoil_60, tsoil_100, tair, precip)
 tag.meteo <- full_join(tag.meteo.07, tag.meteo.08) %>% full_join(tag.meteo.09)
 tag.meteo.monthly <- tag.meteo %>% group_by(year, month) %>%
   dplyr::summarise(tair= mean(tair, na.rm = T),
@@ -884,7 +884,7 @@ chafe.monthly <- chafe.monthly %>%
                                     year %in% c("2018", "2019")~"Picarro G4301 Mobile Gas Concentration Analyzer"))
 chafe.monthly <- chafe.monthly %>%
   mutate(land_cover= case_when(landscape_position %in% c("upland", "slope")~ "130",
-                               landscape_position== "lowland"~ "180") )
+                               landscape_position %in% "lowland"~ "180") )
 chafe.monthly <- chafe.monthly %>%
   mutate(land_cover_bawld= case_when(landscape_position %in% c("upland", "slope")~ "Dry Tundra",
                                landscape_position== "lowland"~ "Tundra Wetland") )
@@ -893,13 +893,13 @@ chafe.ch <- chafe.monthly
 
 #CO2 and CH4 surface flux, soil profile concentrations, and stable isotope composition, Barrow, Alaska, 2012-2013
 vaughn.flux <- read_csv("NGEEdata/flux_CO2_CH4_Barrow_2012_2013.csv") %>%
-  select(UTM_northing, UTM_easting, plot_ID, chamber_type, date, flux_CO2, flux_CH4)
+  dplyr::select(UTM_northing, UTM_easting, plot_ID, chamber_type, date, flux_CO2, flux_CH4)
 vaughn.soil <- read_csv("NGEEdata/soil_moisture_Barrow_2012_2013.csv") %>%
-  select(UTM_northing, UTM_easting, plot_ID, date, VWC)
+  dplyr::select(UTM_northing, UTM_easting, plot_ID, date, VWC)
 vaughn.temp <- read_csv("NGEEdata/temperature_profiles_Barrow_2012_2013.csv") %>%
-  select(UTM_northing, UTM_easting, plot_ID, date, soil_temp, air_temp, depth_probe)
+  dplyr::select(UTM_northing, UTM_easting, plot_ID, date, soil_temp, air_temp, depth_probe)
 vaughn.isotopes <- read_csv("NGEEdata/isotopes_concentratons_Barrow_2012_2013.csv") %>%
-  select(UTM_northing, UTM_easting, area, plot_ID, sample, sampletype, date, thawdepth)          
+  dplyr::select(UTM_northing, UTM_easting, area, plot_ID, sample, sampletype, date, thawdepth)          
 #merge dfs
 vaughn <- vaughn.flux %>% full_join(vaughn.soil, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
 vaughn <- vaughn %>% full_join(vaughn.temp, by= c("UTM_northing", "UTM_easting", "plot_ID","date"))
