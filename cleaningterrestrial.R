@@ -5,7 +5,7 @@ library(rquery)
 library(stringr)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-abc <- read_csv("ABC.v2.jun24.csv")
+abc <- read_csv("ABC.v2.jul24.csv")
 abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
 abc$citation <- paste("CO2:", abc$citation_co2, "CH4:", abc$citation_ch4, sep= " ")
 
@@ -975,7 +975,7 @@ abc$extraction_source_co2 <- NULL
 abc$extraction_source_ch4 <- NULL
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc, "ABC.v2.jun24.cleanish.wdupes.csv")
+write_csv(abc, "ABC.v2.jul24.cleanish.wdupes.csv")
 
 ### duplicate fluxes #####_--------------------------------------------------------
 abc <- abc %>%
@@ -1037,7 +1037,7 @@ dupes <- abc.nodupes %>% get_dupes(site_name, site_reference, year, month, flux_
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.jun24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.jul24.cleanish.nodupes.csv")
 
 #carbon stock for Richard
 x <- abc.nodupes %>%
@@ -1051,43 +1051,6 @@ x$source <- ""
 
 setwd("/Users/iwargowsky/Desktop")   
 write_csv(x, "sites.wo.c_stock.csv")
-
-###removing data that is entirely gapfilled-------------------------------------
-
-update_nee <- function(df) {
-  df %>%
-    mutate(gap_fill_perc_nee= as.numeric(gap_fill_perc_nee ))%>%
-    arrange(site_name, site_reference,  year, month, partition_method) %>% # Ensure data is ordered by site, year, and month
-    group_by(site_name, site_reference) %>% # Group by site to handle each site separately
-    mutate(
-      nee = if_else(
-        (!is.na(gap_fill_perc_nee) & gap_fill_perc_nee > 50) &
-          !is.na(lag(gap_fill_perc_nee, 1)) & !is.na(lead(gap_fill_perc_nee, 1)) & # Ensure the next row's gap_fill_perc_nee is not NA
-          (lag(gap_fill_perc_nee, 1) == 100 | lead(gap_fill_perc_nee, 1) == 100), # Check the previous or next month's gap_fill_perc_nee is 100
-        NA, # Set nee to NA if all conditions are met
-        nee
-      )
-    ) %>%
-    ungroup() # Ungroup after the operation
-}
-abc.nodupes.nogapfilled <- update_nee(abc.nodupes)
-
-
-
-# 
-setwd("/Users/iwargowsky/Desktop/arcticborealCflux")
-write_csv(abc.nodupes.nogapfilled, "ABC.v2.may24.cleanish.nodupes.nogapfilled.csv")
-
-
-
-
-x <- abc.nodupes %>% dplyr::filter(!is.na(nee))%>% dplyr::filter(!(gap_fill_perc_nee== 100))
-
-x <- abc.nodupes.nogapfilled %>% dplyr::filter(!(is.na(nee)))%>% dplyr::filter(!(gap_fill_perc_nee== 100))
-
-
-
-
 
 
 
@@ -1103,12 +1066,12 @@ staticvars <- read_csv("ABCfluxv2.staticvars.csv")
 staticvars$land_cover_bawld_Kuhn <- ""
 staticvars$Disturbance_Category <- ""
 
-abc.static <- abc %>% select(colnames(staticvars))
+abc.static <- abc.nodupes %>% dplyr::select(colnames(staticvars))
 
 #look
 abc.static.condense<-  abc.static  %>% distinct()
-setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-#write_csv(abc.static.condense , "abc.static.bysite.apr26.csv")
+setwd("/Users/iwargowsky/Desktop")   
+#write_csv(abc.static.condense , "abc.static.bysite.jul24.csv")
 
 #looking at which sites are NA
 # z <- abc.static.condense %>% filter(is.na(land_cover_bawld_Kuhn)) 
