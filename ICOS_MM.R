@@ -136,8 +136,10 @@ icosdat$tower_corrections <- "CUT" #noting what U-star filtering was used
 setwd("/Users/iwargowsky/Desktop/ICOS/VUT sites")
 sto <- read_csv("ICOSETC_SE-Sto_ARCHIVE_INTERIM_L2/ICOSETC_SE-Sto_FLUXNET_MM_INTERIM_L2.csv", na= c(NA, "-9999"))
 sto$site_id <- "SE-Sto"
+svb <- read_csv("ICOSETC_SE-Svb_ARCHIVE_L2/ICOSETC_SE-Svb_FLUXNET_MM_L2.csv", na= c(NA, "-9999"))
+svb$site_id <- "SE-Svb"
 #merge vut sites together
-VUTsites <- sto
+VUTsites <- bind_rows(sto, svb)
 #add year,month, day columns
 VUTsites <- VUTsites %>% mutate(year= substr(VUTsites$TIMESTAMP, 1,4),
                                 month= substr(VUTsites$TIMESTAMP, 5,6))
@@ -173,8 +175,11 @@ VUTsites$data_version <- "" #no data version is provided but need column for mer
 setwd("/Users/iwargowsky/Desktop/ICOS/VUT sites")
 sto.gf <- read_csv("ICOSETC_SE-Sto_ARCHIVE_INTERIM_L2/ICOSETC_SE-Sto_FLUXNET_HH_INTERIM_L2.csv")
 sto.gf$site_id <- "SE-Sto"
+svb.gf <- read_csv("ICOSETC_SE-Svb_ARCHIVE_L2/ICOSETC_SE-Svb_FLUXNET_HH_L2.csv")
+svb.gf$site_id <- "SE-Svb"
+
 #merge vut sites together
-VUTsites.gf <- sto.gf
+VUTsites.gf <- bind_rows(sto.gf, svb.gf)
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 VUT.dat2.gf <- VUTsites.gf %>%
                         mutate( year = substr(TIMESTAMP_START, 1,4),
@@ -209,11 +214,11 @@ se.sto.files.eco <- list.files(path = path,pattern = '*SE-Sto_eco_*',all.files =
 se.sto.files.meteo <- list.files(path = path,pattern = '*SE-Sto_meteo_*',all.files = T,recursive = T)
 #cycle through folders and subset for only our variables of interest
 se.sto.flux <- rbindlist(sapply(se.sto.files.flux, fread, simplify = FALSE, na.strings="NaN"), use.names = TRUE, fill= TRUE)  %>%
-  select(date, time, Fch4_f_1_1_1, Reco_f_1_1_1, GPP_f_1_1_1, Reco_1_1_1, NEE_1_1_1 ) %>% dplyr::filter(!date== "dd/mm/yyyy")
+  dplyr::select(date, time, Fch4_f_1_1_1, Reco_f_1_1_1, GPP_f_1_1_1, Reco_1_1_1, NEE_1_1_1 ) %>% dplyr::filter(!date== "dd/mm/yyyy")
 se.sto.eco <- rbindlist(sapply(se.sto.files.eco, fread, simplify = FALSE, na.strings="NaN"), use.names = TRUE, fill= TRUE)  %>%
-  select(date, time, starts_with("TS_"), starts_with("SWC_"), starts_with("GWL_") )%>% dplyr::filter(!date== "dd/mm/yyyy") 
+  dplyr::select(date, time, starts_with("TS_"), starts_with("SWC_"), starts_with("GWL_") )%>% dplyr::filter(!date== "dd/mm/yyyy") 
 se.sto.meteo <- rbindlist(sapply(se.sto.files.meteo, fread, simplify = FALSE, na.strings=c("NaN", "-9999.00000")), use.names = TRUE, fill= TRUE) %>%
-  select(date, time, PPFD_IN_1_2_1, Ta_1_1_1, D_SNOW_1_1_1, P_1_1_1)%>% dplyr::filter(!date== "dd/mm/yyyy")
+  dplyr::select(date, time, PPFD_IN_1_2_1, Ta_1_1_1, D_SNOW_1_1_1, P_1_1_1)%>% dplyr::filter(!date== "dd/mm/yyyy")
 #consistent data column formats
 se.sto.flux$date <- as.Date(se.sto.flux$date, format= "%d/%m/%Y")
 se.sto.eco$date <- as.Date(se.sto.eco$date, format= "%d/%m/%Y")
