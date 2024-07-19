@@ -11,61 +11,66 @@ library(gdata)
 library(tidyverse)
 library(DataCombine)
 library(janitor)
-###Carbon dioxide fluxes by the AmeriFlux network (dat1) COMPLETED####
-setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
-path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
-# AMF sites in Arctic Data Center
-files1 <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
-#load in files as one df
-ameriflux <- files1 %>% setNames(nm = .) %>% 
-  map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, skip=2,
-                   na=c("NA","-9999")), .id = "site_id")    
-#clean up site id column
-ameriflux$site_id <- substr(ameriflux$site_id, 5,10)
-#select columns to keep
-colnames(ameriflux) #see all column names
-ameriflux.1 <- ameriflux %>% dplyr::select(site_id, TIMESTAMP_START, 
-                                 NEE_PI_F, NEE_PI, RECO_PI_F, RECO_PI,
-                                 GPP_PI_F, TA, SC, TS_1, TS_2, TS,
-                                 P, SWC_1, SWC_2, SWC, PPFD_IN, D_SNOW)
-#add month and year columns
-ameriflux.1$year <- substr(ameriflux.1$TIMESTAMP_START,1,4)
-ameriflux.1$month <- substr(ameriflux.1$TIMESTAMP_START,5,6)
-#get means for each month
-ameriflux.monthly <-  group_by(ameriflux.1, year, month, site_id) %>% 
-  dplyr::summarise(tair= mean(TA, na.rm = TRUE),
-                   nee= mean(c(NEE_PI_F, NEE_PI), na.rm = TRUE),
-                   reco= mean(c(RECO_PI_F, RECO_PI), na.rm = TRUE), 
-                   gpp= mean(GPP_PI_F, na.rm = TRUE),
-                   tsoil_surface= mean(c(TS_1, TS), na.rm = TRUE),
-                   precip = sum(P),
-                   soil_moisture= mean(c(SWC_1, SWC), na.rm = TRUE),
-                   ppfd= mean(PPFD_IN, na.rm = TRUE),
-                   snow_depth= mean(D_SNOW, na.rm = TRUE))
-#create time stamp variable and multiple by number of days in each month and convert units
-ameriflux.monthly$ts = as.yearmon(paste(ameriflux.monthly$year,ameriflux.monthly$month,sep = '-'))
-ameriflux.monthly$nee <- ameriflux.monthly$nee * days_in_month(ameriflux.monthly$ts)*1.0368
-ameriflux.monthly$reco <- ameriflux.monthly$reco * days_in_month(ameriflux.monthly$ts)*1.0368
-ameriflux.monthly$gpp <- ameriflux.monthly$gpp * days_in_month(ameriflux.monthly$ts)*1.0368
-ameriflux.monthly$ts <- NULL
-#Adding in some metadata
-setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
-path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
-files1meta <- list.files(path = path,pattern = '*_BIF_',all.files = T,recursive = T)
-#load in files as a list of df
-meta1 <- files1meta %>%
-  setNames(nm = .) %>% 
-  map_df(~read_xlsx(.x))    
-#more to better format and group by site
-meta1.wide <- meta1 %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
-meta1.bysite <- meta1.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
-                                                           citation = na.omit(DOI),
-                                                           site_name= na.omit(SITE_NAME),
-                                                           latitude= na.omit(LOCATION_LAT),
-                                                           longitude= na.omit(LOCATION_LONG))
-#merge flux df and meta data
-meta1.bysite<- meta1.bysite %>% dplyr::rename(site_id= SITE_ID)
-dat1 <- left_join(ameriflux.monthly, meta1.bysite)
+
+# This script is for processing datasets downloaded from https://arcticdata.io/catalog/data
+
+###Carbon dioxide fluxes by the AmeriFlux network (dat1) NOT USING####
+#Date ranges of these files are covered by those in Amerflux BASE 
+
+# setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
+# path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
+# # AMF sites in Arctic Data Center
+# files1 <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
+# #load in files as one df
+# ameriflux <- files1 %>% setNames(nm = .) %>% 
+#   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, skip=2,
+#                    na=c("NA","-9999")), .id = "site_id")    
+# #clean up site id column
+# ameriflux$site_id <- substr(ameriflux$site_id, 5,10)
+# #select columns to keep
+# colnames(ameriflux) #see all column names
+# ameriflux.1 <- ameriflux %>% dplyr::select(site_id, TIMESTAMP_START, 
+#                                  NEE_PI_F, NEE_PI, RECO_PI_F, RECO_PI,
+#                                  GPP_PI_F, TA, SC, TS_1, TS_2, TS,
+#                                  P, SWC_1, SWC_2, SWC, PPFD_IN, D_SNOW)
+# #add month and year columns
+# ameriflux.1$year <- substr(ameriflux.1$TIMESTAMP_START,1,4)
+# ameriflux.1$month <- substr(ameriflux.1$TIMESTAMP_START,5,6)
+# #get means for each month
+# ameriflux.monthly <-  group_by(ameriflux.1, year, month, site_id) %>% 
+#   dplyr::summarise(tair= mean(TA, na.rm = TRUE),
+#                    nee= mean(c(NEE_PI_F, NEE_PI), na.rm = TRUE),
+#                    reco= mean(c(RECO_PI_F, RECO_PI), na.rm = TRUE), 
+#                    gpp= mean(GPP_PI_F, na.rm = TRUE),
+#                    tsoil_surface= mean(c(TS_1, TS), na.rm = TRUE),
+#                    precip = sum(P),
+#                    soil_moisture= mean(c(SWC_1, SWC), na.rm = TRUE),
+#                    ppfd= mean(PPFD_IN, na.rm = TRUE),
+#                    snow_depth= mean(D_SNOW, na.rm = TRUE))
+# #create time stamp variable and multiple by number of days in each month and convert units
+# ameriflux.monthly$ts = as.yearmon(paste(ameriflux.monthly$year,ameriflux.monthly$month,sep = '-'))
+# ameriflux.monthly$nee <- ameriflux.monthly$nee * days_in_month(ameriflux.monthly$ts)*1.0368
+# ameriflux.monthly$reco <- ameriflux.monthly$reco * days_in_month(ameriflux.monthly$ts)*1.0368
+# ameriflux.monthly$gpp <- ameriflux.monthly$gpp * days_in_month(ameriflux.monthly$ts)*1.0368
+# ameriflux.monthly$ts <- NULL
+# #Adding in some metadata
+# setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
+# path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
+# files1meta <- list.files(path = path,pattern = '*_BIF_',all.files = T,recursive = T)
+# #load in files as a list of df
+# meta1 <- files1meta %>%
+#   setNames(nm = .) %>% 
+#   map_df(~read_xlsx(.x))    
+# #more to better format and group by site
+# meta1.wide <- meta1 %>% pivot_wider(names_from = VARIABLE, values_from = DATAVALUE) 
+# meta1.bysite <- meta1.wide %>% group_by(SITE_ID) %>% reframe(country= na.omit(COUNTRY),
+#                                                            citation = na.omit(DOI),
+#                                                            site_name= na.omit(SITE_NAME),
+#                                                            latitude= na.omit(LOCATION_LAT),
+#                                                            longitude= na.omit(LOCATION_LONG))
+# #merge flux df and meta data
+# meta1.bysite<- meta1.bysite %>% dplyr::rename(site_id= SITE_ID)
+# dat1 <- left_join(ameriflux.monthly, meta1.bysite)
 
 ###Brown Lemming Herbivory Experiment Data (dat3) - Jessica Plein COMPLETED####-----------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/Brown lemming herbivory")

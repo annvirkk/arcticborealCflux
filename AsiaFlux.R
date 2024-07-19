@@ -5,6 +5,10 @@ library(readr)
 library(lubridate)
 library(data.table)
 library(zoo)
+
+#this script is for processing data downloaded from https://db.cger.nies.go.jp/asiafluxdb/ 
+#Flux data was gapfilled by Isabel Wargowsky before processing here
+
 setwd("/Users/iwargowsky/Desktop/AsiaFlux")
 path <- "/Users/iwargowsky/Desktop/AsiaFlux"
 list_of_files <- list.files(path = path,pattern = '*.csv',all.files = T,recursive = T)
