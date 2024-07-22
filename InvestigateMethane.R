@@ -6,7 +6,7 @@ library(zoo)
 library(ggplot2)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-abc <- read_csv("ABC.v2.may24.cleanish.nodupes.csv")
+abc <- read_csv("ABC.v2.jul24.cleanish.nodupes.csv")
 
 abc.ch4 <- abc %>% filter(!is.na(ch4_flux_total)) #filter for rows with methane fluxs
 
@@ -30,7 +30,7 @@ abc.ch4.ch.solo <- abc.ch4.ch %>% filter(n==1)
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 # Plotting CH4 EC and saving each plot
 lapply(unique(abc.ch4.ec$site_name), function(site) {
-  p <- ggplot(subset(abc.ch4.ec, site_name == site), aes(x = ts, y = ch4_flux_total, color= extraction_source_ch4)) +
+  p <- ggplot(subset(abc.ch4.ec, site_name == site), aes(x = ts, y = ch4_flux_total, color= gap_fill_perc_ch4)) +
     geom_line() +
     geom_point()+
     labs(title = paste("EC CH4", site),
@@ -39,7 +39,7 @@ lapply(unique(abc.ch4.ec$site_name), function(site) {
     theme_minimal()
   
   # Save the plot to a file
-  ggsave(filename = paste("CH4 EC2/CH4_EC_", site, ".jpeg"),
+  ggsave(filename = paste("CH4 EC.gapfillperc/CH4_EC_", site, ".jpeg"),
          plot = p, width = 10, height = 6)
 
   return(p)

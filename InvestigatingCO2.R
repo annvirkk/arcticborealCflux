@@ -7,11 +7,10 @@ library(ggplot2)
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")  
-abc <- read_csv("ABC.v2.may24.cleanish.nodupes.csv") %>%
+abc <- read_csv("ABC.v2.jul24.cleanish.nodupes.csv") %>%
   mutate(nee= as.numeric(nee),
          gpp= as.numeric(gpp),
          reco= as.numeric(reco))
-abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
 
 ###looking at just CO2
 abc.co2 <- abc %>% 
@@ -50,16 +49,13 @@ abc.co2.ch.solo <- abc.co2.ch %>% dplyr::filter(n==1)
 
 
 
-# Plotting CO2 EC and saving each plot
+# Plotting NEE EC and saving each plot
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-lapply(unique(abc.co2.ec$site_name), function(site) {
-  p <- ggplot(subset(abc.co2.ec, site_name == site)) +
-    geom_line( aes(x = ts, y = nee, color = extraction_source_co2)) +
-    geom_point(aes(x = ts, y = nee, color = extraction_source_co2))+
-    geom_line( aes(x = ts, y = gpp, color= extraction_source_co2), linetype= "dashed") +
-    geom_point(aes(x = ts, y = gpp, color= extraction_source_co2), shape= 2)+
-    geom_line( aes(x = ts, y = reco, color= extraction_source_co2), linetype= "dashed") +
-    geom_point(aes(x = ts, y = reco, color= extraction_source_co2), shape= 0)+
+abc.co2.ec.x <- abc.co2.ec %>% dplyr::filter(!is.na(nee))
+lapply(unique(abc.co2.ec.x$site_name), function(site) {
+  p <- ggplot(subset(abc.co2.ec.x, site_name == site)) +
+    geom_line( aes(x = ts, y = nee, color = gap_fill_perc_nee)) +
+    geom_point(aes(x = ts, y = nee, color = gap_fill_perc_nee))+
     theme(legend.position = "bottom") +
     geom_hline(yintercept = 0)+   
     labs(title = paste("EC ", site),
@@ -67,9 +63,51 @@ lapply(unique(abc.co2.ec$site_name), function(site) {
          y = "g C m-2 month-1")
   
   #Save the plot to a file
-  ggsave(filename = paste("CO2_EC2/EC_", site, ".jpeg"),
+  ggsave(filename = paste("CO2_EC.gapfillperc/NEE", site, ".jpeg"),
          plot = p, width = 10, height = 6)
 
+  return(p)
+})  
+
+
+
+# Plotting GPP EC and saving each plot
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+abc.co2.ec.x <- abc.co2.ec %>% dplyr::filter(!is.na(gpp))
+lapply(unique(abc.co2.ec.x$site_name), function(site) {
+  p <- ggplot(subset(abc.co2.ec.x, site_name == site)) +
+    geom_line( aes(x = ts, y = gpp, color = gap_fill_perc_gpp)) +
+    geom_point(aes(x = ts, y = gpp, color = gap_fill_perc_gpp))+
+    theme(legend.position = "bottom") +
+    geom_hline(yintercept = 0)+   
+    labs(title = paste("EC GPP ", site),
+         x = "Date",
+         y = "g C m-2 month-1")
+  
+  #Save the plot to a file
+  ggsave(filename = paste("CO2_EC.gapfillperc/GPP", site, ".jpeg"),
+         plot = p, width = 10, height = 6)
+  
+  return(p)
+})  
+
+# Plotting RECO EC and saving each plot
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+abc.co2.ec.x <- abc.co2.ec %>% dplyr::filter(!is.na(reco))
+lapply(unique(abc.co2.ec.x$site_name), function(site) {
+  p <- ggplot(subset(abc.co2.ec.x, site_name == site)) +
+    geom_line( aes(x = ts, y = reco, color = gap_fill_perc_reco)) +
+    geom_point(aes(x = ts, y = reco, color = gap_fill_perc_reco))+
+    theme(legend.position = "bottom") +
+    geom_hline(yintercept = 0)+   
+    labs(title = paste("EC RECO ", site),
+         x = "Date",
+         y = "g C m-2 month-1")
+  
+  #Save the plot to a file
+  ggsave(filename = paste("CO2_EC.gapfillperc/RECO", site, ".jpeg"),
+         plot = p, width = 10, height = 6)
+  
   return(p)
 })  
 
@@ -79,19 +117,28 @@ abc.co2.ec.x <- abc.co2.ec %>% group_by(site_name, month) %>%
   dplyr::summarise(nee= mean(as.numeric(nee), na.rm= T))
 
 ggplot(abc.co2.ec.x )+
-  geom_point(aes(month, nee))
+  geom_point(aes(month, nee))+   
+  labs(title = "Average monthly EC NEE ",
+       x = "Month",
+       y = "g C m-2 month-1")
 
 abc.co2.ec.x <- abc.co2.ec %>% group_by(site_name, month) %>%
   dplyr::summarise(gpp= mean(as.numeric(gpp), na.rm= T))
 
 ggplot(abc.co2.ec.x )+
-  geom_point(aes(month, gpp))
+  geom_point(aes(month, gpp))+   
+  labs(title = "Average monthly EC GPP ",
+       x = "Month",
+       y = "g C m-2 month-1")
 
 abc.co2.ec.x <- abc.co2.ec %>% group_by(site_name, month) %>%
   dplyr::summarise(reco= mean(as.numeric(reco), na.rm= T))
 
 ggplot(abc.co2.ec.x )+
-  geom_point(aes(month, reco))
+  geom_point(aes(month, reco))+   
+  labs(title = "Average monthly EC RECO ",
+       x = "Month",
+       y = "g C m-2 month-1")
 
 
 
