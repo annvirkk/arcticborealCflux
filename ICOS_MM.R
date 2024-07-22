@@ -1,4 +1,4 @@
-#ICOS data processing starting with daily# 
+#ICOS data processing# 
 library(janitor)
 library(tidyverse)
 library(stringr)
@@ -9,12 +9,15 @@ library(DataCombine)
 library(dplyr)
 library(zoo)
 library(lubridate)
-###Warm Winters data#####
+
+#This script is for ICOS Warm Winters 2020 dataset, ICOS Ecosystem Thematic Centre L2 Archive data, and ICOS Sweden Stordalen data
+
+### ICOS Warm Winters data#####
 ## Identify file names
 setwd("/Users/iwargowsky/Desktop/ICOS/Warm Winters")
 path <- "/Users/iwargowsky/Desktop/ICOS/Warm Winters"
 wwlist_of_files <- list.files(path = path,pattern = '*_FULLSET_MM_',all.files = T,recursive = T)
-#cycle through folders
+#cycle through folders and load files 
 wwicosdat <- wwlist_of_files %>%
   setNames(nm = .) %>% 
   map_df(~read_csv(.x, col_types = cols(), col_names = TRUE, na=c("NA","-9999")), .id = "site_id")          
@@ -56,6 +59,7 @@ ww.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE,select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
 })
 names(ww.dat2)<- substr(files, 5,10) #name each df
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 ww.dat2.gf <- lapply(ww.dat2, function(df) df %>%
                          mutate( year = substr(df$TIMESTAMP_START, 1,4),
@@ -117,6 +121,7 @@ etc.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE, select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
 })
 names(etc.dat2)<- substr(files, 9,14) #name each df
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 etc.dat2.gf <- lapply(etc.dat2, function(df) df %>%
                        mutate( year = substr(df$TIMESTAMP_START, 1,4),
@@ -133,6 +138,7 @@ icosdat$tower_corrections <- "CUT" #noting what U-star filtering was used
 
 
 ###VUT sites#####----------------------------------------------------------
+#some sites only have Variable U-star Threshold so we'll process them separately
 setwd("/Users/iwargowsky/Desktop/ICOS/VUT sites")
 sto <- read_csv("ICOSETC_SE-Sto_ARCHIVE_INTERIM_L2/ICOSETC_SE-Sto_FLUXNET_MM_INTERIM_L2.csv", na= c(NA, "-9999"))
 sto$site_id <- "SE-Sto"
@@ -160,7 +166,7 @@ VUTsitesNT$partition_method <- "Reichstein"
 VUTsitesNT <- VUTsitesNT %>% dplyr::rename("GPP_CUT_REF"= "GPP_NT_VUT_REF", 
                                 "RECO_CUT_REF"= "RECO_NT_VUT_REF",
                                 "NEE_CUT_REF"= "NEE_VUT_REF") 
-#intentionally renamed as CUT not VUT for merging purposes
+#intentionally renamed as CUT not VUT for merging purposes (we'll rename them later anyway)
 #merge back together with new column "partition method"
 VUTsites <- bind_rows(VUTsitesNT, VUTsitesDT) 
 
@@ -180,6 +186,7 @@ svb.gf$site_id <- "SE-Svb"
 
 #merge vut sites together
 VUTsites.gf <- bind_rows(sto.gf, svb.gf)
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 VUT.dat2.gf <- VUTsites.gf %>%
                         mutate( year = substr(TIMESTAMP_START, 1,4),
@@ -239,7 +246,7 @@ se.sto.time <- se.sto %>% group_by(date, time) %>%
                             SWC_2_1_1, SWC_2_2_1, SWC_2_3_1, SWC_2_4_1, SWC_2_5_1,
                             SWC_3_1_1, SWC_3_2_1, SWC_3_3_1, SWC_3_4_1, SWC_3_5_1,
                             SWC_4_1_1, SWC_4_2_1, SWC_4_3_1, SWC_4_4_1, SWC_4_5_1)), na.rm= TRUE),
-          TS_F_MDS_1= mean(as.numeric(c(TS_1_1_1, TS_1_2_1, TS_1_3_1,
+          TS_F_MDS_1= mean(as.numeric(c(TS_1_1_1, TS_1_2_1, TS_1_3_1, # i referenced other BADM file for soil probe depths
                                 TS_2_1_1, TS_2_2_1, TS_2_3_1,
                                 TS_3_1_1, TS_3_2_1, TS_3_3_1,
                                 TS_2_1_1, TS_4_2_1, TS_4_3_1)), na.rm= TRUE),
@@ -273,16 +280,14 @@ se.sto.monthly <- se.sto.time %>% group_by(year, month) %>%
             tsoil_deep= mean(tsoil_deep, na.rm= TRUE),
             PPFD_IN = mean(PPFD_IN, na.rm= TRUE),
             P_F= mean(P_F, na.rm= TRUE),
-            snow_depth= sum(snow_depth, na.rm= TRUE),
-            #water_table_depth= mean(water_table_depth, na.rm= TRUE)
-  )
+            snow_depth= sum(snow_depth, na.rm= TRUE) )
 
 se.sto.monthly <- se.sto.monthly %>% dplyr::rename(gap_fill_perc_nee = "percent_na_nee",
                                                    gap_fill_perc_reco = "percent_na_reco",
                                                    gap_fill_perc_gpp = "percent_na_gpp",
                                                    gap_fill_perc_ch4 = "percent_na_ch4")
 
-#remove 2020 data according to email from Jutta
+#remove 2020 data according to email from Jutta Holst
 se.sto.monthly <- se.sto.monthly %>% dplyr::filter(!year== 2020)
 
 #convert units from umol m-2 s-1 to g C m-2 day-1
@@ -292,7 +297,7 @@ se.sto.monthly$GPP_CUT_REF <- se.sto.monthly$GPP_CUT_REF *1.0368
 se.sto.monthly$ch4_flux_total <- se.sto.monthly$ch4_flux_total *1.0368
 se.sto.monthly$P_F <- se.sto.monthly$P_F *100 #units online say mm but I suspect its cm so converting
 
-#clarifying partition method because they used Lasslop for GPP fluxes and Reichstein for RECO
+#clarifying partition method because they used Lasslop for GPP fluxes and Reichstein for RECO according to emails with Jutta
 se.sto.monthly.gpp <- se.sto.monthly %>% mutate(partition_method= "Lasslop") %>%
                                          mutate(RECO_CUT_REF= NA)
 se.sto.monthly.reco <- se.sto.monthly %>% mutate(partition_method= "Reichstein")%>%
@@ -335,7 +340,7 @@ allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF *days_in_month(as.yea
 allICOSpermonth$GPP_CUT_REF <- allICOSpermonth$GPP_CUT_REF* -1
 allICOSpermonth$P_F <- allICOSpermonth$P_F *days_in_month(as.yearmon(paste(allICOSpermonth$year,allICOSpermonth$month,sep = '-')))
 #data usage
-allICOSpermonth$data_usage <- "Tier 1" 
+allICOSpermonth$data_usage <- "Tier 1" # all ICOS is CCby4
 #flux method
 allICOSpermonth$flux_method <- "EC"
 

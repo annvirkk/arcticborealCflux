@@ -8,6 +8,9 @@ library(tidyverse)
 library(data.table)
 library(lubridate)
 library(zoo)
+
+#This script is for processing FLUXNET data
+
 #Downloaded data from https://fluxnet.org/data/download-data/
 ####load in files######-----------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015/Fluxnet2015")
@@ -50,6 +53,7 @@ fluxnet.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE, select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
 })
 names(fluxnet.dat2)<- substr(files, 5,10) #name each df
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 fluxnet.dat2.gf <- lapply(fluxnet.dat2, function(df) df %>%
                         mutate( year = substr(df$TIMESTAMP_START, 1,4),
@@ -64,6 +68,7 @@ fluxnet.dat2.gf  <- bind_rows(fluxnet.dat2.gf , .id = "site_id") #turn list  int
 fluxnetdf <- merge(fluxnet.dat2.gf, fluxnetdf) #merge with data
 
 ###VUT sites #####----------------------------------------------------------
+#some sites only have Variable U-star Threshold so we'll process them separately
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015/VUT sites")
 blv <- read_csv("FLX_SJ-Blv_FLUXNET2015_FULLSET_2008-2009_1-4/FLX_SJ-Blv_FLUXNET2015_FULLSET_MM_2008-2009_1-4.csv",
                 na=c("NA","-9999"))
@@ -107,6 +112,7 @@ vrk.gf <- read_csv("FLX_RU-Vrk_FLUXNET2015_FULLSET_2008-2008_1-4/FLX_RU-Vrk_FLUX
 vrk.gf$site_id <- "RU-Vrk"
 #merge vut sites together
 VUTsites.gf <- bind_rows(blv.gf, vrk.gf)
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 VUT.dat2.gf <- VUTsites.gf %>%
   mutate( year = substr(TIMESTAMP_START, 1,4),

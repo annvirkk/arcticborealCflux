@@ -5,6 +5,10 @@ library(readxl)
 library(lubridate)
 library(zoo)
 library(readr)
+
+#this script is for processing Ameriflux BASE data
+#this is data that may or may not be gapfilled 
+
 #PROCESSING AMERIFLUX BASE FILES
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE")
 path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE"
@@ -747,88 +751,3 @@ sites.datescovered2 <- sites %>% group_by(site_id) %>% dplyr::summarise(start_da
 #double checking that function above worked
 checkdates <- sites %>% arrange(site_id, ts)
 
-
-
-
-
-#----------------------------------------------------------------------------------
-#PROCESSING ARCTIC DATA CENTER AMERIFLUX BASE FILES
-setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux")
-path <- "/Users/iwargowsky/Desktop/arcticdatacenter/downloads/ameriflux"
-files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T)
-#load in files as a list of df
-adcbase.dat <-  lapply(files,function(i){
-  fread(i, na.strings =c("NA","-9999"), skip= 2)
-})
-#add year, month, day columns
-adc.base <- lapply(adcbase.dat, function(df) df %>%
-                 mutate( year = substr(df$TIMESTAMP_START, 1,4),
-                         month = substr(df$TIMESTAMP_START, 5,6)))
-###US-Ivo
-colnames(adc.base[[12]])
-adc.base[[12]] <- adc.base[[12]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
-                   percent_na_rh = (sum(is.na(RH))/n()*100),
-                   percent_na_PPFD = (sum(is.na(PPFD_IN))/n()*100),
-                   percent_na_TA = (sum(is.na(TA))/n()*100),
-                   TA= mean(TA, na.rm=TRUE),
-                   NEE= mean(NEE_PI, na.rm=TRUE),
-                   TS= mean(c(TS_1, TS_2), na.rm=TRUE),
-                   P= sum(P, na.rm=TRUE),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   SWC= mean(c(SWC_1, SWC_2), na.rm=TRUE))
-#US-Brw
-colnames(adc.base[[7]])
-adc.base[[7]] <- adc.base[[7]] %>% group_by(year, month) %>%
-  dplyr::summarise(NEE= mean(NEE_PI, na.rm=TRUE),
-                   percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
-                   TA= mean(TA, na.rm=TRUE),
-                   percent_na_ta = (sum(is.na(TA))/n()*100),
-                   TS= mean(TS_1, na.rm=TRUE),
-                   P= sum(P, na.rm=TRUE),
-                   SWC= mean(SWC_1, na.rm=TRUE),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   percent_na_ppfd= (sum(is.na(PPFD_IN))/n()*100),
-                   RECO= mean(RECO_PI, na.rm=TRUE),
-                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
-#US-Atq
-colnames(adc.base[[6]])
-adc.base[[6]] <- adc.base[[6]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na = (sum(is.na(NEE_PI))/n()*100),
-                   TA= mean(TA, na.rm=TRUE),
-                   NEE= mean(NEE_PI, na.rm=TRUE),
-                   TS= mean(TS_1, na.rm=TRUE),
-                   P= sum(P, na.rm=TRUE),
-                   SWC= mean(SWC_1, na.rm=TRUE),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
-                   RECO= mean(RECO_PI, na.rm=TRUE),
-                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
-#US-ICh
-colnames(adc.base[[9]])
-adc.base[[9]] <- adc.base[[9]] %>% group_by(year, month) %>%
-  dplyr::summarise(percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
-                   TA= mean(TA, na.rm=TRUE),
-                   percent_na_ta = (sum(is.na(TA))/n()*100),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
-                   RECO= mean(RECO_PI, na.rm=TRUE),
-                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
-#US-ICs
-colnames(adc.base[[10]])
-adc.base[[10]] <- adc.base[[10]] %>% group_by(year, month) %>%
-  dplyr::summarise(NEE= mean(NEE_PI, na.rm=TRUE),
-                   percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
-                   RECO= mean(RECO_PI, na.rm=TRUE),
-                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))
-#US-ICt
-colnames(adc.base[[11]])
-adc.base[[11]] <- adc.base[[11]] %>% group_by(year, month) %>%
-  dplyr::summarise(NEE= mean(NEE_PI, na.rm=TRUE),
-                   percent_na_nee = (sum(is.na(NEE_PI))/n()*100),
-                   PPFD= mean(PPFD_IN, na.rm=TRUE),
-                   percent_na_ppfd = (sum(is.na(PPFD_IN))/n()*100),
-                   RECO= mean(RECO_PI, na.rm=TRUE),
-                   percent_na_reco = (sum(is.na(RECO_PI))/n()*100))

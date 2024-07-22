@@ -11,9 +11,12 @@ library(tidyr)
 library(janitor)
 library(lubridate)
 library(zoo)
+
+#This script is for processing Ameriflux-FLUXNET and Ameriflux-FLUXNETbeta data files
+
 #Downloaded data from https://ameriflux.lbl.gov/data/download-data/
 
-#load in all FLUXNET files ####
+#load in all Ameriflux data processed with the ONEFlux pipeline ####
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET")
 path <- "/Users/iwargowsky/Desktop/Ameriflux/AMF-FLUXNET"
 files <- list.files(path = path,pattern = '*FULLSET_MM_',all.files = T,recursive = T)
@@ -54,6 +57,7 @@ ameriflux.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE, select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
 })
 names(ameriflux.dat2)<- substr(files, 5,10) #name each df
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 ameriflux.dat2.gf <- lapply(ameriflux.dat2, function(df) df %>%
                             mutate( year = substr(df$TIMESTAMP_START, 1,4),
@@ -106,6 +110,7 @@ cf1.gf <- read_csv("AMF_CA-CF1_FLUXNET_FULLSET_2007-2008_3-5/AMF_CA-CF1_FLUXNET_
 cf1.gf$site_id <- "CA-CF1"
 #merge vut sites together
 VUTsites.gf <- cf1.gf
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 VUT.dat2.gf <- VUTsites.gf %>%
   mutate( year = substr(TIMESTAMP_START, 1,4),
@@ -161,6 +166,7 @@ beta.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE, select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
 })
 names(beta.dat2)<- substr(files, 5,10) #name each df
+# QC= 1,2, 3 indicate gapfilled data 0 = measured value
 #replace 1,2,3 with 1, sum and divide by 48 to get gapfill percentage per day
 beta.dat2.gf <- lapply(beta.dat2, function(df) df %>%
                               mutate( year = substr(df$TIMESTAMP_START, 1,4),

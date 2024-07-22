@@ -53,7 +53,7 @@ write.csv(dupes, "icos.fluxnet.dupes.csv")
 
 #remove duplicates
 icos.fluxnet <- icos.fluxnet.wdupes %>%  
-  arrange(extraction_source_co2) %>%  #give preference to fluxnet data since it has more variables 
+  arrange(extraction_source_co2) %>%  #give preference to fluxnet data
   distinct(site_reference, year, month, partition_method, .keep_all = TRUE)
 ##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
 
@@ -89,7 +89,7 @@ write.csv(dupes, "icos.fluxnet.AMF.dupes.csv")
 
 #remove duplicates
 icos.fluxnet.AMF <- icos.fluxnet.AMF.wdupes %>%  
-  arrange(desc(extraction_source_co2)) %>%  #give preference to rows with more flux data
+  arrange((extraction_source_co2)) %>%  
   distinct(site_reference, year, month, partition_method, .keep_all = TRUE)
 ##MAKE SURE #newdf= #df.wdupes - (#dupes/2)
 
@@ -225,7 +225,7 @@ icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- anti_join(icos.fluxnet.AMF.euro.CH4.b
                                                    "extraction_source_ch4"))
 
 
-#--------------------------------------------------------------------------------------------------------------
+### Fixing some columns  #####--------------------------------------------------------------------------------------------
 #fix column names
 colnames(icos.fluxnet.AMF.euro.CH4.base.asia.ADC)
 icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- icos.fluxnet.AMF.euro.CH4.base.asia.ADC %>% 
@@ -255,7 +255,7 @@ icos.fluxnet.AMF.euro.CH4.base.asia.ADC <- icos.fluxnet.AMF.euro.CH4.base.asia.A
 x<- icos.fluxnet.AMF.euro.CH4.base.asia.ADC  %>% get_dupes(site_reference, year, month, partition_method) 
 
 
-#####Thaw depth and water table data from arctic data center for Barrow, Aquasuk, and Ivotuk--------------------
+#####Thaw depth and water table data from Arctic Data Center for Barrow, Aquasuk, and Ivotuk--------------------
 setwd("/Users/iwargowsky/Desktop/arcticdatacenter/downloads")
 tdwt <- read_csv("tdwt.csv")#adding year and month columns
 tdwt <- tdwt %>% mutate(year= as.integer(year(as.Date(date, format= "%m/%d/%Y"))), 
