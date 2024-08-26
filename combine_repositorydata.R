@@ -338,7 +338,7 @@ colnames(icos.fluxnet.AMF.euro.CH4.base.asia.ADC.static)
 
 
 
-####checking things for Anna 8/18#### 
+####checking things for Anna 8/18/23#### 
 v2.annual <- icos.fluxnet.AMF.euro.CH4  %>%
   filter(site_reference== "CA-Gro"|site_reference== "FI-Kaa") %>%
   filter(partition_method== "Reichstein") %>%
