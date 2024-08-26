@@ -115,7 +115,8 @@ etcdoi <- read_csv("ICOSETCDOI.csv")
 icosdat <- merge(icosdat, etcdoi)
 
 #####GAP FIll % ####--------------------------------------------------
-files <- list.files(path = path,pattern = '*_HH_',all.files = T,recursive = T) 
+files <- list.files(path = path,pattern = '*_HH_L2',all.files = T,recursive = T) 
+#NOTE: deleted VARINFO HH files for this to work
 #load in files as a list of df
 etc.dat2 <- lapply(files,function(i){
   fread(i, na.strings =c("NA","-9999"), header = TRUE, select=c('TIMESTAMP_START', 'NEE_CUT_REF_QC'))
@@ -282,10 +283,15 @@ se.sto.monthly <- se.sto.time %>% group_by(year, month) %>%
             P_F= mean(P_F, na.rm= TRUE),
             snow_depth= sum(snow_depth, na.rm= TRUE) )
 
-se.sto.monthly <- se.sto.monthly %>% dplyr::rename(gap_fill_perc_nee = "percent_na_nee",
-                                                   gap_fill_perc_reco = "percent_na_reco",
-                                                   gap_fill_perc_gpp = "percent_na_gpp",
-                                                   gap_fill_perc_ch4 = "percent_na_ch4")
+se.sto.monthly <- se.sto.monthly %>% mutate(NEE_CUT_REF= ifelse(percent_na_nee> 0 , NA, NEE_CUT_REF),
+                                            RECO_CUT_REF= ifelse(percent_na_reco> 0 , NA, RECO_CUT_REF),
+                                            GPP_CUT_REF= ifelse(percent_na_gpp> 0 , NA, GPP_CUT_REF),
+                                            ch4_flux_total= ifelse(percent_na_ch4> 0 , NA, ch4_flux_total))
+
+se.sto.monthly$percent_na_nee <- NULL
+se.sto.monthly$percent_na_reco <- NULL
+se.sto.monthly$percent_na_gpp <- NULL
+se.sto.monthly$percent_na_ch4 <- NULL
 
 #remove 2020 data according to email from Jutta Holst
 se.sto.monthly <- se.sto.monthly %>% dplyr::filter(!year== 2020)
