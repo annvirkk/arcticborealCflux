@@ -16,7 +16,8 @@ dat.renamed <- dat %>% dplyr::rename("site_id"= "study_id",
                                      "precip"="precip_int",
                                      "ppfd"="par_ppfd",
                                      "soil_depth"= "sol_depth",
-                                      "soil_perc_c"= "soil_perc_carbon")
+                                      "soil_perc_c"= "soil_perc_carbon",
+                                     "gap_fill_perc_nee"= "gap_fill_perc")
 dat.renamed <- dat.renamed %>% mutate(tsoil_surface_depth= ifelse(tsoil_depth<=10, tsoil_depth, NA),
                                       tsoil_deep_depth= ifelse(tsoil_depth>10, tsoil_depth, NA),
                                       tsoil_surface= ifelse(tsoil_depth<=10, tsoil, NA),
@@ -121,8 +122,6 @@ dat.v2 <- dat.v2 %>%
 #Clarifying names for RU-Sam open and closed path
 dat.v2 <- dat.v2 %>%
   mutate(site_name= ifelse(site_reference== "RU-Sam", "Samoylov Island", site_name ))%>%
-  mutate(site_name= ifelse(site_id== "Kutzbach_Samoylov_Tower_3_closedpath", "Samoylov Island closed", site_name ))%>%
-  mutate(site_name= ifelse(site_id== "Kutzbach_Samoylov_Tower_3_openpath", "Samoylov Island open", site_name)) %>%
   mutate(site_reference= ifelse(site_id== "Kutzbach_Samoylov_Tower_3_closedpath", "RU-Sam (closed)", site_reference ))%>%
   mutate(site_reference= ifelse(site_id== "Kutzbach_Samoylov_Tower_3_openpath", "RU-Sam (open)", site_reference)) 
 #Seida
@@ -141,7 +140,10 @@ dat.v2 <- dat.v2 %>%
 dat.v2 <- dat.v2 %>% 
   mutate(site_reference= ifelse(site_reference == "CA-sOBS", "CA-Obs", site_reference) ) %>%
   mutate(site_name= ifelse(site_name == "Southern Old Black Spruce", "Saskatchewan - Western Boreal, Mature Black Spruce", site_name) )
-
+#Lake Hazen
+dat.v2 <- dat.v2 %>% 
+  mutate(site_reference= ifelse(site_reference== "CA-LHazen1", "CA-LHazen1-semidesert", site_reference)) %>%
+  mutate(site_reference= ifelse(site_reference== "CA-LHazen2", "CA-LHazen2-meadow wetland", site_reference))
 
 
 #fixing extraction_source naming conventions
@@ -165,6 +167,9 @@ dat.v2 <- dat.v2 %>%
 dat.v2 <- dat.v2 %>% 
   mutate(site_name= ifelse(site_id == "Euskirchen_US-TFBS_tower1", "Bonanza Creek Black Spruce", site_name) ) %>%
   mutate(site_reference= ifelse(site_id == "Euskirchen_US-TFBS_tower1", "US-BZS", site_reference) )
+#changing Chokurdakh to Kytalyk, Russia
+dat.v2 <- dat.v2 %>% 
+  mutate(site_name = ifelse(site_name %in% "Chokurdakh", "Kytalyk, Russia", site_name))
 
 
 #reformatting 
@@ -241,7 +246,6 @@ dat.v2 <- dat.v2 %>%
                                                         "Andoya_NO-And" ), "Moist", soil_moisture_class))
 dat.v2$site_unique <- NULL
 
-### Fixing duplicates NULL### Fixing duplicates ####
 #remove rows without flux data
 dat.v2 <- dat.v2 %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
