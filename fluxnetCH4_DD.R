@@ -26,7 +26,7 @@ CH4fluxnet <- CH4fluxnetdf %>% dplyr::select(site_id, TIMESTAMP, FCH4_F_ANNOPTLM
 # CH4fluxnet <- CH4fluxnet %>% mutate(gap_fill_perc_ch4= case_when(FCH4_F_ANNOPTLM_QC %in% 3 ~100, 
 #                                                              FCH4_F_ANNOPTLM_QC %in% 1 ~0))
 
-# 5/21/24 no gaps loger than 2 months
+# 5/21/24 no gaps longer than 2 months
 CH4fluxnet <- CH4fluxnet %>%
   mutate(FCH4_F_ANNOPTLM= ifelse(FCH4_F_ANNOPTLM_QC %in% 3, NA, FCH4_F_ANNOPTLM))
 
@@ -52,16 +52,28 @@ CH4fluxnet.permonth<- CH4fluxnet %>% group_by(year, month, site_id, data_version
                    percent_na_reco.dt = (sum(is.na(RECO_DT))/n()*100),
                    percent_na_gpp.nt = (sum(is.na(GPP_NT))/n()*100),
                    percent_na_reco.nt = (sum(is.na(RECO_NT))/n()*100),
-                   FCH4_F = sum(FCH4_F_ANNOPTLM, na.rm= TRUE),
+                   FCH4_F = mean(FCH4_F_ANNOPTLM, na.rm= TRUE),
                    TA_F = mean(TA_F, na.rm= TRUE),
                    P_F = sum(P_F, na.rm= TRUE),
                    D_SNOW_F = mean(D_SNOW_F, na.rm= TRUE),
                    TS_1 = mean(TS_1, na.rm= TRUE),
                    SWC_F= mean(SWC_F, na.rm= TRUE),
                    PPFD_IN_F = mean(PPFD_IN_F, na.rm= TRUE),
-                   GPP_NT= sum(GPP_NT, na.rm=TRUE), GPP_DT=sum(GPP_DT, na.rm= TRUE),
-                   RECO_NT= sum(RECO_NT, na.rm= TRUE), RECO_DT=sum(RECO_DT, na.rm= TRUE),
-                   NEE_F= sum(NEE_F_ANNOPTLM, na.rm= TRUE))
+                   GPP_NT= mean(GPP_NT, na.rm=TRUE), GPP_DT=mean(GPP_DT, na.rm= TRUE),
+                   RECO_NT= mean(RECO_NT, na.rm= TRUE), RECO_DT=mean(RECO_DT, na.rm= TRUE),
+                   NEE_F= mean(NEE_F_ANNOPTLM, na.rm= TRUE))
+#remove rows with more than 10% data missing in a month
+CH4fluxnet.permonth <- CH4fluxnet.permonth %>% 
+  mutate(FCH4_F = ifelse(percent_na_ch4> 10, NA, FCH4_F)) %>%
+  mutate(NEE_F = ifelse(percent_na_nee> 10, NA, NEE_F)) %>%
+  mutate(GPP_NT = ifelse(percent_na_gpp.nt> 10, NA, GPP_NT)) %>%
+  mutate(GPP_DT = ifelse(percent_na_gpp.dt> 10, NA, GPP_DT)) %>%
+  mutate(RECO_NT = ifelse(percent_na_reco.nt> 10, NA, RECO_NT)) %>%
+  mutate(RECO_DT = ifelse(percent_na_reco.dt> 10, NA, RECO_DT))
+
+CH4fluxnet.permonth <- CH4fluxnet.permonth %>% select(-c(percent_na_ch4, percent_na_nee, 
+                                                        percent_na_gpp.nt, percent_na_gpp.dt,
+                                                        percent_na_reco.nt, percent_na_reco.dt))
 
 #separate DT and NT approaches
 CH4fluxnet.permonthDT <- CH4fluxnet.permonth %>% select(-c(GPP_NT, RECO_NT))
@@ -76,11 +88,13 @@ CH4fluxnet.permonthNT <- CH4fluxnet.permonthNT %>% dplyr::rename("GPP"= "GPP_NT"
 CH4fluxnet.permonth <- bind_rows(CH4fluxnet.permonthNT, CH4fluxnet.permonthDT) 
 
 #units
-CH4fluxnet.permonth$NEE_F <- CH4fluxnet.permonth$NEE_F*1.0368
-CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368 * -1
-CH4fluxnet.permonth$RECO <- CH4fluxnet.permonth$RECO*1.0368
-CH4fluxnet.permonth$FCH4_F <- CH4fluxnet.permonth$FCH4_F*0.0010368
-
+CH4fluxnet.permonth$ts <- as.yearmon(paste(CH4fluxnet.permonth$year, CH4fluxnet.permonth$month, sep = "-"))
+CH4fluxnet.permonth$NEE_F <- CH4fluxnet.permonth$NEE_F*1.0368*days_in_month(CH4fluxnet.permonth$ts)
+CH4fluxnet.permonth$GPP <- CH4fluxnet.permonth$GPP*1.0368 * -1*days_in_month(CH4fluxnet.permonth$ts)
+CH4fluxnet.permonth$RECO <- CH4fluxnet.permonth$RECO*1.0368*days_in_month(CH4fluxnet.permonth$ts)
+CH4fluxnet.permonth$FCH4_F <- CH4fluxnet.permonth$FCH4_F*0.0010368*days_in_month(CH4fluxnet.permonth$ts)
+CH4fluxnet.permonth$ts <- NULL
+  
 #Adding in some metadata####-----------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 meta <- read_csv("FLX_AA-Flx_CH4-META_20201112135337801132.csv")
