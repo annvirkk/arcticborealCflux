@@ -79,6 +79,7 @@ rocha.ec <- rbindlist(list(rocha.ec.moderate, rocha.ec.severe, rocha.ec.unburned
   dplyr::filter(month %in% c(6,7,8)) #winter and shoulders season fluxes are entirely gapfilled as 0 so we're removing
 rocha.ec$data_contributor_or_author <- "Adrian Rocha"
 rocha.ec$gpp <- rocha.ec$gpp *-1
+rocha.ec$biome <- "Tundra"
 
 #Mary Farina---------------------------------------------------------------------------
 farina.ch <- read_csv("Data_for_ABCfluxV2_Terrestrial_Chamber_Flux_BigTrailLake_Fens_July2021_mfarina20240414.csv", na= "N/A")
@@ -99,14 +100,12 @@ farina.ch <- farina.ch %>%
   dplyr::rename("chamber_nr_measurement_days_ch4"="chamber_nr_measurement_days" )
 
 farina.ch$gpp <- farina.ch$gpp * -1
-farina.ch$soil_moisture <- farina.ch$soil_moisture*100
 
 
 
 #Natascha Kljun---------------------------------------------------------------------------
 kljun.ec <- read_csv("ABCfluxv2.vars_Ijusdal.csv")%>%
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
-kljun.ec$soil_moisture <- kljun.ec$soil_moisture*100
 
 #Daniel Nadeau---------------------------------------------------------------------------
 nadeau.ec <- read_csv("ABC_Bernard_spruce_moss_valley.csv") 
@@ -307,6 +306,7 @@ holmes$data_contributor_or_author <- "Beth Holmes, Patrick Crill"
 holmes$email <- "bhuettel@fsu.edu, patrick.crill@geo.su.se"
 
 #Lake Hazen --------------------------------------------------------------------
+#NOTE: Isabel had to manually rearrange a lot of the data in excel for this site
 hazen.co2 <- read_xlsx("Lake Hazen/Lake_Hazen_EC_Towers_ABCfluxv2_Request_2023_ikw.edits.xlsx", sheet= 4, skip=1, na= c("n/a", "-")) 
 hazen.co2 <- hazen.co2 %>%
   filter(!is.na(`Soil CO2 Flux (umol/m2/s)`)) %>%
@@ -347,6 +347,13 @@ hazen.ch4$ch4_flux_total <- hazen.ch4$ch4_flux_total/1000*days_in_month(as.yearm
 
 hazen.ch <- merge(hazen.ch4, hazen.co2)
 
+#permafrost thaw
+hazen.thaw <- read_xlsx("Lake Hazen/Lake_Hazen_EC_Towers_ABCfluxv2_Request_2023_ikw.edits.xlsx", sheet= 10,na= c("n/a", "-"))  %>%
+  group_by(site_reference, year, month) %>%
+  dplyr::summarise(thaw_depth= mean(thaw_depth))
+
+hazen.ch <- merge(hazen.ch, hazen.thaw)
+
 #static info 
 hazen.static <- read_xlsx("Lake Hazen/Lake_Hazen_EC_Towers_ABCfluxv2_Request_2023_ikw.edits.xlsx", sheet=2, na= c("n/a", "-")) %>%
   dplyr::filter(measure_type %in%  c("Chambers - CO2", "Chambers - CH4")) %>%
@@ -361,10 +368,6 @@ hazen.ch$Column <- NULL
 hazen.ch$measure_type <- NULL
 
 
-#hazen.thaw <- read_xlsx("Lake Hazen/Lake_Hazen_EC_Towers_ABCfluxv2_Request_2023_ikw.edits.xlsx", sheet=2, na= c("n/a", "-")) %>%
-  
-
-
 
 #BAWLD -------------------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2/chamber data extractions")
@@ -376,7 +379,9 @@ BAWLD.new$dataentry_person <- "Kuhn"
 BAWLDsinglemonth <- read_csv("ABCflux2_single_month_chambers_ikwedits.csv", na= c(NA, "-"))%>%
   dplyr::filter(!site_name== "Tanana_River")%>%
   dplyr::rename("ch4_flux_total"= "ch4_flux_total_CONVERTED",
-                "chamber_nr_measurement_days_ch4"="chamber_nr_measurement_days") %>%
+                "chamber_nr_measurement_days_ch4"="chamber_nr_measurement_days",
+                "water_table_depth"= "water_table_depth_ABC") %>%
+  mutate(water_table_depth_BAWLD= NULL) %>%
   mutate(chamber_nr_measurement_days_co2= ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco), chamber_nr_measurement_days_ch4, NA))%>%
   group_by(site_name, site_reference, year, month) %>%
   dplyr::summarise(across(where(is.numeric),list(mean = ~ mean(.x, na.rm = TRUE)) ),
@@ -391,7 +396,7 @@ newPIdata <- rbindlist(list(schuur.ec, rocha.ec, kljun.ec, nadeau.ec , farina.ch
                           knoblauch.ch, skeeter.chamber, skeeter.tower, domine.ec,
                           boreas, hazen.ch),  fill = TRUE)
 
-newPIdata$extraction_source <- "User-Contributed"
+newPIdata$extraction_source <- "User-contributed"
 newPIdata$dataentry_person <- "Wargowsky"
 
 newBAWLDdata <- rbindlist(list(BAWLDsinglemonth, BAWLD.new ),  fill = TRUE)
@@ -404,14 +409,6 @@ late.additions <- late.additions %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal), ~ is.na(.))) %>%
   dplyr::filter(!site_name %in% c("Y", NA, "Site name as specified in data source. E.g. Hyytiälä"))
 
-late.additions <- late.additions %>% 
-  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), citation, NA)) %>%
-  mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal),  citation, NA)) %>%
-  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), extraction_source, NA)) %>%
-  mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal), extraction_source, NA)) %>%
-  mutate(citation = NULL, extraction_source= NULL)
-
-
 
 #CLEANING#########-----------------------------------------------------------
 late.additions$date <- as.Date(paste(late.additions$year, late.additions$month,sep = '-'), format = "%Y-%m") #add time stamp
@@ -420,151 +417,162 @@ late.additions$ts <- as.yearmon(paste(late.additions$year, late.additions$month,
 
 ##FLUXES
 # Plotting CO2
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site)) +
-    geom_line( aes(x = ts, y = as.numeric(nee))) +
-    geom_point(aes(x = ts, y = as.numeric(nee)))+
-    geom_line( aes(x = ts, y = as.numeric(gpp)), linetype= "dashed") +
-    geom_point(aes(x = ts, y = as.numeric(gpp)), shape= 2)+
-    geom_line( aes(x = ts, y = as.numeric(reco)), linetype= "dashed") +
-    geom_point(aes(x = ts, y = as.numeric(reco)), shape= 0)+
-    theme(legend.position = "bottom") +
-    geom_hline(yintercept = 0)+   
-    labs(title = site,
-         x = "Date",
-         y = "g C m-2 month-1")
-  
-  return(p)
-})  
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site)) +
+#     geom_line( aes(x = ts, y = as.numeric(nee))) +
+#     geom_point(aes(x = ts, y = as.numeric(nee)))+
+#     geom_line( aes(x = ts, y = as.numeric(gpp)), linetype= "dashed") +
+#     geom_point(aes(x = ts, y = as.numeric(gpp)), shape= 2)+
+#     geom_line( aes(x = ts, y = as.numeric(reco)), linetype= "dashed") +
+#     geom_point(aes(x = ts, y = as.numeric(reco)), shape= 0)+
+#     theme(legend.position = "bottom") +
+#     geom_hline(yintercept = 0)+   
+#     labs(title = site,
+#          x = "Date",
+#          y = "g C m-2 month-1")
+#   
+#   return(p)
+# })  
 
 # Plotting CH4
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site)) +
-    geom_line( aes(x = ts, y = ch4_flux_total, color = extraction_source)) +
-    geom_point(aes(x = ts, y = ch4_flux_total, color = extraction_source))+
-    theme(legend.position = "bottom") +
-    geom_hline(yintercept = 0)+   
-    labs(title = site,
-         x = "Date",
-         y = "g C m-2 month-1")
-  
-  return(p)
-})  
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site)) +
+#     geom_line( aes(x = ts, y = ch4_flux_total, color = extraction_source)) +
+#     geom_point(aes(x = ts, y = ch4_flux_total, color = extraction_source))+
+#     theme(legend.position = "bottom") +
+#     geom_hline(yintercept = 0)+   
+#     labs(title = site,
+#          x = "Date",
+#          y = "g C m-2 month-1")
+#   
+#   return(p)
+# })  
 
 #Plotting TAIR
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(tair), color= extraction_source)) +
-    geom_line() +
-    geom_point()+
-    labs(title = paste("Tair", site),
-         x = "Date",
-         y = "Air Temperature") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(tair), color= extraction_source)) +
+#     geom_line() +
+#     geom_point()+
+#     labs(title = paste("Tair", site),
+#          x = "Date",
+#          y = "Air Temperature") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 
 #Plotting PRECIP
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(precip), color= extraction_source)) +
-    geom_line() +
-    geom_point()+
-    labs(title = paste("Precip", site),
-         x = "Date",
-         y = "Precip") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(precip), color= extraction_source)) +
+#     geom_line() +
+#     geom_point()+
+#     labs(title = paste("Precip", site),
+#          x = "Date",
+#          y = "Precip") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 #Plotting TSOIL
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site)) +
-    geom_line( aes(x = ts, y = as.numeric(tsoil_surface), color= extraction_source)) +
-    geom_point( aes(x = ts, y = as.numeric(tsoil_surface), color= extraction_source))+
-    geom_line( aes(x = ts, y = as.numeric(tsoil_deep), color= extraction_source), linetype= "dashed") +
-    geom_point( aes(x = ts, y = as.numeric(tsoil_deep), color= extraction_source))+
-    labs(title = paste("Soil temps", site),
-         x = "Date",
-         y = "soil temps") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site)) +
+#     geom_line( aes(x = ts, y = as.numeric(tsoil_surface), color= extraction_source)) +
+#     geom_point( aes(x = ts, y = as.numeric(tsoil_surface), color= extraction_source))+
+#     geom_line( aes(x = ts, y = as.numeric(tsoil_deep), color= extraction_source), linetype= "dashed") +
+#     geom_point( aes(x = ts, y = as.numeric(tsoil_deep), color= extraction_source))+
+#     labs(title = paste("Soil temps", site),
+#          x = "Date",
+#          y = "soil temps") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 #water table depth
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site)) +
-    geom_line( aes(x = ts, y = as.numeric(water_table_depth), color= extraction_source)) +
-    geom_point( aes(x = ts, y = as.numeric(water_table_depth), color= extraction_source))+
-    labs(title = paste("Water table depth", site),
-         x = "Date",
-         y = "Water table depth") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site)) +
+#     geom_line( aes(x = ts, y = as.numeric(water_table_depth), color= extraction_source)) +
+#     geom_point( aes(x = ts, y = as.numeric(water_table_depth), color= extraction_source))+
+#     labs(title = paste("Water table depth", site),
+#          x = "Date",
+#          y = "Water table depth") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 
 #soil moisture
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(soil_moisture), color= extraction_source)) +
-    geom_line() +
-    geom_point()+
-    labs(title = paste("Soil Moisture", site),
-         x = "Date",
-         y = "Soil Moisture") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(soil_moisture), color= extraction_source)) +
+#     geom_line() +
+#     geom_point()+
+#     labs(title = paste("Soil Moisture", site),
+#          x = "Date",
+#          y = "Soil Moisture") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
+late.additions <- late.additions %>% mutate(soil_moisture= ifelse(site_name %in% c("Tura, Russia",
+                                                                                   "Western Siberia",
+                                                                                   "Bernard spruce-moss valley"), 
+                                                                  as.numeric(soil_moisture) *100, soil_moisture))
 
 #thaw_depth
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(thaw_depth), color= extraction_source)) +
-    geom_line() +
-    geom_point()+
-    labs(title = paste("thaw_depth", site),
-         x = "Date",
-         y = "thaw_depth") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(thaw_depth), color= extraction_source)) +
+#     geom_line() +
+#     geom_point()+
+#     labs(title = paste("thaw_depth", site),
+#          x = "Date",
+#          y = "thaw_depth") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 #snow_depth
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(snow_depth), color= extraction_source)) +
-    geom_line() +
-    geom_point()+
-    labs(title = paste("snow_depth", site),
-         x = "Date",
-         y = "snow_depth") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(snow_depth), color= extraction_source)) +
+#     geom_line() +
+#     geom_point()+
+#     labs(title = paste("snow_depth", site),
+#          x = "Date",
+#          y = "snow_depth") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 #ppfd
-lapply(unique(late.additions$site_name), function(site) {
-  p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(ppfd), color= extraction_source)) +
-    geom_line() +
-    geom_point()+
-    labs(title = paste("ppfd", site),
-         x = "Date",
-         y = "ppfd") +
-    theme_minimal()
-  
-  return(p)
-})
+# lapply(unique(late.additions$site_name), function(site) {
+#   p <- ggplot(subset(late.additions, site_name == site), aes(x = ts, y = as.numeric(ppfd), color= extraction_source)) +
+#     geom_line() +
+#     geom_point()+
+#     labs(title = paste("ppfd", site),
+#          x = "Date",
+#          y = "ppfd") +
+#     theme_minimal()
+#   
+#   return(p)
+# })
 
 unique(late.additions$alt)
 
 late.additions$ts <- NULL
 
 ### DISCRETE VARIABLES ######_-----------------------------------------------------------------------------------------
+late.additions <- late.additions %>% 
+  mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), citation, NA)) %>%
+  mutate(citation_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal),  citation, NA)) %>%
+  mutate(extraction_source_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), extraction_source, NA)) %>%
+  mutate(extraction_source_co2 = ifelse(!is.na(nee) | !is.na(gpp) | !is.na(reco)| !is.na(nee_seasonal), extraction_source, NA)) %>%
+  mutate(citation = NULL, extraction_source= NULL)
+
 
 unique(late.additions$country)
 late.additions <- late.additions %>% mutate(country= ifelse(country %in% "CA","Canada", country)) %>%
@@ -598,7 +606,7 @@ late.additions <- late.additions %>% mutate(country= ifelse(country %in% "CA","C
 unique(late.additions$year)
 
 unique(late.additions$month)
-late.additions$month <- as.numeric(late.additions$month)
+late.additions$month <- as.integer(late.additions$month)
 
 #seasonal intervals
 unique(late.additions$nee_seasonal_interval)  
