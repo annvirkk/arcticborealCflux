@@ -36,8 +36,8 @@ nykanen.permonth <- nykanen.permonth %>% mutate(disturbance= case_when(site_refe
 nykanen.permonth$data_contributor_or_author <- "Nykänen, Hannu; Alm, Jukka; Martikainen, Pertti; Silvola, Jouko"
 nykanen.permonth$site_id <- paste("Nykanen_", nykanen.permonth$site_name, nykanen.permonth$site_reference, "agg", sep= "_")
 nykanen.permonth$email <- "hannu.nykanen@uef.fi"
-nykanen.permonth$extraction_source <- "Paper/Zenodo"
-nykanen.permonth$citation <- "Nykänen Hannu, Alm Jukka, Martikainen Pertti, & Silvola Jouko. (2022). Chamber flux data (CH4 , CO2) from Finland (1991 -1993) originally used in Nykänen et al. GBC, 12(1), 53 - 69, 1988, [Data set]. Zenodo. https://doi.org/10.5281/zenodo.6952933"
+nykanen.permonth$extraction_source <- "Zenodo/Publication"
+nykanen.permonth$citation <- "Nykänen Hannu, Alm Jukka, Martikainen Pertti, & Silvola Jouko. (2022). Chamber flux data (CH4 , CO2) from Finland (1991 -1993) originally used in Nykänen et al. GBC, 12(1), 53 - 69, 1988, [Data set]. Zenodo. https://doi.org/10.5281/zenodo.6952933; DOI:10.1029/97GB02732"
 nykanen.permonth$country <- "Finland"
 nykanen.permonth$biome <- "Boreal"
 nykanen.permonth$flux_method <- "Chamber"
@@ -76,8 +76,8 @@ magnani.permonth$site_id <- paste("Magnani_NyÅlesund_", magnani.permonth$site_r
 magnani.permonth$latitude <- "78.923806"
 magnani.permonth$longitude <- "11.8915"
 magnani.permonth$email <- "marta.magnani@edu.unito.it"
-magnani.permonth$extraction_source <- "Paper/Zenodo"
-magnani.permonth$citation <- "Marta Magnani, Ilaria Baneschi, Mariasilvia Giamberini, Brunella Raco, & Antonello Provenzale. (2022). CO2 NEE and ER + air and soil meteorological and climate parameters in Arctic tundra, Ny Ålesund (Svalbard, NO) - summer 2019 [Data set]. Zenodo. https://doi.org/10.5281/zenodo.5815579"
+magnani.permonth$extraction_source <- "Zenodo/Publication"
+magnani.permonth$citation <- "Marta Magnani, Ilaria Baneschi, Mariasilvia Giamberini, Brunella Raco, & Antonello Provenzale. (2022). CO2 NEE and ER + air and soil meteorological and climate parameters in Arctic tundra, Ny Ålesund (Svalbard, NO) - summer 2019 [Data set]. Zenodo. https://doi.org/10.5281/zenodo.5815579; https://doi.org/10.1038/s41598-021-04728-0"
 magnani.permonth$country <- "Norway"
 magnani.permonth$biome <- "Tundra"
 magnani.permonth$permafrost <- "Yes"
@@ -96,7 +96,6 @@ dat2 <- magnani.permonth
 
 
 Zenodo.ch <- rbindlist(list(dat1, dat2), fill = TRUE)
-Zenodo.ch$extraction_source <- "Zenodo"
 Zenodo.ch$data_usage <- "Tier 1"
 
 
