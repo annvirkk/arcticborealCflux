@@ -738,6 +738,16 @@ base.ALL <- base.ALL %>%
   mutate(citation_co2 = ifelse(!is.na(NEE) | !is.na(GPP) | !is.na(RECO),  citation, NA))%>%
   mutate(citation= NULL)
 
+
+#remove gap_fill_perc for gapfilled data because it isn't representative of actually gapfill percentage
+base.ALL <- base.ALL %>%
+  mutate(gap_fill_perc_nee= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_nee)) %>%
+  mutate(gap_fill_perc_reco= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_reco)) %>%
+  mutate(gap_fill_perc_gpp= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_gpp)) %>%
+  mutate(gap_fill_perc_ch4= ifelse(gap_fill_ch4==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_ch4))
+  
+
+
 #save
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 write_csv(base.ALL , "ameriflux.base.csv")
