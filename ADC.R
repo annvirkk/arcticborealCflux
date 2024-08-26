@@ -122,8 +122,8 @@ pleindat.monthly$site_reference <- 'Utqiaġvik plots aggregated'
 pleindat.monthly$data_contributor_or_author <- 'Jessica Plein, Donatella Zona, Rulon Clark, Kyle Arndt, Walter Oechel, and Douglas Stow'
 pleindat.monthly$site_id <- 'Plein_Utqiaġvik_agg'
 pleindat.monthly$email <- 'jlplein@sdsu.edu'
-pleindat.monthly$extraction_source <- 'Arctic Data Center'
-pleindat.monthly$citation <- 'DOI:10.18739/A2S17ST8F'
+pleindat.monthly$extraction_source <- 'Arctic Data Center/Publication'
+pleindat.monthly$citation <- 'DOI:10.18739/A2S17ST8F; https://doi.org/10.5194/bg-19-2779-2022, 2022'
 pleindat.monthly$country <- 'USA'
 pleindat.monthly$latitude <- '71.322527'
 pleindat.monthly$longitude <- '-156.60917'
@@ -164,8 +164,8 @@ thule.monthly$site_reference <- "Thule chambers aggregated"
 thule.monthly$data_contributor_or_author <- "Robert Jespersen, Jeffrey Welker, Maria Vaisanen, and A Joshua Leffler"
 thule.monthly$site_id <- "Jesperson_Thule_agg"
 thule.monthly$email <- "gusjespers@gmail.com"
-thule.monthly$extraction_source <- "Arctic Data Center"
-thule.monthly$citation <- "DOI:10.18739/A2KH0F09B"
+thule.monthly$extraction_source <- "Arctic Data Center/Publication"
+thule.monthly$citation <- "DOI:10.18739/A2KH0F09B; DOI: 10.1111/gcb.16027"
 thule.monthly$country <-"Greenland"
 thule.monthly$latitude <- '76.55'
 thule.monthly$longitude <- '-68.566667'
@@ -365,6 +365,7 @@ friedman.monthly$site_name <- "Barrow"
 friedman.monthly$site_id <- paste("Friedman_Barrow_agg_",friedman.monthly$site_reference)
 friedman.monthly$email <- "support@arcticdata.io"
 friedman.monthly$data_contributor_or_author <- "K Miller, E Friedman, L Angenent, and D A Lipson"
+friedman.monthly$extraction_source <- "Arctic Data Center"
 friedman.monthly$citation <- "DOI:10.18739/A2T727H0D"
 friedman.monthly$country <- "USA"
 friedman.monthly$biome <- "Tundra"
@@ -438,6 +439,7 @@ wilkman.monthly$longitude <- "-156.596467"
 wilkman.monthly$flux_method <- "EC"
 wilkman.monthly$instrumentation <- "LI-7500"
 wilkman.monthly$flux_method_detail <- "EC_open"
+wilkman.monthly$gap_fill <- "Monthly Averages from non-gapfilled data"
 
 dat10<- wilkman.monthly
 ###Greenhouse gas flux (dat2) - Donatella Zona####-----------------------------------------------------------------------------
@@ -598,11 +600,14 @@ zona.dat.full <- full_join(zona.monthly, meteo.monthly, by= c("site_id", "year",
 
 #Removing strange data
 #removing air temp
-zona.monthly <- zona.monthly %>%
-  mutate(tair= ifelse(year %in% c(2020, 2021, 2022)& site_id %in% c("US-Bes","US-Brw"), NA, tair)) %>%
-  mutate(tair= ifelse(site_id %in% c("US-Beo", "US-Ivo", "US-Atq"), NA, tair)) %>%
-  mutate(tsoil= ifelse(site_id %in% c("US-Atq"), NA, tsoil)) %>%
-  mutate(tsoil= ifelse(site_id %in% c("US-Brw") & year < 2017, NA, tsoil))
+zona.dat.full  <- zona.dat.full %>%
+  mutate(tair= ifelse(year %in% c(2020, 2021, 2022)& site_reference %in% c("US-Bes","US-Brw"), NA, tair)) %>%
+  mutate(tair= ifelse(site_reference %in% c("US-Beo", "US-Ivo", "US-Atq"), NA, tair)) 
+zona.dat.full  <- zona.dat.full %>%
+  mutate(tsoil_surface= ifelse(site_reference %in% c("US-Atq"), NA, tsoil_surface)) %>%
+  mutate(tsoil_surface= ifelse(site_reference %in% c("US-Brw") & year < 2017, NA, tsoil_surface)) %>%
+  mutate(tsoil_deep= ifelse(site_reference %in% c("US-Atq"), NA, tsoil_deep)) %>%
+  mutate(tsoil_deep= ifelse(site_reference %in% c("US-Brw") & year < 2017, NA, tsoil_deep))
 
 
 
@@ -617,10 +622,10 @@ zona.monthly <- zona.monthly %>%
 # 
 # zona.HH <- left_join(zona.dat, meteo, by=c('site_id', 'year', 'month'))
 #adding static info
-zona.dat.full$email <- "dzona@mail.sdsu.edu"
-zona.dat.full$data_contributor_or_author <- "Donatella Zona"
+zona.dat.full$email <- "dzona@mail.sdsu.edu, woechel@mail.sdsu.edu"
+zona.dat.full$data_contributor_or_author <- "Donatella Zona, Walter Oechel"
 zona.dat.full$citation <- "doi:10.18739/A20Z70Z1H"
-
+zona.dat.full$gap_fill <- "Monthly Averages from non-gapfilled data"
 
 
 dat2 <- zona.dat.full
@@ -641,7 +646,6 @@ ADC.ec$extraction_source <- "Arctic Data Center"
 ADC.ec$data_usage <- "Tier 1"
 ADC.ec$dataentry_person <- "Isabel"
 ADC.ch <- rbindlist(list(dat3, dat4, dat5, dat6, dat7, dat8), fill = TRUE)
-ADC.ch$extraction_source <- "Arctic Data Center"
 ADC.ch$dataentry_person <- "Isabel"
 ADC.ch$data_usage <- "Tier 1"
 
