@@ -162,11 +162,15 @@ tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv")%>%
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 
+tallidart.ec$data_usage <- "Tier 2"
+tallidart.ch$data_usage <- "Tier 2"
+
 ### Kajar Köster ####-----------------------------------------------------------
 koster.ch <- read_csv("ABCfluxv2_Koster.csv")
 
 ### Sofie Sjogersten ####-------------------------------------------------------
 sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
+  dplyr::filter(!(site_name %in% c("Storflaket" , "Tourist St."))) %>%
   mutate(reco= ifelse(as.numeric(reco)>500, NA, reco),
          ch4_flux_total= ifelse(as.numeric(ch4_flux_total)> 35, NA, ch4_flux_total)) %>%
   mutate(reco= ifelse(as.numeric(reco) < 0, NA, reco)) %>%
@@ -181,8 +185,10 @@ sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
 sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
 
 ###Geert Hensgens####-----------------------------------------------------------
-hensgens.ec <- read_csv("ABCfluxv2.KYT.csv") %>%
-  mutate(gpp=  gpp *-1) #fixing because gpp is not negative
+hensgens.ec <- read_csv("ABCfluxv2_New.KYT.csv") %>%
+  mutate(gpp=  gpp *-1) %>% #fixing because gpp is not negative 
+  dplyr::rename("gap_fill_perc_ch4"= "gap_fill_perc_CH4",
+                "gap_fill_perc_nee"= "gap_fill_perc_NEE")
 
 ###Danila Illyasov####---------------------------------------------------------
 ilyasov.ch <- read_csv("ABCfluxv2_vars_Mukhrino_Ilyasov_Niyazova.csv") %>%	
@@ -341,7 +347,7 @@ webb.ch$ch4_flux_total_0 <- NULL
 
 ##remove outliers
 webb.ch <- webb.ch %>%
-  mutate(ch4_flux_total= ifelse(ch4_flux_total>75, NA, ch4_flux_total)) %>%
+  mutate(ch4_flux_total= ifelse(ch4_flux_total>50, NA, ch4_flux_total)) %>%
   mutate(nee= ifelse(nee< -500, NA, nee)) %>%
   mutate(gpp= ifelse(gpp< -500, NA, gpp))
 
@@ -398,7 +404,10 @@ rasanen.ch <- read_csv("ABCfluxv2vars_AR_corrected.csv") %>%
 ### Anna Virkkala ###----------------------------------------------------------
 virkkala.2017.ch <- read_csv("abcflux_kilpisjarvi_2017_co2_virkkala_march2024.csv") %>%
   mutate(site_reference= str_extract(site_id, "chamber_\\d+"))%>%
-  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days",
+                "soil_depth" = "org_dep",
+                "soil_moisture" = "moist",
+                "soil_perc_c"= "soil_per_c")
 virkkala.2018.ch <- read_csv("abcflux_kilpisjarvi_2018_ch4_virkkala_march2024.csv") %>%
   mutate(site_reference= str_extract(site_id, "chamber_\\d+"))%>%
   dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
@@ -652,7 +661,7 @@ dobosy$diurnal_coverage <- "Day and Night"
 dobosy$gap_fill <- "MDS"
 dobosy$citation <- "Dobosy; R.; D. et al.: Estimating Random Uncertainty in Airborne Flux Measurements over Alaskan Tundra: Update on the Flux Fragment Method. https://doi.org/10.1175/JTECH-D-16-0187.1"
 dobosy$site_name <- "NOAA-ATDD; Deadhorse"
-dobosy$data_contributor_or_author <- "Kochendorfer"
+dobosy$data_contributor_or_author <- "John Kochendorfer"
 dobosy$email <- "john.kochendorfer@noaa.gov"
 dobosy$country <- "USA"
 dobosy$biome <- "Tundra"
@@ -707,7 +716,7 @@ tagesson.ec <- left_join(tag.ec.monthly, tag.meteo.monthly)
 tagesson.ec$tsoil_surface_depth <- "2.5"
 tagesson.ec$tsoil_deep_depth <- "60"
 tagesson.ec$site_name <- "Rylekaerene"
-tagesson.ec$data_contributor_or_author <- "Torbern Tagesson; Department of Physical Geography and Ecosystems Science, Lund University, Sölvegatan 12, 223 62, Lund, Sweden,"
+tagesson.ec$data_contributor_or_author <- "Torbern Tagesson"
 tagesson.ec$email <- "torbern.tagesson@nateko.lu.se"
 tagesson.ec$citation <- "Tagesson, T., Mölder, M., Mastepanov, M., Sigsgaard, C., Tamstorf, M.P., Lund, M., . . . Ström, L. (2012) Land-atmosphere exchange of methane from soil thawing to soil freezing in a high-Arctic wet tundra ecosystem. Global Change Biology, 18, 1928–1940."
 tagesson.ec$country <- "Greenland"
@@ -764,7 +773,7 @@ tag.ch.monthly <- tag.ch %>%
   dplyr::summarise(tsoil_surface= mean(`Soil temp 10 cm`, na.rm = T),
                    alt= mean(`Active layer`, na.rm = T),
                    water_table_depth= mean(`Wt depth`, na.rm = T),
-                   par= mean(PAR, na.rm = T),
+                   ppfd= mean(PAR, na.rm = T),
                    ch4_flux_total= mean(`CH4 flux dark (mg CH4 m−2 h−1)`, na.rm = T),
                    nee= mean(`NEE (mg CO2 m−2 h−1)`, na.rm = T),
                    reco= mean(`RESP (mg CO2 m−2 h−1)`, na.rm = T),
@@ -866,6 +875,10 @@ chafe.monthly$nee<- chafe.monthly$nee*1.0368*days_in_month(as.yearmon(paste(chaf
 chafe.monthly$reco<- chafe.monthly$reco*1.0368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
 chafe.monthly$gpp<- chafe.monthly$nee- chafe.monthly$reco
 chafe.monthly$ch4_flux_total<- chafe.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
+
+chafe.monthly <- chafe.monthly %>%
+  mutate(ch4_flux_total= ifelse(ch4_flux_total>30, NA, ch4_flux_total))
+
 #adding static info
 chafe.monthly$moisture_depth <- "20"
 chafe.monthly$site_name <- "Council Road Mile Marker 71, Seward Peninsula"
@@ -956,7 +969,7 @@ vaughn.monthly$site_name <- "Barrow, Alaska"
 vaughn.monthly$site_id <- paste("Vaughn_Barrow_", vaughn.monthly$site_reference, sep= "")
 vaughn.monthly$country <- "USA"
 vaughn.monthly$biome <- "Tundra"
-vaughn.monthly$data_contributor_or_author <- "Vaughn, L.S., Conrad, M.S., Torn, M.S., Bill, M., Curtis, J.B., Chafe, O"
+vaughn.monthly$data_contributor_or_author <- "Lydia Vaughn, Mark Conrad, Margaret Torn, Markus Bill, Bryan Curtis, Oriana Chafe"
 vaughn.monthly$citation <-"Vaughn, L.S., Conrad, M.S., Torn, M.S., Bill, M., Curtis, J.B., Chafe, O. 2015. CO2 and CH4 surface fluxes, soil profile concentrations, and stable isotope composition, Barrow, Alaska, 20122013. Next Generation Ecosystem Experiments Arctic Data Collection, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tennessee, USA. Data set accessed at DOI:10.5440/1227684."
 vaughn.monthly$gap_fill <- "Average"
 vaughn.monthly$partition_method <- "GPP= NEE- ER"
@@ -1000,6 +1013,18 @@ PIdat.ch <- PIdat.ch %>%
 dupes.ec <- PIdat.ec %>% get_dupes(site_name, site_reference,  year, month, partition_method) 
 dupes.ch <- PIdat.ch %>% get_dupes(site_name, site_reference,  year, month)  
 
+#clarifying extraction source
+PIdat.ch <- PIdat.ch %>%
+  mutate(extraction_source= ifelse(data_contributor_or_author %in%  "Scott Davidson" , "User-contributed/Publication", extraction_source)) %>%
+  mutate(extraction_source= ifelse(data_contributor_or_author %in%  "Torbern Tagesson" , "User-contributed/Publication", extraction_source)) %>%
+  mutate(extraction_source= ifelse(data_contributor_or_author %in%  c("Oriana Chafe, Ian Shirley, Stan Wullschleger, and Margaret Torn" ,
+                                                                       "Lydia Vaughn, Mark Conrad, Margaret Torn, Markus Bill, Bryan Curtis, Oriana Chafe"), 
+                                    "User-contributed/NGEE", extraction_source))
+  
+PIdat.ec <- PIdat.ec %>%
+  mutate(extraction_source= ifelse(data_contributor_or_author %in%  "Torbern Tagesson" , "User-contributed/Publication", extraction_source)) 
+  
+  
 
 PIdat.ec2 <- PIdat.ec %>% 
   mutate(citation_ch4 = ifelse(!is.na(ch4_flux_total)| !is.na(ch4_flux_seasonal), citation, NA)) %>%
