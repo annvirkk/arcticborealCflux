@@ -79,7 +79,7 @@ rocha.ec <- rbindlist(list(rocha.ec.moderate, rocha.ec.severe, rocha.ec.unburned
   dplyr::filter(month %in% c(6,7,8)) #winter and shoulders season fluxes are entirely gapfilled as 0 so we're removing
 rocha.ec$data_contributor_or_author <- "Adrian Rocha"
 rocha.ec$gpp <- rocha.ec$gpp *-1
-rocha.ec$biome <- "Tundra"
+rocha.ec <- rocha.ec %>% mutate(biome== "Tundra")
 
 #Mary Farina---------------------------------------------------------------------------
 farina.ch <- read_csv("Data_for_ABCfluxV2_Terrestrial_Chamber_Flux_BigTrailLake_Fens_July2021_mfarina20240414.csv", na= "N/A")
@@ -303,6 +303,7 @@ holmes$diurnal_coverage <- "Day and Night"
 holmes$tsoil_surface_depth <- 10
 holmes$tsoil_deep_depth <- 35
 holmes$data_contributor_or_author <- "Beth Holmes, Patrick Crill"
+holmes$dataentry_person <- "Wargowsky"
 holmes$email <- "bhuettel@fsu.edu, patrick.crill@geo.su.se"
 
 #Lake Hazen --------------------------------------------------------------------
@@ -367,6 +368,13 @@ hazen.ch <- hazen.ch %>% full_join(hazen.static, by = join_by(site_reference))
 hazen.ch$Column <- NULL
 hazen.ch$measure_type <- NULL
 
+#### David Holl and Lars Kutzbach ####-------------------------------------------
+ru.sam <- read.table("Holl_and_Kutzbach_2018.tab", header = T, sep = "\t", fill= TRUE, skip=33 )
+
+ru.sam <- ru.sam %>%
+  mutate(year= year(as.Date(Date.Time.local..Timestamp.referring.to.end.of...., format= "%Y-%m-%dT%H:%M")),
+         month= month(as.Date(Date.Time.local..Timestamp.referring.to.end.of...., format= "%Y-%m-%dT%H:%M")))
+
 
 
 #BAWLD -------------------------------------------------------------------------
@@ -377,7 +385,8 @@ BAWLD.new <- read_csv("abcFluxv1_additional_chamber_CH4_uptake_extractions_april
 BAWLD.new$dataentry_person <- "Kuhn"
 
 BAWLDsinglemonth <- read_csv("ABCflux2_single_month_chambers_ikwedits.csv", na= c(NA, "-"))%>%
-  dplyr::filter(!site_name== "Tanana_River")%>%
+  dplyr::filter(!site_name %in% c("Tanana_River", "NorthSlope", "AlaskanRange", 
+                                  "Richardson", "BrooksRange", "Moosonee"))%>%
   dplyr::rename("ch4_flux_total"= "ch4_flux_total_CONVERTED",
                 "chamber_nr_measurement_days_ch4"="chamber_nr_measurement_days",
                 "water_table_depth"= "water_table_depth_ABC") %>%
@@ -391,6 +400,10 @@ BAWLDsinglemonth <- read_csv("ABCflux2_single_month_chambers_ikwedits.csv", na= 
 
 BAWLDsinglemonth$dataentry_person <- "Windholz"
 
+
+BAWLDsinglemonth.redo <- read_csv("ABCfluxv2.vars Richard.xlsx - terrestrial chamber.csv", na= c(NA, "-", "NA") )
+BAWLDsinglemonth$dataentry_person <- "OKeefe"
+
 #CONDENSE-------------------------------------------------------------------------
 newPIdata <- rbindlist(list(schuur.ec, rocha.ec, kljun.ec, nadeau.ec , farina.ch, 
                           knoblauch.ch, skeeter.chamber, skeeter.tower, domine.ec,
@@ -399,7 +412,7 @@ newPIdata <- rbindlist(list(schuur.ec, rocha.ec, kljun.ec, nadeau.ec , farina.ch
 newPIdata$extraction_source <- "User-contributed"
 newPIdata$dataentry_person <- "Wargowsky"
 
-newBAWLDdata <- rbindlist(list(BAWLDsinglemonth, BAWLD.new ),  fill = TRUE)
+newBAWLDdata <- rbindlist(list(BAWLDsinglemonth, BAWLD.new, BAWLDsinglemonth.redo ),  fill = TRUE)
 
 newBAWLDdata$extraction_source <- "BAWLD-CH4-Publication"
 
