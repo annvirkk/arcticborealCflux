@@ -160,7 +160,7 @@ write_csv(fluxnetALL, "fluxnetpermonth.csv")
 
 
 ####extract list of sites and dates covered###
-fluxnetALL$ts <- paste(fluxnetALL$year, fluxnetALL$month)
+fluxnetALL$ts <- as.yearmon(paste(fluxnetALL$year, fluxnetALL$month, sep="-"))
 sites <- subset(fluxnetALL, select = c(site_id,ts))
 sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
                                                                        end_date = max(ts))

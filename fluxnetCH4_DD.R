@@ -130,7 +130,6 @@ CH4fluxnetALL$gap_fill <- "ANNOPTLM"
 setwd("/Users/iwargowsky/Desktop/Fluxnet-CH4")
 write_csv(CH4fluxnetALL, "CH4fluxnetpermonth.csv")
 
-x <- CH4fluxnet.permonth %>% dplyr::filter(percent_na_ch4 ==100)
 
 CH4fluxnetALL$ts <- as.yearmon(paste(CH4fluxnetALL$year, CH4fluxnetALL$month,sep = '-')) #add timestamp
 
@@ -172,7 +171,7 @@ ggplot(CH4fluxnetALL, aes(x = ts, y = RECO, color= percent_na_reco)) +
 
 
 ####extract list of sites and dates covered###
-CH4fluxnet.permonth$ts <- paste(CH4fluxnet.permonth$year, CH4fluxnet.permonth$month)
+CH4fluxnet.permonth$ts <- as.yearmon(paste(CH4fluxnet.permonth$year, CH4fluxnet.permonth$month, sep="-"))
 sites <- subset(CH4fluxnet.permonth, select = c(site_id,ts))
 sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
                                                                        end_date = max(ts))

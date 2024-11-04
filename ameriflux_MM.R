@@ -234,7 +234,7 @@ write_csv(ameriflux.ALL, "ameriflux.fluxnetALL.csv")
 
 
 ####extract list of sites and dates covered###
-ameriflux.ALL$ts <- paste(ameriflux.ALL$year, ameriflux.ALL$month)
+ameriflux.ALL$ts <- as.yearmon(paste(ameriflux.ALL$year, ameriflux.ALL$month, sep="-"))
 sites <- subset(ameriflux.ALL, select = c(site_id,ts))
 sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
                                                                        end_date = max(ts))

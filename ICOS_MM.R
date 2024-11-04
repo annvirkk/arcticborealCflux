@@ -357,3 +357,9 @@ write_csv(allICOSpermonth, "ICOSdatapermonth.csv")
 
 
 
+####extract list of sites and dates covered###
+allICOSpermonth$ts <- as.yearmon(paste(allICOSpermonth$year, allICOSpermonth$month, sep="-"))
+sites <- subset(allICOSpermonth, select = c(site_id,ts))
+sites.datescovered <- sites %>% group_by(site_id) %>% dplyr::summarise(start_date = min(ts),
+                                                                       end_date = max(ts))
+
