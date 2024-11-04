@@ -79,7 +79,8 @@ rocha.ec <- rbindlist(list(rocha.ec.moderate, rocha.ec.severe, rocha.ec.unburned
   dplyr::filter(month %in% c(6,7,8)) #winter and shoulders season fluxes are entirely gapfilled as 0 so we're removing
 rocha.ec$data_contributor_or_author <- "Adrian Rocha"
 rocha.ec$gpp <- rocha.ec$gpp *-1
-rocha.ec <- rocha.ec %>% mutate(biome== "Tundra")
+rocha.ec$biome <- NULL
+rocha.ec$biome <- "Tundra"
 
 #Mary Farina---------------------------------------------------------------------------
 farina.ch <- read_csv("Data_for_ABCfluxV2_Terrestrial_Chamber_Flux_BigTrailLake_Fens_July2021_mfarina20240414.csv", na= "N/A")
