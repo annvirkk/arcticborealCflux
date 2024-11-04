@@ -21,6 +21,7 @@ for (file in terrestrial_files) {
   kenzie.bawld <- rbind(kenzie.bawld, sheet)}
 kenzie.bawld$dataentry_person <- "Kuhn"
 
+kenzie.bawld <- kenzie.bawld %>% dplyr::filter(!site_name== "Lake Hazen, Ellesmere Island") #removing this data since we received the same data from PI
 
 #Combine all 
 bawld.dat <- rbindlist(list( isabel.bawld, anna.bawld, kenzie.bawld), fill = TRUE)
