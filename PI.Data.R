@@ -171,9 +171,9 @@ koster.ch <- read_csv("ABCfluxv2_Koster.csv")
 ### Sofie Sjogersten ####-------------------------------------------------------
 sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
   dplyr::filter(!(site_name %in% c("Storflaket" , "Tourist St."))) %>%
-  mutate(reco= ifelse(as.numeric(reco)>500, NA, reco),
-         ch4_flux_total= ifelse(as.numeric(ch4_flux_total)> 35, NA, ch4_flux_total)) %>%
-  mutate(reco= ifelse(as.numeric(reco) < 0, NA, reco)) %>%
+ mutate(reco= ifelse(as.numeric(reco)>500, NA, reco),
+       ch4_flux_total= ifelse(as.numeric(ch4_flux_total)> 35, NA, ch4_flux_total)) %>%
+ mutate(reco= ifelse(as.numeric(reco) < 0, NA, reco)) %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
   dplyr::summarise(across(where(is.numeric),list(mean = ~ mean(.x, na.rm = TRUE)) ),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
@@ -233,7 +233,7 @@ voigt.ch <- read_csv("ABCfluxv2_CarolinaVoigt.csv") %>%
 
 ###Roger Seco####---------------------------------------------------------------
 seco.ec <- read_csv("ABCfluxv2.vars_RogerSeco_birch.csv")%>%
-   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc") 
 
 ###Sujan Pal and Ryan Sullivan####----------------------------------------------
 pal.bar.ec <- read_csv("BAR_ABCfluxv2.vars_SP_rcs.csv", na= "-9999")%>% 
@@ -347,7 +347,7 @@ webb.ch$ch4_flux_total_0 <- NULL
 
 ##remove outliers
 webb.ch <- webb.ch %>%
-  mutate(ch4_flux_total= ifelse(ch4_flux_total>50, NA, ch4_flux_total)) %>%
+  mutate(ch4_flux_total= ifelse(ch4_flux_total>30, NA, ch4_flux_total)) %>%
   mutate(nee= ifelse(nee< -500, NA, nee)) %>%
   mutate(gpp= ifelse(gpp< -500, NA, gpp))
 
@@ -434,7 +434,7 @@ davidson.16.monthly <- davidson.16 %>%
             chamber_nr_measurement_days= n_distinct(day))
 #change units to gC - CO2 m2 per month
 davidson.16.monthly$nee <- davidson.16.monthly$nee *24* days_in_month(as.yearmon(paste(davidson.16.monthly$year,davidson.16.monthly$month,sep = '-')))
-davidson.16.monthly$gpp <- davidson.16.monthly$gpp *24* days_in_month(as.yearmon(paste(davidson.16.monthly$year,davidson.16.monthly$month,sep = '-')))
+davidson.16.monthly$gpp <- davidson.16.monthly$gpp *24* -1*days_in_month(as.yearmon(paste(davidson.16.monthly$year,davidson.16.monthly$month,sep = '-')))
 davidson.16.monthly$reco <- davidson.16.monthly$reco *24* days_in_month(as.yearmon(paste(davidson.16.monthly$year,davidson.16.monthly$month,sep = '-')))
 davidson.16.monthly$ch4_flux_total <- davidson.16.monthly$ch4_flux_total /1000*24* days_in_month(as.yearmon(paste(davidson.16.monthly$year,davidson.16.monthly$month,sep = '-')))
 davidson.16.monthly$water_table_depth <- davidson.16.monthly$water_table_depth *-1
