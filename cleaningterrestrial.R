@@ -8,8 +8,8 @@ library(janitor)
 library(purrr)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-abc.order <- read_csv("ABC.v2.aug24.csv") # to reorder columns later on
-abc <- read_csv("ABC.v2.aug24.csv")
+abc.order <- read_csv("ABC.v2.oct24.csv") # to reorder columns later on
+abc <- read_csv("ABC.v2.oct24.csv")
 abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
 abc$citation <- paste("CO2:", abc$citation_co2, "CH4:", abc$citation_ch4, sep= " ")
 abc.order$extraction_source <- ""
@@ -52,7 +52,6 @@ abc <- abc %>% dplyr::rename("land_cover_bawld_old"= "land_cover_bawld",
 #specifying that if disturbance is NA then Disturbance_Category should also be NA
 abc <- abc %>% 
   mutate(Disturbance_Category= ifelse(is.na(disturbance), NA, Disturbance_Category))
-
 
 #setwd("/Users/iwargowsky/Desktop/arcticborealCflux")
 #write_csv(abc.x , "ABC.v2.may24.bawld.disturb.csv")
@@ -155,6 +154,7 @@ abc <- abc %>%
   mutate(tsoil_surface_depth= ifelse(tsoil_surface_depth %in% "0-6 cm below soil surface", 3, tsoil_surface_depth )) %>%
   mutate(tsoil_surface_depth= ifelse(tsoil_surface_depth %in% "0-5cm", 2.5, tsoil_surface_depth )) %>%
   mutate(tsoil_surface_depth= ifelse(tsoil_surface_depth %in% "NaN", NA, tsoil_surface_depth ))
+
   
 unique(abc$tsoil_deep_depth)
 abc <- abc %>%
@@ -597,8 +597,8 @@ unique(abc$flux_method)
 
 
 abc <- abc %>%
-  mutate(flux_method= ifelse(flux_method %in% c("5-min chamber flux" ), 
-                             "Chamber", flux_method))
+  mutate(flux_method= ifelse(flux_method %in% c("5-min chamber flux" ), "Chamber", flux_method)) %>%
+  mutate(flux_method= ifelse(flux_method %in% c("Diff" ), "Other", flux_method))
 
 
 ## Diurnal Cover
@@ -882,7 +882,7 @@ abc <- abc %>%
 
 #Isabel:I found a few mistakes but fixed errors directly in excel for 5 sites (Blaesedalen, Hospitaldalen, Mellemlandet, Skarvefjed, UaF)
 
-### gap_fill_perc_ #####
+# gap_fill_perc_ #####
 abc <- abc %>%
   mutate(gap_fill_perc_nee = str_remove(gap_fill_perc_nee, "%"),
          gap_fill_perc_nee = as.numeric(gap_fill_perc_nee)) %>%
@@ -946,11 +946,17 @@ abc <- abc %>% dplyr::filter(!(site_name== "Manitoba - Northern Old Black Spruce
 
 abc <- abc %>% dplyr::filter(!(site_name== "NEON Healy (HEAL)"& year == 2017)) %>%
                dplyr::filter(!(site_name== "NEON Healy (HEAL)"&  year == 2019 & month > 8))  %>%
-               dplyr::filter(!(site_name== "NEON Healy (HEAL)"&  year == 2019 & month < 9)) 
+               dplyr::filter(!(site_name== "NEON Healy (HEAL)"&  year == 2020 & month < 7)) 
+
   
 abc <- abc %>% dplyr::filter(!(site_name== "Ontario - Groundhog River, Boreal Mixedwood Forest"&
                                  extraction_source_co2== "Fluxnet2015" &
-                                 year %in% c(2003, 2014)))
+                                 year %in% 2003))
+
+abc <- abc %>% dplyr::filter(!(site_name== "Ontario - Groundhog River, Boreal Mixedwood Forest"&
+                                 extraction_source_co2== "Fluxnet2015" &
+                                 year %in% 2014 &
+                                 gap_fill_perc_nee == 100))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Poker Flat Research Range Black Spruce Forest" &
                                  extraction_source_co2== "Fluxnet2015" &
@@ -964,10 +970,10 @@ abc <- abc %>% dplyr::filter(!(site_name== "Quebec - 1975 Harvested Black Spruce
                                  year == 2007))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Quebec - Eastern Boreal, Mature Black Spruce"&
-                                 year == 2003))
+                                 year == 2003 & month < 9))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Rosinedal-3"&
-                                 year == 2014))
+                                 year == 2014 & month < 8))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Saskatchewan - Western Boreal, forest burned in 1977"&
                                  year == 2003 &
@@ -979,7 +985,7 @@ abc <- abc %>% dplyr::filter(!(site_name== "Saskatchewan - Western Boreal, fores
 abc <- abc %>% dplyr::filter(!(site_name== "Saskatchewan - Western Boreal, Jack Pine harvested in 2002" &
                                  year < 2004)) %>%
                 dplyr::filter(!(site_name== "Saskatchewan - Western Boreal, Jack Pine harvested in 2002" &
-                        year %in% c(2008,2009)))
+                        year > 2007))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Svartberget" &
                                  year == 2017))
@@ -990,11 +996,12 @@ abc <- abc %>% dplyr::filter(!(site_name== "Tiksi" &
                                  month < 7))
 
 abc <- abc %>% dplyr::filter(!(site_name== "UCI-1850 burn site" & year < 2002)) %>%
-               dplyr::filter(!(site_name== "UCI-1850 burn site" & year == 2003 & month < 6)) 
+               dplyr::filter(!(site_name== "UCI-1850 burn site" & year == 2002 & month < 6)) 
   
-abc <- abc %>% dplyr::filter(!(site_name== "UCI-1930 burn site" & gap_fill_perc_nee > 75)) 
+abc <- abc %>% dplyr::filter(!(site_name== "UCI-1930 burn site" & year == 2001 & month <7 )) %>%
+               dplyr::filter(!(site_name== "UCI-1930 burn site" & year == 2005 & month > 8 ))
 
-abc <- abc %>% dplyr::filter(!(site_name== "UCI-1964 burn site" & year < 2002))
+abc <- abc %>% dplyr::filter(!(site_name== "UCI-1964 burn site" & year < 2002 & month < 8))
 
 abc <- abc %>% dplyr::filter(!(site_name== "UCI-1964 burn site wet" & year < 2003))
 
@@ -1004,21 +1011,27 @@ abc <- abc %>% dplyr::filter(!(site_name== "UCI-1989 burn site" & year < 2002)) 
                dplyr::filter(!(site_name== "UCI-1989 burn site" & year == 2005 & month >9))
 
 abc <- abc %>% dplyr::filter(!(site_name== "UCI-1998 burn site" & year < 2002)) %>%
-               dplyr::filter(!(site_name== "UCI-1998 burn site" & year == 2003 & month < 6))
+               dplyr::filter(!(site_name== "UCI-1998 burn site" & year == 2002 & month < 6))
 
-abc <- abc %>% dplyr::filter(!(site_name== "Hyytiala" & year < 1997))
+abc <- abc %>% dplyr::filter(!(site_name== "Hyytiala" & year < 1997 & month < 7))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Norunda" & year > 2022))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Cherskii" & year == 2002 & month <7))
 
+abc <- abc %>% mutate(ch4_flux_total= ifelse(site_name %in% "YKD" & 
+                                               ch4_flux_total>30 &
+                                               flux_method %in% "Chamber", NA, ch4_flux_total))
+
 abc$extraction_ch4 <- NULL
 abc$extraction_co2 <- NULL
 
+#save df with duplicates
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc, "ABC.v2.aug24.cleanish.wdupes.csv")
+write_csv(abc, "ABC.v2.oct24.cleanish.wdupes.csv")
 
-### duplicate fluxes #####_--------------------------------------------------------
+
+### Removing duplicate fluxes #####_--------------------------------------------------------
 unique(abc$extraction_source)
 abc <- abc %>%
   mutate(pref1= case_when(extraction_source %in% c("CO2: User-contributed CH4: User-contributed",
@@ -1065,8 +1078,6 @@ abc <- abc %>%
                                                    "CO2: ABCflux v1- Euroflux/User-contributed CH4: NA",                 
                                                    "CO2: ABCflux v1- Euroflux CH4: NA",                                  
                                                    "CO2: ABCflux v1- Ameriflux CH4: NA")~4))
- 
- 
 
 
 #remove duplicates
@@ -1081,9 +1092,21 @@ dupes <- abc.nodupes %>% get_dupes(site_name, site_reference, year, month, flux_
 #woo
 
 
+####Samoylov Island special dupe removal####
+# we have data for Samoylov Island from Fluxnet as well as ABCFlux v1 for the same dates
+# data from ABCFlux v1 has both open and closed path (specified in site_reference) but Fluxnet does not
+# here I remove Fluxnet dupes that were not removed because they have diff site_reference
+sam.fluxnet.dupes <- abc.nodupes %>% get_dupes(site_name, year, month, flux_method) %>% 
+  dplyr::filter(site_name == "Samoylov Island") %>%
+  dplyr::filter(extraction_source == "CO2: Fluxnet2015 CH4: NA" )
+
+#remove dupes
+abc.nodupes <- abc.nodupes %>% anti_join(sam.fluxnet.dupes, by= c("site_name", "site_reference", "year", "month"))
+  
+
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.aug24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.oct24.cleanish.nodupes.csv")
 
 
 
@@ -1093,13 +1116,9 @@ write_csv(abc.nodupes, "ABC.v2.aug24.cleanish.nodupes.csv")
 #zona sites
 
 abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "Barrow-BES" & year %in% 2016 
-                                                    & month %in% 8, NA, nee))
-
-abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "Barrow-BES" & year %in% 2017 
+                                                    & month %in% 8, NA, nee)) %>% 
+                               mutate(nee= ifelse(site_name %in% "Barrow-BES" & year %in% 2017 
                                                     & month %in% 2, NA, nee))
-
-abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "Barrow-BES" & year %in% 2017 
-                                                  & month %in% 2, NA, nee))
 
 abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "Barrow-BEO" & year %in% 2013, NA, nee))
 
@@ -1108,8 +1127,8 @@ abc.nodupes <- abc.nodupes %>% mutate(ch4_flux_total= ifelse(site_name %in% "Ivo
                                                   & month %in% 3, NA, ch4_flux_total))
 
 abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "Atqasuk" & year %in% 2016 
-                                                             & month %in% c(2,7), NA, nee)) %>%
-  mutate(nee= ifelse(site_name %in% "Atqasuk" & year %in% 2003, NA, nee))
+                                                             & month %in% 2, NA, nee)) %>%
+                               mutate(nee= ifelse(site_name %in% "Atqasuk" & year %in% 2003, NA, nee))
 
 abc.nodupes <- abc.nodupes %>% mutate(ch4_flux_total= ifelse(site_name %in% "Barrow-CMDL" & year %in% 2018 
                                                              & month %in% c(2,4), NA, ch4_flux_total))
@@ -1118,17 +1137,21 @@ abc.nodupes <- abc.nodupes %>% mutate(ch4_flux_total= ifelse(site_name %in% "Bar
 
 #CO2
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Alberta - Western Peatland - LaBiche River,Black Spruce,Larch Fen" & 
-                                                gap_fill_perc_nee > 99))
+                                                year %in% 2003 & month < 8)) %>%
+  dplyr::filter(!(site_name %in% "Alberta - Western Peatland - LaBiche River,Black Spruce,Larch Fen" & 
+                    year %in% 2009 & gap_fill_perc_nee %in% 100))
 
 abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name %in% "Alberta - Western Peatland - Poor Fen (Sphagnum moss)" & 
-                                                    year %in% 2004 & month < 5)) %>% 
-                               dplyr::filter(!(site_name %in% "Alberta - Western Peatland - Poor Fen (Sphagnum moss)" & 
-                                                 year %in% 2006 & month > 10))
+                                                    year %in% 2004 & month < 5))
 
 abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name %in% "Alberta - Western Peatland - Rich Fen  (Carex)" & 
-                                                 year %in% 2004 & month < 5)) %>% 
-                               dplyr::filter(!(site_name %in% "Alberta - Western Peatland - Rich Fen  (Carex)" & 
-                                                year %in% 2006 & month > 10))
+                                                 year %in% 2004 & month < 5))
+
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name %in% "Attawapiskat River Bog" & 
+                                                 year %in% 2011 & month < 4))
+
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name %in% "Attawapiskat River Fen" & 
+                                                 year %in% 2011 & month < 4))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Bonanza Creek Black Spruce" & 
                                                   gap_fill_perc_nee %in% 100 & year %in% 2010))
@@ -1140,7 +1163,7 @@ abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Bonanza Creek Ri
                                                   month < 5  & year %in% 2011))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Fyodorovskoye" & 
-                                                  gap_fill_perc_nee %in% 100 & year %in% 1998))
+                                                  month < 5 & year %in% 1998))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Fyodorovskoye2" & 
                                                   gap_fill_perc_nee %in% 100 & year %in% 2015))
@@ -1175,34 +1198,46 @@ abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "NEON Barrow Envi
                                                   month <6 & year %in% 2019))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "NGEE Arctic Barrow" & 
-                                                  year %in% 2012))
+                                                  year %in% 2012)) %>%
+                                dplyr::filter(!(site_name %in% "NGEE Arctic Barrow" & 
+                                                    year %in% 2013 & month < 5)) 
 
-abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "NGEE Arctic Council" & 
-                                                  month < 7 & year %in% 2017))
+abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "NGEE Arctic Council" & 
+                                                    month < 8 & year %in% 2017, NA, nee),
+                                      gpp= ifelse(site_name %in% "NGEE Arctic Council" & 
+                                                    month < 8 & year %in% 2017, NA, gpp),
+                                      reco= ifelse(site_name %in% "NGEE Arctic Council" &
+                                                     month < 8 & year %in% 2017, NA, reco)) 
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Samoylov Island" & 
                                                   month > 7 & year %in% 2004)) %>%  
                                 dplyr::filter(!(site_name %in% "Samoylov Island" & 
                                                   month < 7 & year %in% 2005))
 
-abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Saskatchewan - Western Boreal, Jack Pine harvested in 2002" & 
-                                                  year %in% 2010))
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name== "Saskatchewan - Western Boreal, forest burned in 1989"&
+                                                 gap_fill_perc_nee %in% 100))
+
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name== "Saskatchewan - Western Boreal, forest burned in 1998"&
+                                                 gap_fill_perc_nee %in% 100))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Saskatchewan - Western Boreal, Mature Aspen" & 
                                                   gap_fill_perc_nee %in% 100 & year %in% 1996))
 
+abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Saskatchewan - Western Boreal, Mature Black Spruce" & 
+                                                  month < 5 & year %in% 1999))
+
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Saskatchewan - Western Boreal, Mature Jack Pine" &  year %in% 1999))
 
-abc.nodupes <- abc.nodupes %>% mutate(nee= ifelse(site_name %in% "Stordalen - Fen" & 
-                                                               gap_fill_perc_nee %in% 100 & year %in% 2012,
-                                                             NA, nee))
+abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Stordalen - Fen" & 
+                                                  gap_fill_perc_nee %in% 100 & year %in% 2012)) %>%
+  mutate(nee= ifelse(site_name %in% "Stordalen - Fen" & year %in% 2014 & month >9, NA, nee)) %>%
+  mutate(nee= ifelse(site_name %in% "Stordalen - Fen" & year %in% 2015 & month <5, NA, nee))
+  
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Stordalen Palsa Bog (ICOS)" & 
-                                                  month > 9 & year %in% 2023))
+                                                  month > 8 & year %in% 2023))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "UCI-1850 burn site" & 
-                                                  month < 5 & year %in% 2002)) %>%  
-                                dplyr::filter(!(site_name %in% "UCI-1850 burn site" & 
                                                   month > 9 & year %in% 2005))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "UCI-1964 burn site" & 
@@ -1214,12 +1249,7 @@ abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "UCI-1964 burn si
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "UCI-1981 burn site" & 
                                                   gap_fill_perc_nee %in% 100 & year %in% 2005))
 
-abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "UCI-1989 burn site" & 
-                                                  gap_fill_perc_nee %in% 100 & year %in% 2005))
-
-abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "UCI-1998 burn site" & 
-                                                  gap_fill_perc_nee %in% 100 & year %in% 2002))%>% 
-                                dplyr::filter(!(site_name %in% "UCI-1998 burn site" & 
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!(site_name %in% "UCI-1998 burn site" & 
                                                   gap_fill_perc_nee %in% 100 & year %in% 2005))
 
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Cherskii" & 
@@ -1230,38 +1260,70 @@ abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Cherskii" &
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Eight Mile Lake" & 
                                                   gap_fill_perc_nee %in% 100 & year %in% 2020))
 
-abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "NEON Healy (HEAL)" & 
-                                                  month < 7 & year %in% 2020))
-
 abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% c("Nuuk Fen", "Zackenberg Fen", "Zackenberg Heath") & 
                                                   extraction_source %in% "CO2: Fluxnet2015 CH4: NA"))
 
 ### methane
 
-abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "Stordalen Palsa Bog (ICOS)" & year %in% 2021 
-                                                               & month %in% 1, NA, ch4_flux_total))
-
-abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "NGEE Arctic Council" & year %in% 2020 
-                                                              & month %in% 1, NA, ch4_flux_total))
-
-abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "University of Alaska, Fairbanks" 
+ abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "University of Alaska, Fairbanks" 
                                                               & year %in% c(2022, 2023), NA, ch4_flux_total))
 
-abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "University of Alaska, Fairbanks" 
+abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "University of Alaska, Fairbanks"
                                                               & year %in% 2021 & month %in% 1, NA, ch4_flux_total))
 
-abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "University of Alaska, Fairbanks" 
+abc.nodupes <- abc.nodupes %>%  mutate(ch4_flux_total= ifelse(site_name %in% "University of Alaska, Fairbanks"
                                                               & year %in% 2019 & month %in% 12, NA, ch4_flux_total))
+
+#partitioned fluxes
+
+abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% c("Anaktuvuk River Moderate Burn", "Anaktuvuk River Severe Burn", "Anaktuvuk River Unburned")
+                                                    & year %in% 2020 & month %in% 6))
+
+abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Imnavait Creek Watershed Tussock Tundra" 
+                                       & year %in% c(2008, 2015), NA, reco)) %>%
+                             mutate(gpp= ifelse(site_name %in% "Imnavait Creek Watershed Tussock Tundra" 
+                                      & year %in% c(2008, 2015), NA, gpp)) 
+    
+abc.nodupes <- abc.nodupes %>%  dplyr::filter(!(site_name %in% "Imnavait Creek Watershed Wet Sedge Tundra" 
+                                                    & year %in% 2010)) 
+
+abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "NGEE Arctic Barrow" 
+                                                    & year %in% 2013 & month <7 , NA, reco)) %>%
+                                 mutate(reco= ifelse(site_name %in% "NGEE Arctic Barrow" 
+                                                   & year %in% 2015  , NA, reco)) %>%
+                                mutate(gpp= ifelse(site_name %in% "NGEE Arctic Barrow" 
+                                                  & year %in% 2015  , NA, gpp)) 
+
+abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Poker Flat Research Range Black Spruce Forest" 
+                                                    & year %in% 2012 & month %in% c(1,2) , NA, reco)) %>%
+                                 mutate(gpp= ifelse(site_name %in% "Poker Flat Research Range Black Spruce Forest" 
+                                                   & year %in% 2012 & month %in% c(1,2) , NA, gpp))
+                                 
+abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Samoylov Island" 
+                                                    & year %in% 2004 , NA, reco)) %>%
+                                mutate(gpp= ifelse(site_name %in% "Samoylov Island" 
+                                                    & year %in% 2004 , NA, gpp))  
+
+abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Saskatchewan - Western Boreal, forest burned in 1989" 
+                                                    & year %in% 2002 & month <6 , NA, reco))
+
 ### removing winter nee fluxes < -10  #####--------------------------------------------------------
-abc.nodupes <- abc.nodupes %>% 
-  mutate(nee= ifelse(month %in% c(12,1,2) & nee < -10, NA, nee)) %>%
-  mutate(gpp= ifelse(month %in% c(12,1,2) & nee < -10, NA, gpp)) %>%
-  mutate(reco= ifelse(month %in% c(12,1,2) & nee < -10, NA, reco))
+# abc.nodupes <- abc.nodupes %>% 
+#   mutate(nee= ifelse(month %in% c(12,1,2) & nee < -10, NA, nee)) %>%
+#   mutate(gpp= ifelse(month %in% c(12,1,2) & nee < -10, NA, gpp)) %>%
+#   mutate(reco= ifelse(month %in% c(12,1,2) & nee < -10, NA, reco))
+# 
+# ###investigating winter fluxes
+# winter <- abc.nodupes %>% dplyr::filter(month %in% c(12,1,2)) 
+# 
+# winter.sum <- winter %>% group_by(biome, month) %>%
+#   dplyr::summarise (mean= mean(nee, na.rm= T),
+#                     sd= sd(nee, na.rm= T))
 
 
 ### fixing extraction source #####--------------------------------------------------------
 
-unique(abc$extraction_source)
+unique(abc.nodupes$extraction_source)
 abc.nodupes <- abc.nodupes %>% 
   mutate(extraction_source = case_when(extraction_source %in% c("CO2: User-contributed CH4: NA", 
                                                                 "CO2: User-contributed CH4: User-contributed",
@@ -1270,7 +1332,8 @@ abc.nodupes <- abc.nodupes %>%
                                        extraction_source %in% c("CO2: User-contributed/Publication CH4: User-contributed/Publication",
                                                                 "CO2: NA CH4: User-contributed/Publication",
                                                                 "CO2: User-contributed/Publication CH4: NA")~ "User-contributed/Publication",
-                                       extraction_source %in% c("CO2: User-contributed/NGEE CH4: User-contributed/NGEE")~ "User-contributed/NGEE",
+                                       extraction_source %in% c("CO2: User-contributed/NGEE CH4: User-contributed/NGEE",
+                                                                "CO2: User-contributed/NGEE CH4: NA")~ "User-contributed/NGEE",
                                        extraction_source %in% "CO2: Fluxnet-CH4 CH4: Fluxnet-CH4"~ "Fluxnet-CH4",
                                        extraction_source %in% "CO2: Fluxnet2015 CH4: NA"~ "Fluxnet2015",
                                        extraction_source %in%  "CO2: Ameriflux- beta ONEFLUX CH4: NA"~ "Ameriflux- beta ONEFLUX",
@@ -1304,6 +1367,10 @@ abc.nodupes <- abc.nodupes %>%
                                        extraction_source %in%  "CO2: ABCflux v1- SMEAR CH4: NA"  ~ "ABCflux v1- SMEAR",
                                        extraction_source %in%  "CO2: ABCflux v1- Virkkala synthesis CH4: NA"  ~ "ABCflux v1- Virkkala synthesis", .default= extraction_source))
 
+unique(abc.nodupes$extraction_source)
+
+abc.nodupes$extraction_source_co2 <- NULL
+abc.nodupes$extraction_source_ch4 <- NULL
 
 ## Richard's cleaning code #####-------------------------------------------------
 
@@ -1509,10 +1576,10 @@ abc.nodupes <- abc.nodupes %>%
          citation_co2= NULL,
          citation_ch4= NULL)
 
-
-
 ## Fixing site_reference #####---------------------------------------------------
-
+#10/15/24 creating column FluxID to be used when fixing site_reference later on 
+abc.nodupes <- abc.nodupes %>%
+  mutate(FluxID= ifelse( flux_method == "EC" & !is.na(site_reference), site_reference, NA))
 
 abc.nodupes <- abc.nodupes %>%
   mutate(site_reference = ifelse(
@@ -1532,13 +1599,182 @@ abc.nodupes <- abc.nodupes %>%
 
 
 
+#check to see if site_reference is a unique column
+x <- abc.nodupes %>% get_dupes(site_reference, year, month, flux_method)
+
+
+
+##### Disturbance_Category fixing####--------------------------------------------
+
+##Round 2 of disturbance categories
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+disturb.ikw <- read_csv("abc.static.bysite.sep24.disturb_ikw.csv") %>% select(-disturbance)
+
+abc.nodupes$Disturbance_Category <- NULL
+abc.nodupes<- abc.nodupes %>% left_join(disturb.ikw, by= c("site_reference")) 
+
+##### Land cover classes from Anna ####--------------------------------------------
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+landcover <- read_csv("abc.static.bysite.sep24_av.csv") %>% 
+  distinct(site_reference, land_cover_eco, land_cover_plot, data_contributor_or_author)
+#check to see if there are duplicates (which would cause duplicates in merging)
+dupes <- landcover %>% get_dupes(c("site_reference", "data_contributor_or_author"))
+unique(dupes$site_reference)
+##these duplicates are caused by changes in landcover over time but we will change them to be static
+landcover <- landcover %>% 
+  mutate(land_cover_eco= ifelse(site_reference %in% "US-Rpf", 60, land_cover_eco)) %>%
+  mutate(land_cover_plot= ifelse(site_reference %in% "US-Rpf", 60, land_cover_plot)) %>%
+  mutate(land_cover_plot= ifelse(site_reference %in% c("dry heath_HD Ctr 1_Chamber",
+                                                       "dry heath_HD Ctr 3_Chamber"), 120, land_cover_plot)) %>% 
+  distinct(site_reference, land_cover_eco, land_cover_plot, data_contributor_or_author)
+
+#merge with data  
+abc.nodupes <- abc.nodupes %>% full_join(landcover, by= c("site_reference", "data_contributor_or_author"))
+
+
+#check to see make sure nothing was duplicated
+x <- abc.nodupes %>% get_dupes(site_reference, year, month, flux_method)
+
+#remove old land cover
+abc.nodupes$land_cover <- NULL
+
+## Fixing site_reference for towers to match aquatic data 10/15/24 #####---------------------------------------------------
+abc.nodupes <- abc.nodupes %>%
+  mutate(site_reference = ifelse(
+    flux_method == "EC",
+    pmap_chr(list(site_name,FluxID, "tower"), 
+             ~ paste(na.omit(c(...)), collapse = "_")),
+    site_reference
+  ))
+
+#check to see if site_reference is a unique column
+x <- abc.nodupes %>% get_dupes(site_reference, year, month, flux_method)
+
+#remove FluxID column
+abc.nodupes$FluxID <- NULL
+##### BAWLD classes from Kenzie 11/04/24 ####--------------------------------------------
+setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
+bawld.class <- read_csv("abc.static.bysite.oct24_Kuhn.csv")%>%
+  distinct(site_reference, land_cover_bawld2, data_contributor_or_author)
+#merge with df
+abc.nodupes <- abc.nodupes %>% full_join(bawld.class, by= c("site_reference", "data_contributor_or_author"))
+#remove old bawld column
+abc.nodupes$land_cover_bawld <- NULL
+abc.nodupes <- abc.nodupes %>% dplyr::rename("land_cover_bawld"="land_cover_bawld2")
+
+## Unifying some site_names #####---------------------------------------------------
+
+x <- abc.nodupes %>%
+  mutate(site_reference = ifelse(site_name %in% "Abisko Stordalen birch forest", "Birch Forest", site_reference),
+         site_name = ifelse(site_name %in% "Abisko Stordalen birch forest", "Stordalen", site_name)) %>%
+  mutate(site_name= ifelse(site_name %in% c("Stordalen Mire",  "Stordalen, Sweden", "Stordalen - Fen", 
+                                            "Stordalen Palsa Bog (ICOS)"), "Stordalen", site_name))
+
+## Unifying flux_method_detail #####---------------------------------------------------
+#paste info from detail to description before unifying so information is lost when unifying
+abc.nodupes <- abc.nodupes %>%
+  mutate(flux_method_description= paste(flux_method_detail, flux_method_description, sep="-"))
+
+#unifying
+abc.nodupes <- abc.nodupes %>%
+  mutate(flux_method_detail = case_when(
+    flux_method_detail %in% c("Automated", "automated chamber", "Automated chamber measurements", 
+                              "Automated chamber system", "automated chamber, every  1 hr", 
+                              "automated chamber, every  3 hr" , "Automatic chambers", 
+                              "Automatic closed chamber", "automatic, closed", "Chambers_mostly_automatic") ~ "Automatic chamber",
+    
+    flux_method_detail %in% c("CO2: Closed path CH4: Open path", "CO2: closed-path; CH4: open-path", 
+                              "Closed path CO2, Open path CH4", "Enclosed CO2; Open-path CH4", 
+                              "enclosed-path CO2, open-path CH4") ~ "CO2: Closed-path eddy covariance, CH4: Open-path eddy covariance",
+    
+    flux_method_detail %in% c("CH4: closed path eddy covariance, CO2: open-path eddy covariance", 
+                              "Open-path CO2 measurements (LI7500RS), closed-path CH4 measurements (DLT-100)") ~ "CO2: Open-path eddy covariance, CH4: Closed-path eddy covariance",
+    
+    flux_method_detail %in% c("Closed path", "closed-path", "Closed-path eddy covariance", 
+                              "closed-path eddy covariance", "EC_closed", "EC_enclosed", 
+                              "Enclosed", "enclosed", "enclosed eddy covariance", "enclosed-path", 
+                              "enclosed-path eddy covariance", "Encolsed path") ~ "Closed-path eddy covariance",
+    
+    flux_method_detail %in% c("Open", "Open path", "Open Path CO2 & CH4", "Open Path EC", 
+                              "Open-path CO2 measurements (LI7500RS)", 
+                              "Open-path CO2 measurements (LI7500RS), open-path CH4 measurements (LI7700)", 
+                              "Open-path EC", "open-path EC", "open-path eddy covariance", 
+                              "Open-path eddy covariance", "Open-path eddy-covariance", "EC_open") ~ "Open-path eddy covariance",
+    
+    flux_method_detail %in% c("Manual chamber measurement. Flux estimates from three repetitions were averaged together.", 
+                              "Manual chamber measurement. Flux estimates from three repetitions were averaged together., Manual chamber measurement. Three replicate fluxes were estimated and averaged using an opaque cover, and three replicate fluxes were estimated and averaged without the opaque cover.", 
+                              "Manual chamber measurements (dark chamber)", 
+                              "manual chamber measurements",
+                              "Manual chamber with a volume of 8.5 L and surface of 706.5 cm2", 
+                              "Manual one-time chamber measurements, average of 4 collars", 
+                              "Manual samples 3,10,15,20min", "Manual closed chamber", 
+                              "Manual closed chambers", "mostly manual chambers", "mostly manual chamber measurements",
+                              "Manual chamber", "Manual chamber measurements" , "Mostly manual chamber measurements"  ,
+                              "Manual measurements", "Manual chamber measurement" , "Manual",
+                              "Manual non-steady-state (closed) chamber measurements during snow-free period", 
+                              "non-steady state, closed dynamic flux chamber", "Static chamber", 
+                              "Static chambers", "Static chambers, six replicates in each 'site_reference'", 
+                              "Static closed chambers", "Static manual chamber", "Chambers_mostly_manual",
+                              "Manual chambers", "Manual chamber with a  volume of 8.5 L and surface of 706.5 cm2" ,
+                              "Static manual chambers", "Chambers consisted of opaque, plastic 20-L buckets with bottoms removed and resealable air-tight lids (Gamma Seal Lid, Encore Plastics, Sandusky, OH, USA) Chambers blocked 88% (41%) of photosynthetically active radiation measured with a cosign quantum flux sensor (Apogee Instruments, Logan, UT) in full sun (shade).", 
+                              "Closed chamber", "Closed Chamber", "Closed chamber and gas bottles", 
+                              "Closed chamber and LI7810 gas analyser", "Closed chambers", 
+                              "Closed chambers on 56 cm * 56 cm permanent frames", "close chamber, evry 4 h", 
+                              "Closed manual chamber", "Closed-loop chambers", 
+                              "Closed loop system", "Closed dynamic chamber method", "Manual Chamber",
+                              "Closed dynamic manual", "Chambers_snow", "manual chamber",
+                              "Following methods described in Shaver et al (2007)") ~ "Manual chamber",
+    
+    flux_method_detail %in% c("EC_open & closed", "closed and open-path eddy covariance", 
+                              "Closed path analyzers were mainly used, at times when closed path analyzers was not functioning, open path data were used if available. OP (Li-7500 Licor), CP (FGGA Los Gatos)") ~ "Open and Closed-path eddy covariance",
+   
+     flux_method_detail %in% "CO2: EC_open CH4: Combination of the gradient and eddy covariance methods" ~ "CO2: Open-path eddy covariance CH4: Combination of the gradient and eddy covariance methods" ,
+    
+    flux_method_detail %in% "Chambers_CUV" ~ "Chamber/Cuvettes" ,
+    
+    TRUE ~ flux_method_detail
+  )) 
+
+abc.nodupes <- abc.nodupes %>% 
+  mutate(flux_method_detail= ifelse(is.na(flux_method_detail), flux_method, flux_method_detail))
+
+unique(abc.nodupes$flux_method_detail)
+#### SAVE FINAL DF ####---------------------------------------------------------
+
+#remove rows that do not contain flux data
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
+                                                           ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
+                                                           ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
+
+
+#### QUALITY FLAG####---------------------------------------------------------
+#df of quantiles 
+quantiles <- abc.nodupes %>%
+  group_by(month, land_cover_eco, biome) %>%
+  reframe(lower.nee= quantile(nee, .025, na.rm=T),
+          upper.nee= quantile(nee, .975, na.rm=T),
+          lower.reco= quantile(reco, .025, na.rm=T),
+          upper.reco= quantile(reco, .975, na.rm=T),
+          lower.gpp= quantile(gpp, .025, na.rm=T),
+          upper.gpp= quantile(gpp, .975, na.rm=T))
+
+
+# Join quantiles with abc.nodupes and add QC column
+abc.nodupes <- abc.nodupes %>%
+  left_join(quantiles, by = c("month", "biome", "land_cover_eco")) %>%
+  mutate(expert_flag_co2 = ifelse(nee > lower.nee & nee < upper.nee, 0, 1),
+         expert_flag_reco= ifelse(reco > lower.reco & reco < upper.reco, 0, 1),
+         expert_flag_gpp= ifelse(gpp > lower.gpp & gpp < upper.gpp, 0, 1),
+         expert_flag_partitioned = pmax(expert_flag_reco, expert_flag_gpp, na.rm = T)) %>%
+  mutate(expert_flag_co2= ifelse(is.na(expert_flag_co2), expert_flag_partitioned, expert_flag_co2))
+         
+abc.nodupes <- abc.nodupes %>% select(-c(lower.nee, upper.nee, lower.reco, upper.reco,
+                                        lower.gpp, upper.gpp, expert_flag_reco, 
+                                        expert_flag_gpp, expert_flag_partitioned))
+
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.aug24.cleanish.nodupes.csv")
-
-
-
-
+write_csv(abc.nodupes, "ABC.v2.oct24.cleanish.nodupes.csv")
 
 
 
@@ -1632,6 +1868,19 @@ x.co2 <- abc.nodupes %>% dplyr::filter(flux_method== "EC") %>%
 
 
 
+
+ru.sam <- abc %>% dplyr::filter(site_name== "Samoylov Island") 
+ru.sam$ts <- as.yearmon(paste(ru.sam$year, ru.sam$month, sep="-"))
+
+
+ggplot(ru.sam)+ geom_line(aes(x=ts, y=nee, color= site_reference)) +
+  geom_point(aes(x=ts, y=nee, color= site_reference))
+
+
+
+
+
+
 ### static by site ##########--------------------------------------------------------------
 #remove dynamic variables
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
@@ -1640,12 +1889,12 @@ staticvars$land_cover_bawld<- ""
 staticvars$Disturbance_Category <- ""
 
 abc.static <- abc.nodupes %>% dplyr::select(colnames(staticvars)) %>%
-  dplyr::select(-c(citation, canopy_height))
+  dplyr::select(-c(canopy_height))
 
 #look
 abc.static.condense<-  abc.static  %>% distinct()
 setwd("/Users/iwargowsky/Desktop")   
-#write_csv(abc.static.condense , "abc.static.bysite.aug24.csv")
+#write_csv(abc.static.condense , "abc.static.bysite.oct24.csv")
 
 #looking at which sites are NA
 # z <- abc.static.condense %>% filter(is.na(land_cover_bawld_Kuhn)) 
@@ -1655,3 +1904,38 @@ setwd("/Users/iwargowsky/Desktop")
 
 
   
+####Land_cover_bawld and Disturb_Category ROUND 2
+abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_author, extraction_source, citation,
+                                      country, latitude, longitude, biome, veg_detail,
+                                      land_cover, land_cover_bawld, landform,
+                                      permafrost, permafrost_thaw, disturbance, disturb_year, disturb_severity, 
+                                      flux_method, flux_method_detail, flux_method_description, c_stock) %>%
+  dplyr::summarise(min_ch4= min(ch4_flux_total),
+                   max_ch4= max(ch4_flux_total))
+
+setwd("/Users/iwargowsky/Desktop")   
+write_csv(abc.static , "abc.static.bysite.ch4.oct24.csv")
+
+
+
+####Disturb_Category ROUND 2
+abc.static <- abc.nodupes %>% select(site_reference, disturbance, Disturbance_Category) %>% distinct()
+
+setwd("/Users/iwargowsky/Desktop")   
+write_csv(abc.static , "abc.static.bysite.oct24.disturb.csv")
+
+####Land_cover_bawld for Kenzie
+abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_author, extraction_source, citation,
+                                       country, latitude, longitude, biome, veg_detail,
+                                       land_cover_plot, land_cover_eco, land_cover_bawld, landform,
+                                       permafrost, permafrost_thaw, disturbance, Disturbance_Category, flux_method) %>%
+  dplyr::summarise(min_ch4= min(ch4_flux_total),
+                   max_ch4= max(ch4_flux_total))
+
+
+setwd("/Users/iwargowsky/Desktop")   
+write_csv(abc.static , "abc.static.bysite.oct24.csv")
+
+###NEW LAND COVER CLASSES
+
+
