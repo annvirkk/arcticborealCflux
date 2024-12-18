@@ -90,50 +90,40 @@ ikw.co2.ch <- read_csv("IKW.CO2.dataextractions.ch.csv") # CO2 data extracted fr
 late.additions.ch <- read_csv("late.additions.ch.csv") #data submitted after March 2024
 
 #merge 
-ABC.ch.wdupes <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch, bawld.ch.dat, ikw.co2.ch,late.additions.ch), fill = TRUE)
-ABC.ch.wdupes <- ABC.ch.wdupes %>% mutate(year= as.integer(ABC.ch.wdupes$year)) %>% 
-                                   mutate(month= as.integer(ABC.ch.wdupes$month)) #consistency in date formats
+ABC.ch <- rbindlist(list(PIdat.ch, ADC.ch, Zenodo.ch, abcflux.v1.Ch, bawld.ch.dat, ikw.co2.ch,late.additions.ch), fill = TRUE)
+ABC.ch <- ABC.ch %>% mutate(year= as.integer(ABC.ch$year)) %>% 
+                                   mutate(month= as.integer(ABC.ch$month)) #consistency in date formats
 
 #unifying names for partition methods 
-unique(ABC.ch.wdupes$partition_method) #see if any chamber measurements specify a partition method
-ABC.ch.wdupes <- ABC.ch.wdupes %>%
-  mutate(partition_method = ifelse(ABC.ch.wdupes$partition_method %in% "Reichstein (night time=Reco partitioning)","Reichstein", ABC.ch.wdupes$partition_method))
-# ####reformatting based on partitioning methods ####
-# Not using this code anymore
-# ABC.ch.wdupes <- ABC.ch.wdupes %>%
-#   mutate(gpp.nt = ifelse(partition_method %in% "Reichstein", gpp, NA),
-#          gpp.dt = ifelse(partition_method %in% "Lasslop", gpp, NA),
-#          reco.nt = ifelse(partition_method %in% "Reichstein", reco, NA),
-#          reco.dt = ifelse(partition_method %in% "Lasslop", reco, NA),
-#          gpp = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), gpp, NA),
-#          reco = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), reco, NA))
+unique(ABC.ch$partition_method) #see if any chamber measurements specify a partition method
+ABC.ch <- ABC.ch %>%
+  mutate(partition_method = ifelse(ABC.ch$partition_method %in% "Reichstein (night time=Reco partitioning)","Reichstein", ABC.ch$partition_method))
 
 #remove rows that do not contain flux data
-ABC.ch.wdupes <- ABC.ch.wdupes %>%
+ABC.ch <- ABC.ch %>%
   dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
-                   ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
-                   ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
+                   ch4_flux_diffusion, ch4_flux_ebullition, ch4_flux_storage), ~ is.na(.)))
 
 #check if there are any duplicates
-dupes<- ABC.ch.wdupes %>% get_dupes(site_name, site_reference, year, month) 
+dupes<- ABC.ch %>% get_dupes(site_name, site_reference, year, month) 
 
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
-#write_csv(ABC.ch.wdupes, "ABCv2.ch.csv")
+#write_csv(ABC.ch, "ABCv2.ch.csv")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.oct24 <- rbindlist(list(ABC.ch.wdupes, ABC.ec), fill = TRUE) 
+ABC.v2.dec24 <- rbindlist(list(ABC.ch, ABC.ec), fill = TRUE) 
 #removing rows without any flux data
-ABC.v2.oct24<- ABC.v2.oct24 %>% dplyr::select(-starts_with("...")) %>%  #unnecessary columns 
+ABC.v2.dec24<- ABC.v2.dec24 %>% dplyr::select(-starts_with("...")) %>%  #unnecessary columns 
                                 dplyr::filter(!site_name== "") %>%
                                  dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 #check if there are any duplicates
-dupes <- ABC.v2.oct24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
+dupes <- ABC.v2.dec24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
 
 ###preliminary cleaning of site names to remove special characters
-ABC.v2.oct24 <- ABC.v2.oct24 %>% 
+ABC.v2.dec24 <- ABC.v2.dec24 %>% 
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik", "Utqiaġvik"),"Utqiagvik" , site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik North", "Utqiaġvik North"), "Utqiagvik North", site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik South", "Utqiaġvik South"), "Utqiagvik South", site_name) ) %>%
@@ -154,7 +144,7 @@ ABC.v2.oct24 <- ABC.v2.oct24 %>%
   mutate(site_name= ifelse(site_name == "Värriö", "Varrio", site_name) ) %>%
   mutate(site_name= ifelse(site_name == "Iškoras", "Iskoras", site_name) ) 
 
-ABC.v2.oct24 <- ABC.v2.oct24 %>% 
+ABC.v2.dec24 <- ABC.v2.dec24 %>% 
   mutate(site_reference= ifelse(site_reference == "Värriö_Grazed", "Varrio_Grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_non-grazed", "Varrio_non-grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_Fire45", "Varrio_Fire45" , site_reference) ) %>%
@@ -164,12 +154,12 @@ ABC.v2.oct24 <- ABC.v2.oct24 %>%
   mutate(site_reference= ifelse(site_name == "Svalbard", "Bjornedalen" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Utqiaġvik plots aggregated", "Utqiagvik plots aggregated" , site_reference) ) 
   
-ABC.v2.oct24 <- ABC.v2.oct24 %>% 
+ABC.v2.dec24 <- ABC.v2.dec24 %>% 
   dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-write_csv(ABC.v2.oct24, "ABC.v2.oct24.csv")
+write_csv(ABC.v2.dec24, "ABC.v2.dec24.csv")
 
 
 
@@ -182,7 +172,7 @@ write_csv(ABC.v2.oct24, "ABC.v2.oct24.csv")
 
   
 ####extract list of sites and dates covered##
-ECsites.datescovered <- ABC.v2.oct24 %>% 
+ECsites.datescovered <- ABC.v2.dec24 %>% 
   filter(flux_method== "EC" ) %>%
   mutate(ts= as.yearmon(paste(year, month,sep = '-'))) %>%
   group_by(site_name, site_reference) %>% 
