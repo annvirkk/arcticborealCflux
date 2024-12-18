@@ -6,7 +6,7 @@ setwd("/Users/iwargowsky/Desktop/ABC flux v1")
 dat <- read_csv("Arctic_Boreal_CO2_Flux.csv", na =c("NA", "-9999")) 
 #load list of ABC V2 variables
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
-v2.vars <- read_csv("ABCfluxv2.variables.csv")
+v2.vars <- read_csv("abc.v2.vars.csv")
 
 #rename variables from ABC V1 format to V2
 dat.renamed <- dat %>% dplyr::rename("site_id"= "study_id",
@@ -160,8 +160,9 @@ dat.v2 <- dat.v2 %>%
   dplyr::filter(!data_contributor_or_author%in% "Maija E. Marushchak")
 
 #removing Eugenies second tower according to emails between Sue and Anna 2.12.24
-dat.v2 <- dat.v2 %>% 
-  dplyr::filter(!site_reference%in% "RU-Eusk_cher2")
+#now not removing per discussion with Anna 10/31/24
+#dat.v2 <- dat.v2 %>% 
+#  dplyr::filter(!site_reference%in% "RU-Eusk_cher2")
 
 #fixing name of Euskirchen_US-TFBS_tower1 to US-BZS
 dat.v2 <- dat.v2 %>% 
@@ -248,9 +249,7 @@ dat.v2$site_unique <- NULL
 
 #remove rows without flux data
 dat.v2 <- dat.v2 %>%
-  dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
-                   ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
-                   ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
+  dplyr::filter(!if_all(c(nee, gpp, reco, nee_seasonal), ~ is.na(.)))
 #find number of  duplicates
 dupes<- dat.v2 %>% get_dupes(site_name, site_reference, year, month, partition_method) 
 
