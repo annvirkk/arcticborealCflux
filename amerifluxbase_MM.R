@@ -741,9 +741,9 @@ base.ALL <- base.ALL %>%
 
 #remove gap_fill_perc for gapfilled data because it isn't representative of actually gapfill percentage
 base.ALL <- base.ALL %>%
-  mutate(gap_fill_perc_nee= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_nee)) %>%
   mutate(gap_fill_perc_reco= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_reco)) %>%
   mutate(gap_fill_perc_gpp= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_gpp)) %>%
+  mutate(gap_fill_perc_nee= ifelse(gap_fill==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_nee)) %>%
   mutate(gap_fill_perc_ch4= ifelse(gap_fill_ch4==  "Monthly Averages from gapfilled data",NA, gap_fill_perc_ch4))
   
 
