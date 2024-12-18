@@ -8,8 +8,8 @@ library(janitor)
 library(purrr)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-abc.order <- read_csv("ABC.v2.oct24.csv") # to reorder columns later on
-abc <- read_csv("ABC.v2.oct24.csv")
+abc.order <- read_csv("ABC.v2.dec24.csv") # to reorder columns later on
+abc <- read_csv("ABC.v2.dec24.csv")
 abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
 abc$citation <- paste("CO2:", abc$citation_co2, "CH4:", abc$citation_ch4, sep= " ")
 abc.order$extraction_source <- ""
@@ -898,9 +898,7 @@ colnames(abc)
 unique(abc$chamber_nr_measurement_days)
 abc$chamber_nr_measurement_days <- NULL
 
-unique(abc$gap_fill_perc_gpp)
 abc$gap_fill_perc_gpp <- NULL
-unique(abc$gap_fill_perc_reco)
 abc$gap_fill_perc_reco <- NULL
 
 unique(abc$gap_fill_perc)
@@ -1019,16 +1017,13 @@ abc <- abc %>% dplyr::filter(!(site_name== "Norunda" & year > 2022))
 
 abc <- abc %>% dplyr::filter(!(site_name== "Cherskii" & year == 2002 & month <7))
 
-abc <- abc %>% mutate(ch4_flux_total= ifelse(site_name %in% "YKD" & 
-                                               ch4_flux_total>30 &
-                                               flux_method %in% "Chamber", NA, ch4_flux_total))
 
 abc$extraction_ch4 <- NULL
 abc$extraction_co2 <- NULL
 
 #save df with duplicates
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc, "ABC.v2.oct24.cleanish.wdupes.csv")
+write_csv(abc, "ABC.v2.dec24.cleanish.wdupes.csv")
 
 
 ### Removing duplicate fluxes #####_--------------------------------------------------------
@@ -1106,12 +1101,14 @@ abc.nodupes <- abc.nodupes %>% anti_join(sam.fluxnet.dupes, by= c("site_name", "
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.oct24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.dec24.cleanish.nodupes.csv")
 
 
 
 
 ### removing fluxes based on gapfill percent #####--------------------------------------------------------
+#adding this so we can find avg gap fill percent of fluxes removed
+abc.intact <- abc.nodupes
 
 #zona sites
 
@@ -1293,11 +1290,6 @@ abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "NGEE Arctic 
                                                    & year %in% 2015  , NA, reco)) %>%
                                 mutate(gpp= ifelse(site_name %in% "NGEE Arctic Barrow" 
                                                   & year %in% 2015  , NA, gpp)) 
-
-abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Poker Flat Research Range Black Spruce Forest" 
-                                                    & year %in% 2012 & month %in% c(1,2) , NA, reco)) %>%
-                                 mutate(gpp= ifelse(site_name %in% "Poker Flat Research Range Black Spruce Forest" 
-                                                   & year %in% 2012 & month %in% c(1,2) , NA, gpp))
                                  
 abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Samoylov Island" 
                                                     & year %in% 2004 , NA, reco)) %>%
@@ -1306,6 +1298,11 @@ abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Samoylov Isl
 
 abc.nodupes <- abc.nodupes %>%  mutate(reco= ifelse(site_name %in% "Saskatchewan - Western Boreal, forest burned in 1989" 
                                                     & year %in% 2002 & month <6 , NA, reco))
+
+
+data.removed <- anti_join(abc.intact, abc.nodupes) %>% 
+  mutate(gap_fill_perc_nee= as.numeric(gap_fill_perc_nee))
+mean(data.removed$gap_fill_perc_nee, na.rm=T)
 
 ### removing winter nee fluxes < -10  #####--------------------------------------------------------
 # abc.nodupes <- abc.nodupes %>% 
@@ -1663,12 +1660,13 @@ abc.nodupes$land_cover_bawld <- NULL
 abc.nodupes <- abc.nodupes %>% dplyr::rename("land_cover_bawld"="land_cover_bawld2")
 
 ## Unifying some site_names #####---------------------------------------------------
-
-x <- abc.nodupes %>%
-  mutate(site_reference = ifelse(site_name %in% "Abisko Stordalen birch forest", "Birch Forest", site_reference),
-         site_name = ifelse(site_name %in% "Abisko Stordalen birch forest", "Stordalen", site_name)) %>%
-  mutate(site_name= ifelse(site_name %in% c("Stordalen Mire",  "Stordalen, Sweden", "Stordalen - Fen", 
-                                            "Stordalen Palsa Bog (ICOS)"), "Stordalen", site_name))
+abc.nodupes  <- abc.nodupes %>%
+  mutate(site_name= ifelse(site_name %in% "Stordalen Palsa Bog (ICOS)", "Stordalen Palsa Bog", site_name ),
+         site_reference= ifelse(site_reference %in% "Stordalen Palsa Bog (ICOS)_SE-Sto_tower", "Stordalen Palsa Bog_SE-Sto_tower", site_reference)) %>%
+  mutate(site_name= ifelse(site_name %in% "Stordalen - Fen", "Stordalen Fen", site_name ),
+         site_reference= ifelse(site_reference %in% "Stordalen - Fen_SE-St1_tower", "Stordalen Fen_SE-St1_tower", site_reference)) %>%
+  mutate(site_name= ifelse(site_name %in% c("Stordalen Mire", "Stordalen, Sweden"), "Stordalen", site_name))
+ 
 
 ## Unifying flux_method_detail #####---------------------------------------------------
 #paste info from detail to description before unifying so information is lost when unifying
@@ -1739,18 +1737,16 @@ abc.nodupes <- abc.nodupes %>%
   mutate(flux_method_detail= ifelse(is.na(flux_method_detail), flux_method, flux_method_detail))
 
 unique(abc.nodupes$flux_method_detail)
-#### SAVE FINAL DF ####---------------------------------------------------------
-
-#remove rows that do not contain flux data
-abc.nodupes <- abc.nodupes %>% dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
-                                                           ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
-                                                           ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
-
+#### fix site name for Ranskalankorpi ####---------------------------------------------------------
+abc.nodupes <- abc.nodupes %>% 
+  mutate(site_name = ifelse(site_name %in% "Ranskalankorpi, Continuous cover forestry treatment", "Ranskalankorpi", site_name)) %>% 
+  mutate(site_reference= ifelse(site_reference %in% "Ranskalankorpi, Continuous cover forestry treatment_FI-Ran forestry treatment_tower", "Ranskalankorpi_FI-Ran forestry treatment_tower", site_reference))
 
 #### QUALITY FLAG####---------------------------------------------------------
-#df of quantiles 
-quantiles <- abc.nodupes %>%
-  group_by(month, land_cover_eco, biome) %>%
+
+#df of quantiles CO2
+quantiles.co2 <- abc.nodupes %>%
+  group_by(month, biome) %>%
   reframe(lower.nee= quantile(nee, .025, na.rm=T),
           upper.nee= quantile(nee, .975, na.rm=T),
           lower.reco= quantile(reco, .025, na.rm=T),
@@ -1759,22 +1755,61 @@ quantiles <- abc.nodupes %>%
           upper.gpp= quantile(gpp, .975, na.rm=T))
 
 
-# Join quantiles with abc.nodupes and add QC column
+# Join quantiles with abc.nodupes and add QC column for CO2 
 abc.nodupes <- abc.nodupes %>%
-  left_join(quantiles, by = c("month", "biome", "land_cover_eco")) %>%
+  left_join(quantiles.co2, by = c("month", "biome")) %>%
   mutate(expert_flag_co2 = ifelse(nee > lower.nee & nee < upper.nee, 0, 1),
          expert_flag_reco= ifelse(reco > lower.reco & reco < upper.reco, 0, 1),
          expert_flag_gpp= ifelse(gpp > lower.gpp & gpp < upper.gpp, 0, 1),
          expert_flag_partitioned = pmax(expert_flag_reco, expert_flag_gpp, na.rm = T)) %>%
   mutate(expert_flag_co2= ifelse(is.na(expert_flag_co2), expert_flag_partitioned, expert_flag_co2))
+
+#df of quantiles CH4
+quantiles.ch4 <- abc.nodupes %>%
+  group_by(month, biome, land_cover_bawld) %>%
+  reframe(lower.ch4.2.5 = quantile(ch4_flux_total, .025, na.rm=T),
+          upper.ch4.97.5= quantile(ch4_flux_total, .975, na.rm=T),
+          lower.ch4.1 = quantile(ch4_flux_total, .1, na.rm=T),
+          upper.ch4.99= quantile(ch4_flux_total, .99, na.rm=T))
+
+# Join quantiles with abc.nodupes and add QC column for Ch4
+abc.nodupes <- abc.nodupes %>%
+  left_join(quantiles.ch4, by = c("month", "biome", "land_cover_bawld")) %>%
+  mutate(expert_flag_ch4.97.5 = ifelse(ch4_flux_total > lower.ch4.2.5 & ch4_flux_total < upper.ch4.97.5, 0, 1),
+         expert_flag_ch4.99 = ifelse(ch4_flux_total > lower.ch4.1 & ch4_flux_total < upper.ch4.99, 0, 1))
+
          
 abc.nodupes <- abc.nodupes %>% select(-c(lower.nee, upper.nee, lower.reco, upper.reco,
                                         lower.gpp, upper.gpp, expert_flag_reco, 
-                                        expert_flag_gpp, expert_flag_partitioned))
+                                        expert_flag_gpp, expert_flag_partitioned,
+                                        lower.ch4.2.5, lower.ch4.1, upper.ch4.97.5, upper.ch4.99))
+
+#Quality flag 2
+# abc.nodupes <- abc.nodupes %>%
+#   mutate(expert_flag_co2= ifelse(site_name %in% c("RU-Eusk_cher2"), 2, expert_flag_co2),
+#          expert_flag_ch4= ifelse(site_name %in% c("RU-Eusk_cher2"), 2, expert_flag_ch4))
+# 
+# 
+# #Quality flag 3
+# abc.nodupes <- abc.nodupes %>%
+#   mutate(expert_flag_co2= ifelse(site_reference %in% c("Iskoras_NO-Isk-fen_tower",
+#                                                        "Iskoras_NO-Isk-palsa_tower",
+#                                                        "Ranskalankorpi_FI-Ran forestry treatment_tower"), 3, expert_flag_co2),
+#          expert_flag_ch4= ifelse(site_reference %in% c("Iskoras_NO-Isk-fen_tower",
+#                                                   "Iskoras_NO-Isk-palsa_tower",
+#                                                   "Ranskalankorpi_FI-Ran forestry treatment_tower"), 3 expert_flag_ch4)))
+
+#### SAVE FINAL DF ####---------------------------------------------------------
+
+
+#remove rows that do not contain flux data
+abc.nodupes <- abc.nodupes %>% dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_total, nee_seasonal, ch4_flux_seasonal,
+                                                       ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,co2_flux_storage, 
+                                                       ch4_flux_storage_bubble, co2_flux_storage_bubble), ~ is.na(.)))
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.oct24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.dec24.cleanish.nodupes.csv")
 
 
 
@@ -1894,7 +1929,7 @@ abc.static <- abc.nodupes %>% dplyr::select(colnames(staticvars)) %>%
 #look
 abc.static.condense<-  abc.static  %>% distinct()
 setwd("/Users/iwargowsky/Desktop")   
-#write_csv(abc.static.condense , "abc.static.bysite.oct24.csv")
+#write_csv(abc.static.condense , "abc.static.bysite.dec24.csv")
 
 #looking at which sites are NA
 # z <- abc.static.condense %>% filter(is.na(land_cover_bawld_Kuhn)) 
@@ -1914,7 +1949,7 @@ abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_autho
                    max_ch4= max(ch4_flux_total))
 
 setwd("/Users/iwargowsky/Desktop")   
-write_csv(abc.static , "abc.static.bysite.ch4.oct24.csv")
+write_csv(abc.static , "abc.static.bysite.ch4.dec24.csv")
 
 
 
@@ -1922,7 +1957,7 @@ write_csv(abc.static , "abc.static.bysite.ch4.oct24.csv")
 abc.static <- abc.nodupes %>% select(site_reference, disturbance, Disturbance_Category) %>% distinct()
 
 setwd("/Users/iwargowsky/Desktop")   
-write_csv(abc.static , "abc.static.bysite.oct24.disturb.csv")
+write_csv(abc.static , "abc.static.bysite.dec24.disturb.csv")
 
 ####Land_cover_bawld for Kenzie
 abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_author, extraction_source, citation,
@@ -1934,7 +1969,7 @@ abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_autho
 
 
 setwd("/Users/iwargowsky/Desktop")   
-write_csv(abc.static , "abc.static.bysite.oct24.csv")
+write_csv(abc.static , "abc.static.bysite.dec24.csv")
 
 ###NEW LAND COVER CLASSES
 
