@@ -170,16 +170,12 @@ koster.ch <- read_csv("ABCfluxv2_Koster.csv")
 
 ### Sofie Sjogersten ####-------------------------------------------------------
 sjogersten.ch <- read_csv("Sjogersten wetland sites ABCfluxv2.vars.csv") %>%
-  dplyr::filter(!(site_name %in% c("Storflaket" , "Tourist St."))) %>%
- mutate(reco= ifelse(as.numeric(reco)>500, NA, reco),
-       ch4_flux_total= ifelse(as.numeric(ch4_flux_total)> 35, NA, ch4_flux_total)) %>%
- mutate(reco= ifelse(as.numeric(reco) < 0, NA, reco)) %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
   dplyr::summarise(across(where(is.numeric),list(mean = ~ mean(.x, na.rm = TRUE)) ),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
   rename_with(~gsub("_unique", "", .), everything()) %>%  # Remove "_unique" from column names
   rename_with(~gsub("_mean", "", .), everything()) %>%# Remove "_mean" from column names
-  mutate(site_reference= paste(site_reference, "agg", sep="_"))
+  mutate(site_reference= paste(site_reference, "agg", sep="_")) 
 
 ###Patrick Sullivan ####--------------------------------------------------------
 sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
@@ -344,12 +340,6 @@ webb.ch$ch4_flux_total <- webb.ch$ch4_flux_total_0/10^6*60*24*12.01*days_in_mont
 webb.ch$nee_0 <- NULL
 webb.ch$reco_0 <- NULL
 webb.ch$ch4_flux_total_0 <- NULL
-
-##remove outliers
-webb.ch <- webb.ch %>%
-  mutate(ch4_flux_total= ifelse(ch4_flux_total>30, NA, ch4_flux_total)) %>%
-  mutate(nee= ifelse(nee< -500, NA, nee)) %>%
-  mutate(gpp= ifelse(gpp< -500, NA, gpp))
 
 webb.ch <- webb.ch %>%
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
@@ -830,10 +820,6 @@ tag.ch.monthly <- tag.ch.monthly %>%
                               startsWith(site_reference,"Vaccinium heath")~"Dominant"))
 tag.ch.monthly$other_moss_cover <- "Present"
 
-##remove outlier methane flux
-tag.ch.monthly <- tag.ch.monthly %>%
-  mutate(ch4_flux_total= ifelse(ch4_flux_total>75, NA, ch4_flux_total))
-
 
 tagesson.ch <- tag.ch.monthly
 #####Margaret Torn/ Sigrid Dengel NGEE####
@@ -876,8 +862,6 @@ chafe.monthly$reco<- chafe.monthly$reco*1.0368*days_in_month(as.yearmon(paste(ch
 chafe.monthly$gpp<- chafe.monthly$nee- chafe.monthly$reco
 chafe.monthly$ch4_flux_total<- chafe.monthly$ch4_flux_total*0.0010368*days_in_month(as.yearmon(paste(chafe.monthly$year, chafe.monthly$month,sep = '-')))
 
-chafe.monthly <- chafe.monthly %>%
-  mutate(ch4_flux_total= ifelse(ch4_flux_total>30, NA, ch4_flux_total))
 
 #adding static info
 chafe.monthly$moisture_depth <- "20"
