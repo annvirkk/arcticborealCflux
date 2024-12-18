@@ -644,9 +644,9 @@ ADC.ec  <- ADC.ec %>% filter(!if_all(c(nee, ch4_flux_total), ~ is.na(.)))
 
 ADC.ec$extraction_source <- "Arctic Data Center"
 ADC.ec$data_usage <- "Tier 1"
-ADC.ec$dataentry_person <- "Isabel"
+ADC.ec$dataentry_person <- "Wargowsky"
 ADC.ch <- rbindlist(list(dat3, dat4, dat5, dat6, dat7, dat8), fill = TRUE)
-ADC.ch$dataentry_person <- "Isabel"
+ADC.ch$dataentry_person <- "Wargowsky"
 ADC.ch$data_usage <- "Tier 1"
 
 ADC.ch<- ADC.ch %>% 
