@@ -478,6 +478,7 @@ zona.monthly <- group_by(zona.dat, year, month, site_id) %>%
                     percent_na_nee = (sum(is.na(co2_flux))/n()*100),
                     nee = mean(as.numeric(co2_flux), na.rm = TRUE),
                     ch4_flux_total = mean(as.numeric(ch4_flux), na.rm = TRUE),
+                    percent_na_tair = (sum(is.na(air_temperature))/n()*100),
                     tair = mean(as.numeric(air_temperature), na.rm = TRUE))
 #remove rows without flux data
 zona.monthly <- zona.monthly %>% dplyr::filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
