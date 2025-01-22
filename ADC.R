@@ -474,10 +474,10 @@ zona.dat <- zona.dat %>%
          air_temperature= ifelse(as.numeric(air_temperature) >500, NA, air_temperature))
 #monthly means
 zona.monthly <- group_by(zona.dat, year, month, site_id) %>% 
-  dplyr::summarise( ch4_flux_total = mean(as.numeric(ch4_flux), na.rm = TRUE),
-                    percent_na_ch4 = (sum(is.na(ch4_flux))/n()*100),
-                    nee = mean(as.numeric(co2_flux), na.rm = TRUE),
+  dplyr::summarise( percent_na_ch4 = (sum(is.na(ch4_flux))/n()*100),
                     percent_na_nee = (sum(is.na(co2_flux))/n()*100),
+                    nee = mean(as.numeric(co2_flux), na.rm = TRUE),
+                    ch4_flux_total = mean(as.numeric(ch4_flux), na.rm = TRUE),
                     tair = mean(as.numeric(air_temperature), na.rm = TRUE))
 #remove rows without flux data
 zona.monthly <- zona.monthly %>% dplyr::filter(if_any(c('nee', 'ch4_flux_total'), ~ !is.na(.)))
