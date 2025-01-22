@@ -161,15 +161,21 @@ dat.v2 <- dat.v2 %>%
 
 #removing Eugenies second tower according to emails between Sue and Anna 2.12.24
 #now not removing per discussion with Anna 10/31/24
-#dat.v2 <- dat.v2 %>% 
+# dat.v2 <- dat.v2 %>%
 #  dplyr::filter(!site_reference%in% "RU-Eusk_cher2")
+#need to rename these sites because they are not the same as RU-Che or RU_Ch2
+dat.v2 <- dat.v2 %>%
+  mutate(site_name= ifelse(site_id %in% "Euskirchen_RU-Eusk_cher1_tower1", "Cherskii ecotone", site_name)) %>%
+  mutate(site_name= ifelse(site_id %in% "Euskirchen_RU-Eusk_cher2_tower2", "Cherskii disturbed forest", site_name)) 
+  
+
 
 #fixing name of Euskirchen_US-TFBS_tower1 to US-BZS
-dat.v2 <- dat.v2 %>% 
+dat.v2 <- dat.v2 %>%
   mutate(site_name= ifelse(site_id == "Euskirchen_US-TFBS_tower1", "Bonanza Creek Black Spruce", site_name) ) %>%
   mutate(site_reference= ifelse(site_id == "Euskirchen_US-TFBS_tower1", "US-BZS", site_reference) )
 #changing Chokurdakh to Kytalyk, Russia
-dat.v2 <- dat.v2 %>% 
+dat.v2 <- dat.v2 %>%
   mutate(site_name = ifelse(site_name %in% "Chokurdakh", "Kytalyk, Russia", site_name))
 
 

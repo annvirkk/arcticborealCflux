@@ -8,8 +8,8 @@ library(janitor)
 library(purrr)
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-abc.order <- read_csv("ABC.v2.dec24.csv") # to reorder columns later on
-abc <- read_csv("ABC.v2.dec24.csv")
+abc.order <- read_csv("ABC.v2.jan25.csv") # to reorder columns later on
+abc <- read_csv("ABC.v2.jan25.csv")
 abc$extraction_source <- paste("CO2:", abc$extraction_source_co2, "CH4:", abc$extraction_source_ch4, sep= " ")
 abc$citation <- paste("CO2:", abc$citation_co2, "CH4:", abc$citation_ch4, sep= " ")
 abc.order$extraction_source <- ""
@@ -53,8 +53,6 @@ abc <- abc %>% dplyr::rename("land_cover_bawld_old"= "land_cover_bawld",
 abc <- abc %>% 
   mutate(Disturbance_Category= ifelse(is.na(disturbance), NA, Disturbance_Category))
 
-#setwd("/Users/iwargowsky/Desktop/arcticborealCflux")
-#write_csv(abc.x , "ABC.v2.may24.bawld.disturb.csv")
 
 ### remove true duplicate fluxes #####_--------------------------------------------------------
 dupes <- abc %>% get_dupes(site_name, site_reference, year, month, flux_method)
@@ -76,7 +74,6 @@ abc <- abc %>%
 # write_csv(abc, "ABC.v2.may24.full.csv")
 
 ### Tair  and tair_height #####_--------------------------------------------------------
-
 abc <- abc %>%
   mutate(tair= ifelse(site_id %in% c("Larsen_Abisko2_Ch02","Larsen_Abisko3_Ch03"), NA, tair)) %>%
   mutate(tair= ifelse(site_id %in% "Christensen_NO-Adv_tower1", NA, tair)) %>%
@@ -97,6 +94,9 @@ abc <- abc %>%
   mutate(tair= ifelse(site_id %in% c("Christiansen_Zackenberg1_Ch03", "Christiansen_Zackenberg2_Ch04", "Christiansen_Zackenberg3_Ch05", "Pirk_Zackenberg_Ch_snow01", "Pirk_Zackenberg_Diff01"), NA, tair)) %>%
   mutate(tair= ifelse(site_id %in% "Lund_GL-ZaH_tower1", NA, tair))%>%
   mutate(tair= ifelse(site_id %in% "Lund_GL-ZaH_tower2" & year %in% c(2010, 2011, 2012, 2013, 2014), NA, tair)) 
+
+abc <- abc %>% mutate(tair= as.numeric(tair))
+summary(abc$tair)
 
 unique(abc$tair_height)
 abc <- abc %>%
@@ -124,7 +124,11 @@ abc <- abc %>%
   mutate(precip= ifelse(site_id %in% c("Schimel_ToolikLake_Diff01","Schimel_ToolikLake_Diff02"), NA, precip)) %>%
   mutate(precip= ifelse(site_id %in% c("Pirk_Zackenberg_Ch_snow01", "Pirk_Zackenberg_Diff01"), NA, precip)) %>%
   mutate(precip= ifelse(site_id %in% "Lund_GL-ZaH_tower1", NA, precip)) %>%
-  mutate(precip= ifelse(site_id %in% "Lund_GL-ZaH_tower2" & year %in% c(2010, 2011, 2012, 2013, 2014), NA, precip)) 
+  mutate(precip= ifelse(site_id %in% "Lund_GL-ZaH_tower2" & year %in% c(2010, 2011, 2012, 2013, 2014), NA, precip)) %>%
+  mutate(precip= ifelse(site_name %in% "Lompolojankka" & year %in% c(2006,2010), NA, precip))
+
+abc <- abc %>%
+  mutate(precip= as.numeric(precip)) 
 
 ### TSOIL#####_------------------------------------------------------------------
 abc <- abc %>%
@@ -156,6 +160,9 @@ abc <- abc %>%
   mutate(tsoil_surface_depth= ifelse(tsoil_surface_depth %in% "NaN", NA, tsoil_surface_depth ))
 
   
+abc <- abc %>%
+  mutate(tsoil_deep = as.numeric(tsoil_deep))
+
 unique(abc$tsoil_deep_depth)
 abc <- abc %>%
   mutate(tsoil_deep_depth= ifelse(tsoil_deep_depth %in% "N/A", NA, tsoil_deep_depth )) %>%
@@ -191,6 +198,12 @@ abc <- abc %>%
   mutate(water_table_depth = ifelse(site_name %in% "Siikaneva" &
                                       extraction_source %in% "CO2: ABCflux v1 - SMEAR CH4: NA", as.numeric(water_table_depth) * -1, water_table_depth)) %>%
   mutate(water_table_depth = ifelse(site_name %in% "North Star Yedoma-Regrowth", NA, water_table_depth))
+
+#making numeric
+abc <- abc %>%
+  mutate(notes= ifelse(water_table_depth== "n/a variabile moisture in talik (mostly water unsaturated except a few thin (10-cm thick) layers between 4 and 5.5 m; base of talik at 7 m is unsaturated (borehole/soil core observations)", paste(notes, "n/a variabile moisture in talik (mostly water unsaturated except a few thin (10-cm thick) layers between 4 and 5.5 m; base of talik at 7 m is unsaturated (borehole/soil core observations)"), notes)) %>%
+  mutate(water_table_depth= as.numeric(water_table_depth))
+
   
 ### SOIL MOISTURE#####_------------------------------------------------------------------
 abc <- abc %>%
@@ -301,8 +314,8 @@ abc <- abc %>%
   mutate(notes = ifelse(thaw_depth %in% "5 to 9 m thick talik", "5 to 9 m thick talik", notes)) %>%
   mutate(notes = ifelse(thaw_depth %in% "5 to 9 m", "5 to 9 m", notes)) %>%
   mutate(notes = ifelse(thaw_depth %in% "Ice lens at depth of 40 cm in strings (below no frost)", "Ice lens at depth of 40 cm in strings (below no frost)", notes)) %>%
-  mutate(notes = ifelse(thaw_depth %in% "frozen at the surface, unfrozen between 67 and 150", "frozen at the surface, unfrozen between 67 and 150", notes)) %>%
-  mutate(notes = ifelse(thaw_depth %in% "frozen at the surface, unfrozen between 47 and 150", "frozen at the surface, unfrozen between 47 and 150", notes)) %>%
+  mutate(notes = ifelse(thaw_depth %in% "frozen at the surface, unfrozen between 67 and 150", "; frozen at the surface, unfrozen between 67 and 150", notes)) %>%
+  mutate(notes = ifelse(thaw_depth %in% "frozen at the surface, unfrozen between 47 and 150", "; frozen at the surface, unfrozen between 47 and 150", notes)) %>%
   mutate(thaw_depth= ifelse(thaw_depth %in% c("5 to 9 m thick talik",
                                               "5 to 9 m",
                                               "Ice lens at depth of 40 cm in strings (below no frost)",
@@ -751,6 +764,7 @@ abc <- abc %>%
   mutate(soil_depth = ifelse(soil_depth %in% c("100-200" ), "150", soil_depth)) %>%
   mutate(soil_depth = ifelse(soil_depth %in% c(">100" ), "100", soil_depth)) %>%
   mutate(soil_depth = ifelse(soil_depth %in% c(">50" ), "50", soil_depth)) %>%
+  mutate(soil_depth = ifelse(soil_depth %in% c("250 cm"), "250", soil_depth)) %>%
   
   mutate(soil_depth = ifelse(soil_depth %in% c("N/A","no", "NaN"), NA, soil_depth))
 
@@ -812,9 +826,10 @@ unique(abc$c_stock)
 abc <- abc %>%
   mutate(c_stock= ifelse(c_stock %in% c("133.1 (±5.1)"), "133.1", c_stock)) %>%
   mutate(c_stock= ifelse(c_stock %in% c("N/A","no","Unknown","Total", "NaN"), NA, c_stock))
+  
 
 
-abc$c_stock = as.numeric(abc$c_stock)
+
 
 ##disturbance year
 
@@ -823,7 +838,6 @@ abc$c_stock = as.numeric(abc$c_stock)
 ## need to code this still, right now it is coded as NA
 ##need to fix ongoing and current using the same logic as above
 
-unique(abc$disturb_year)
 
 abc <- abc %>%
   mutate(disturb_year = ifelse(disturb_year %in% c("N/A", "No", "unknown", "Unknown","-", "0", "NaN" ), NA, disturb_year)) %>%
@@ -853,7 +867,7 @@ abc <- abc %>%
   mutate(disturb_year= ifelse(disturb_year %in% c("1949-1967"), "1958", disturb_year))
   
 
-
+unique(abc$disturb_year)
 ### More cleaning by Isabel ###-----------------------------------------------------------
 #check lat long coords
 
@@ -882,7 +896,7 @@ abc <- abc %>%
 
 #Isabel:I found a few mistakes but fixed errors directly in excel for 5 sites (Blaesedalen, Hospitaldalen, Mellemlandet, Skarvefjed, UaF)
 
-# gap_fill_perc_ #####
+# rename gap_fill_perc_ #####
 abc <- abc %>%
   mutate(gap_fill_perc_nee = str_remove(gap_fill_perc_nee, "%"),
          gap_fill_perc_nee = as.numeric(gap_fill_perc_nee)) %>%
@@ -919,6 +933,13 @@ abc$citation_co2 <- NULL
 
 abc$Column <- NULL
 abc$ts <- NULL
+
+unique(abc$water_do...128)
+abc$water_do...128 <- NULL
+unique(abc$water_do...139)
+abc$water_do...139 <- NULL
+unique(abc$water_do...162) #actually water_do
+abc <- abc %>% dplyr::rename("water_do"= "water_do...162")
 
 ### removing weird fluxes #####_-----------------------------------------------
 
@@ -1023,7 +1044,7 @@ abc$extraction_co2 <- NULL
 
 #save df with duplicates
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc, "ABC.v2.dec24.cleanish.wdupes.csv")
+write_csv(abc, "ABC.v2.jan25.cleanish.wdupes.csv")
 
 
 ### Removing duplicate fluxes #####_--------------------------------------------------------
@@ -1101,7 +1122,7 @@ abc.nodupes <- abc.nodupes %>% anti_join(sam.fluxnet.dupes, by= c("site_name", "
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.dec24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.jan25.cleanish.nodupes.csv")
 
 
 
@@ -1401,9 +1422,10 @@ abc.nodupes = abc.nodupes |>
 unique(abc.nodupes$data_version)
 
 # lai cleaning
-abc.nodupes = abc.nodupes |>
-  mutate(lai = if_else(lai == "1.6 ¬± 0.7 m2 m‚Äì2", "1.6", lai)) |>
-  mutate(lai = if_else(lai == "0 (no vegetation areas), 0.3‚Äì0.7, Cannone et al. (2016)", NA, lai))
+abc.nodupes <- abc.nodupes %>%
+  mutate(lai = if_else(lai %in% "1.6 ± 0.7 m2 m–2", "1.6", lai)) %>%
+  mutate(lai = if_else(lai  %in% "0 (no vegetation areas), 0.3‚Äì0.7, Cannone et al. (2016)", NA, lai)) %>%
+  mutate(lai= as.numeric(lai))
 unique(abc.nodupes$lai)
 
 # ndvi cleaning
@@ -1476,15 +1498,15 @@ abc.nodupes = abc.nodupes |>
 
 # tsoil_deep cleaning
 abc.nodupes = abc.nodupes |>
-  mutate(tsoil_deep = if_else(tsoil_deep %in% c("N/A", "NaN"), "NA", tsoil_deep))
+  mutate(tsoil_deep = if_else(tsoil_deep %in% c("N/A", "NaN"), NA, tsoil_deep))
 
 # moisture_depth cleaning
 abc.nodupes = abc.nodupes |>
-  mutate(moisture_depth = if_else(moisture_depth == "NaN", "NA", moisture_depth))
+  mutate(moisture_depth = if_else(moisture_depth == "NaN", NA, moisture_depth))
 
 # water_table_depth cleaning
 abc.nodupes = abc.nodupes |>
-  mutate(water_table_depth = if_else(water_table_depth %in% c("N/A", "NaN"), "NA", water_table_depth))
+  mutate(water_table_depth = if_else(water_table_depth %in% c("N/A", "NaN"), NA, water_table_depth))
 
 # Disturbance_Category cleaning
 abc.nodupes = abc.nodupes |>
@@ -1521,9 +1543,9 @@ abc.nodupes = abc.nodupes |>
   mutate(landform = if_else(landform %in% c("Palsas", "palsas"), "Palsa", landform))
 
 # adding c_stock data
-abc.nodupes = abc.nodupes |>
-  mutate(c_stock = if_else(c_stock %in% "see Heffernan et al. 2020, https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2019JG005501", 187.18, c_stock)) |>
-  mutate(c_stock = if_else(c_stock %in% "see Pelletier et al. 2015, https://doi.org/10.1177/0959683617693899", 167, c_stock))
+abc.nodupes <- abc.nodupes %>%
+  mutate(c_stock = if_else(c_stock %in% "see Heffernan et al. 2020, https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2019JG005501", "187.18", c_stock)) %>%
+  mutate(c_stock = if_else(c_stock %in% "see Pelletier et al. 2015, https://doi.org/10.1177/0959683617693899", "167", c_stock))
 
 #adding c_stock data that Richard found in literature search
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
@@ -1737,10 +1759,17 @@ abc.nodupes <- abc.nodupes %>%
   mutate(flux_method_detail= ifelse(is.na(flux_method_detail), flux_method, flux_method_detail))
 
 unique(abc.nodupes$flux_method_detail)
-#### fix site name for Ranskalankorpi ####---------------------------------------------------------
+#### fix some site names ####---------------------------------------------------------
 abc.nodupes <- abc.nodupes %>% 
   mutate(site_name = ifelse(site_name %in% "Ranskalankorpi, Continuous cover forestry treatment", "Ranskalankorpi", site_name)) %>% 
   mutate(site_reference= ifelse(site_reference %in% "Ranskalankorpi, Continuous cover forestry treatment_FI-Ran forestry treatment_tower", "Ranskalankorpi_FI-Ran forestry treatment_tower", site_reference))
+
+abc.nodupes <- abc.nodupes %>% 
+  mutate(site_reference= ifelse(site_reference %in% "Scotty Creek_CA-SCC-MB_Chamber", "Scotty Creek_CA-SCC-MatureBog_Chamber", site_reference)) %>%
+  mutate(site_reference= ifelse(site_reference %in% "Scotty Creek_CA-SCC-YB_Chamber", "Scotty Creek_CA-SCC-YoungBog_Chamber", site_reference)) %>%
+  mutate(site_reference= ifelse(site_reference %in% "Scotty Creek_CA-SCC-P_Chamber", "Scotty Creek_CA-SCC-PeatPlateau_Chamber", site_reference)) %>%
+  mutate(site_reference= ifelse(site_reference %in% "Scotty Creek_CA-SCC-PE_Chamber", "Scotty Creek_CA-SCC-PlateauEdge_Chamber", site_reference))
+
 
 #### QUALITY FLAG####---------------------------------------------------------
 
@@ -1763,41 +1792,54 @@ abc.nodupes <- abc.nodupes %>%
          expert_flag_gpp= ifelse(gpp > lower.gpp & gpp < upper.gpp, 0, 1),
          expert_flag_partitioned = pmax(expert_flag_reco, expert_flag_gpp, na.rm = T)) %>%
   mutate(expert_flag_co2= ifelse(is.na(expert_flag_co2), expert_flag_partitioned, expert_flag_co2))
+# 
+# #df of quantiles CH4
+# quantiles.ch4 <- abc.nodupes %>%
+#   group_by(month, biome, land_cover_bawld) %>%
+#   reframe(lower.ch4.2.5 = quantile(ch4_flux_total, .025, na.rm=T),
+#           upper.ch4.97.5= quantile(ch4_flux_total, .975, na.rm=T),
+#           lower.ch4.1 = quantile(ch4_flux_total, .1, na.rm=T),
+#           upper.ch4.99= quantile(ch4_flux_total, .99, na.rm=T))
+# 
+# # Join quantiles with abc.nodupes and add QC column for Ch4
+# abc.nodupes <- abc.nodupes %>%
+#   left_join(quantiles.ch4, by = c("month", "biome", "land_cover_bawld")) %>%
+#   mutate(expert_flag_ch4.97.5 = ifelse(ch4_flux_total > lower.ch4.2.5 & ch4_flux_total < upper.ch4.97.5, 0, 1),
+#          expert_flag_ch4.99 = ifelse(ch4_flux_total > lower.ch4.1 & ch4_flux_total < upper.ch4.99, 0, 1))
 
-#df of quantiles CH4
-quantiles.ch4 <- abc.nodupes %>%
-  group_by(month, biome, land_cover_bawld) %>%
-  reframe(lower.ch4.2.5 = quantile(ch4_flux_total, .025, na.rm=T),
-          upper.ch4.97.5= quantile(ch4_flux_total, .975, na.rm=T),
-          lower.ch4.1 = quantile(ch4_flux_total, .1, na.rm=T),
-          upper.ch4.99= quantile(ch4_flux_total, .99, na.rm=T))
-
-# Join quantiles with abc.nodupes and add QC column for Ch4
 abc.nodupes <- abc.nodupes %>%
-  left_join(quantiles.ch4, by = c("month", "biome", "land_cover_bawld")) %>%
-  mutate(expert_flag_ch4.97.5 = ifelse(ch4_flux_total > lower.ch4.2.5 & ch4_flux_total < upper.ch4.97.5, 0, 1),
-         expert_flag_ch4.99 = ifelse(ch4_flux_total > lower.ch4.1 & ch4_flux_total < upper.ch4.99, 0, 1))
+  mutate(expert_flag_ch4= ifelse(ch4_flux_total > 30, 1,0))
 
          
 abc.nodupes <- abc.nodupes %>% select(-c(lower.nee, upper.nee, lower.reco, upper.reco,
                                         lower.gpp, upper.gpp, expert_flag_reco, 
                                         expert_flag_gpp, expert_flag_partitioned,
-                                        lower.ch4.2.5, lower.ch4.1, upper.ch4.97.5, upper.ch4.99))
+                                        #lower.ch4.2.5, lower.ch4.1, upper.ch4.97.5, upper.ch4.99
+                                          ))
 
 #Quality flag 2
-# abc.nodupes <- abc.nodupes %>%
-#   mutate(expert_flag_co2= ifelse(site_name %in% c("RU-Eusk_cher2"), 2, expert_flag_co2),
-#          expert_flag_ch4= ifelse(site_name %in% c("RU-Eusk_cher2"), 2, expert_flag_ch4))
-# 
-# 
-# #Quality flag 3
-# abc.nodupes <- abc.nodupes %>%
-#   mutate(expert_flag_co2= ifelse(site_reference %in% c("Iskoras_NO-Isk-fen_tower",
-#                                                        "Iskoras_NO-Isk-palsa_tower",
-#                                                        "Ranskalankorpi_FI-Ran forestry treatment_tower"), 3, expert_flag_co2),
-#          expert_flag_ch4= ifelse(site_reference %in% c("Iskoras_NO-Isk-fen_tower",
-#                                                   "Iskoras_NO-Isk-palsa_tower",
-#                                                   "Ranskalankorpi_FI-Ran forestry treatment_tower"), 3 expert_flag_ch4)))
+
+#Removing RU-Che because it is an experimental site
+abc.nodupes <- abc.nodupes %>%
+  dplyr::filter(!site_reference %in% "Cherskii_RU-Che_tower")
+
+abc.nodupes <- abc.nodupes %>%
+  mutate(expert_flag_co2= ifelse(site_name %in% c("Cherskii disturbed forest",
+                                                  "North Star Yedoma-Regrowth",
+                                                  "North Star Yedoma"), 2, expert_flag_co2),
+         expert_flag_ch4= ifelse(site_name %in% c("Cherskii disturbed forest",
+                                                  "North Star Yedoma-Regrowth",
+                                                  "North Star Yedoma"), 2, expert_flag_ch4))
+
+
+#Quality flag 3
+abc.nodupes <- abc.nodupes %>%
+  mutate(expert_flag_co2= ifelse(site_reference %in% c("Iskoras_NO-Isk-fen_tower",
+                                                       "Iskoras_NO-Isk-palsa_tower",
+                                                       "Ranskalankorpi_FI-Ran forestry treatment_tower"), 3, expert_flag_co2),
+         expert_flag_ch4= ifelse(site_reference %in% c("Iskoras_NO-Isk-fen_tower",
+                                                  "Iskoras_NO-Isk-palsa_tower",
+                                                  "Ranskalankorpi_FI-Ran forestry treatment_tower"), 3, expert_flag_ch4))
 
 #### SAVE FINAL DF ####---------------------------------------------------------
 
@@ -1809,7 +1851,7 @@ abc.nodupes <- abc.nodupes %>% dplyr::filter(!if_all(c(nee, gpp, reco, ch4_flux_
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
-write_csv(abc.nodupes, "ABC.v2.dec24.cleanish.nodupes.csv")
+write_csv(abc.nodupes, "ABC.v2.jan25.cleanish.nodupes.csv")
 
 
 
@@ -1929,7 +1971,7 @@ abc.static <- abc.nodupes %>% dplyr::select(colnames(staticvars)) %>%
 #look
 abc.static.condense<-  abc.static  %>% distinct()
 setwd("/Users/iwargowsky/Desktop")   
-#write_csv(abc.static.condense , "abc.static.bysite.dec24.csv")
+#write_csv(abc.static.condense , "abc.static.bysite.jan25.csv")
 
 #looking at which sites are NA
 # z <- abc.static.condense %>% filter(is.na(land_cover_bawld_Kuhn)) 
@@ -1949,7 +1991,7 @@ abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_autho
                    max_ch4= max(ch4_flux_total))
 
 setwd("/Users/iwargowsky/Desktop")   
-write_csv(abc.static , "abc.static.bysite.ch4.dec24.csv")
+write_csv(abc.static , "abc.static.bysite.ch4.jan25.csv")
 
 
 
@@ -1957,7 +1999,7 @@ write_csv(abc.static , "abc.static.bysite.ch4.dec24.csv")
 abc.static <- abc.nodupes %>% select(site_reference, disturbance, Disturbance_Category) %>% distinct()
 
 setwd("/Users/iwargowsky/Desktop")   
-write_csv(abc.static , "abc.static.bysite.dec24.disturb.csv")
+write_csv(abc.static , "abc.static.bysite.jan25.disturb.csv")
 
 ####Land_cover_bawld for Kenzie
 abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_author, extraction_source, citation,
@@ -1969,7 +2011,7 @@ abc.static <- abc.nodupes %>% group_by(site_reference, data_contributor_or_autho
 
 
 setwd("/Users/iwargowsky/Desktop")   
-write_csv(abc.static , "abc.static.bysite.dec24.csv")
+write_csv(abc.static , "abc.static.bysite.jan25.csv")
 
 ###NEW LAND COVER CLASSES
 

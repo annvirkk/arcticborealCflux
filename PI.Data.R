@@ -58,7 +58,9 @@ dyukarev.ch <- read_csv("Russian data/ABCfluxv2_vars - Dyukarev-Veretennikova.ch
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")%>%
   mutate(chamber_nr_measurement_days_co2= ifelse(is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
   mutate(chamber_nr_measurement_days_ch4= ifelse(is.na(nee), chamber_nr_measurement_days, NA)) %>%
-  mutate(chamber_nr_measurement_days = NULL)
+  mutate(chamber_nr_measurement_days = NULL) %>%
+  mutate(tsoil_deep = as.numeric(gsub(",", ".", gsub("\\(15-60 cm\\) ", "", tsoil_deep)))) #fix formatting
+  
 
 ###Mike Peacock####-------------------------------------------------------------
 peacock <- read_csv("ABCfluxv2.vars_Mike_Peacock_terrestrialchamber.csv") %>%

@@ -53,7 +53,7 @@ base[[5]] <- base[[5]] %>% group_by(year, month) %>%
   dplyr::summarise(percent_na_ch4 = (sum(is.na(FCH4))/n()*100),
                   TA= mean(TA, na.rm= TRUE),
                    PPFD= mean(PPFD_IN, na.rm= TRUE),
-                   P= sum(P_RAIN, na.rm= TRUE),
+                 #  P= sum(P_RAIN, na.rm= TRUE), removed because unrealistic monthly values
                    TS= mean(c(TS_1_1_1, TS_2_1_1, TS_3_1_1), na.rm= TRUE),
                    FCH4= mean(FCH4, na.rm = TRUE))
 #not gapfilled

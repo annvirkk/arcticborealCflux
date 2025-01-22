@@ -44,28 +44,6 @@ ABC.ec  <- ABC.ec.wdupes  %>%
   arrange(desc(extraction_source_co2)) %>% #this step ensures "User-contributed" data is kept
   distinct(site_name, site_reference, partition_method, year, month, .keep_all = TRUE)
 
-
-# ####reformatting based on partitioning methods ####
-# Not using this code anymore
-# ABC.ec <- ABC.ec %>%
-#  mutate(gpp.nt = ifelse(partition_method %in% "Reichstein", gpp, NA),
-#        gpp.dt = ifelse(partition_method %in% "Lasslop", gpp, NA),
-#       reco.nt = ifelse(partition_method %in% "Reichstein", reco, NA),
-#      reco.dt = ifelse(partition_method %in% "Lasslop", reco, NA),
-#     gpp = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), gpp, NA),
-#     reco = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), reco, NA),
-#     nee.dt.nt = ifelse(partition_method %in% c("Reichstein","Lasslop"), nee, NA),
-#     nee = ifelse(!(partition_method %in% c("Reichstein", "Lasslop")), nee, NA))
-# 
-# ##condense rows
-# ABC.ec <- ABC.ec %>% group_by(year, month, site_name, site_reference, extraction_source_co2, extraction_source_ch4) %>% 
-#   summarise_all(list(unique = ~toString(unique(.[!is.na(.)])))) %>% #summarise by unique values
-#   rename_with(~gsub("_unique", "", .), everything()) #remove "_unique" from column names
-# 
-# persistant.dupes <- ABC.ec %>% get_dupes(site_name, site_reference, year, month) 
-# #write.csv(persistant.dupes, "persistant.dupes.csv")
-
-
 #fix Ameriflux BASE and Arctic Data Center name
 ABC.ec <- ABC.ec %>% 
   mutate(extraction_source_co2= ifelse(extraction_source_co2== "AAmeriflux BASE","Ameriflux BASE", extraction_source_co2))%>%
@@ -114,16 +92,16 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.dec24 <- rbindlist(list(ABC.ch, ABC.ec), fill = TRUE) 
+ABC.v2.jan25 <- rbindlist(list(ABC.ch, ABC.ec), fill = TRUE) 
 #removing rows without any flux data
-ABC.v2.dec24<- ABC.v2.dec24 %>% dplyr::select(-starts_with("...")) %>%  #unnecessary columns 
+ABC.v2.jan25<- ABC.v2.jan25 %>% dplyr::select(-starts_with("...")) %>%  #unnecessary columns 
                                 dplyr::filter(!site_name== "") %>%
                                  dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 #check if there are any duplicates
-dupes <- ABC.v2.dec24 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
+dupes <- ABC.v2.jan25 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
 
 ###preliminary cleaning of site names to remove special characters
-ABC.v2.dec24 <- ABC.v2.dec24 %>% 
+ABC.v2.jan25 <- ABC.v2.jan25 %>% 
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik", "Utqiaġvik"),"Utqiagvik" , site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik North", "Utqiaġvik North"), "Utqiagvik North", site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik South", "Utqiaġvik South"), "Utqiagvik South", site_name) ) %>%
@@ -144,7 +122,7 @@ ABC.v2.dec24 <- ABC.v2.dec24 %>%
   mutate(site_name= ifelse(site_name == "Värriö", "Varrio", site_name) ) %>%
   mutate(site_name= ifelse(site_name == "Iškoras", "Iskoras", site_name) ) 
 
-ABC.v2.dec24 <- ABC.v2.dec24 %>% 
+ABC.v2.jan25 <- ABC.v2.jan25 %>% 
   mutate(site_reference= ifelse(site_reference == "Värriö_Grazed", "Varrio_Grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_non-grazed", "Varrio_non-grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_Fire45", "Varrio_Fire45" , site_reference) ) %>%
@@ -154,12 +132,12 @@ ABC.v2.dec24 <- ABC.v2.dec24 %>%
   mutate(site_reference= ifelse(site_name == "Svalbard", "Bjornedalen" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Utqiaġvik plots aggregated", "Utqiagvik plots aggregated" , site_reference) ) 
   
-ABC.v2.dec24 <- ABC.v2.dec24 %>% 
+ABC.v2.jan25 <- ABC.v2.jan25 %>% 
   dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-write_csv(ABC.v2.dec24, "ABC.v2.dec24.csv")
+write_csv(ABC.v2.jan25, "ABC.v2.jan25.csv")
 
 
 
@@ -172,7 +150,7 @@ write_csv(ABC.v2.dec24, "ABC.v2.dec24.csv")
 
   
 ####extract list of sites and dates covered##
-ECsites.datescovered <- ABC.v2.dec24 %>% 
+ECsites.datescovered <- ABC.v2.jan25 %>% 
   filter(flux_method== "EC" ) %>%
   mutate(ts= as.yearmon(paste(year, month,sep = '-'))) %>%
   group_by(site_name, site_reference) %>% 
