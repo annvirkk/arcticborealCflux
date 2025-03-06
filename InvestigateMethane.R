@@ -5,8 +5,9 @@ library(readr)
 library(zoo)
 library(ggplot2)
 
+
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-abc <- read_csv("ABC.v2.jul24.cleanish.nodupes.csv")
+abc <- read_csv("ABC.v2.aug24.cleanish.nodupes.csv")
 
 abc.ch4 <- abc %>% filter(!is.na(ch4_flux_total)) #filter for rows with methane fluxs
 
@@ -26,7 +27,6 @@ abc.ch4.ch.solo <- abc.ch4.ch %>% filter(n==1)
 
 
 
-
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 # Plotting CH4 EC and saving each plot
 lapply(unique(abc.ch4.ec$site_name), function(site) {
@@ -39,11 +39,18 @@ lapply(unique(abc.ch4.ec$site_name), function(site) {
     theme_minimal()
   
   # Save the plot to a file
-  ggsave(filename = paste("CH4 EC.gapfillperc/CH4_EC_", site, ".jpeg"),
+  ggsave(filename = paste("CH4 EC.gapfillperc2/CH4_EC_", site, ".jpeg"),
          plot = p, width = 10, height = 6)
 
   return(p)
 })
+
+#Averaged by month
+abc.ch4.ec.x <- abc.ch4.ec %>% group_by(month, site_name, site_reference) %>%
+  dplyr::summarise(ch4_flux_total= mean(ch4_flux_total, na.rm = T))
+
+
+ggplot(abc.ch4.ec.x) + geom_point(aes(x = month, y = ch4_flux_total))
 
 
 # Plotting CH4 Chamber and saving each plot
@@ -84,6 +91,13 @@ lapply(unique(abc.ch4.ch.solo$site_name), function(site) {
 
 
 
+#Averaged by month
+abc.ch4.ch.x <- abc.ch4.ch %>% group_by(month, site_name, site_reference) %>%
+  dplyr::summarise(ch4_flux_total= mean(ch4_flux_total, na.rm = T))
+
+
+ggplot(abc.ch4.ch.x) + geom_point(aes(x = month, y = ch4_flux_total))
+
 
 
 
@@ -104,7 +118,7 @@ abc.ch4.seasonal <- abc %>%  filter(!if_all(c(ch4_flux_seasonal,
                                      ch4_flux_diffusion,ch4_flux_ebullition, ch4_flux_storage,
                                      ch4_flux_storage_bubble), ~ is.na(.)))
 abc.ch4.condense.seasonal <- abc.ch4.seasonal %>%
-  group_by(site_name, site_reference,  flux_method, land_cover_bawld, latitude, longitude, veg_detail, landform, citation_ch4, permafrost, ch4_flux_seasonal_interval) %>%
+  group_by(site_name, site_reference,  flux_method, land_cover_bawld, latitude, longitude, veg_detail, landform, citation, extraction_source, permafrost, ch4_flux_seasonal_interval) %>%
   dplyr::summarise(ch4_season_max= max(ch4_flux_seasonal), ch4_season_min= min(ch4_flux_seasonal),
                    ch4_diff_max= max(ch4_flux_diffusion), ch4_diff_min= min(ch4_flux_diffusion),
                    ch4_eb_max= max(ch4_flux_ebullition), ch4_eb_min= min(ch4_flux_ebullition),

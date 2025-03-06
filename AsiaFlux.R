@@ -31,7 +31,7 @@ asiadat <- asiadat %>% group_by(Year, DOY, TIME, site_id) %>%
                    tsoil_surface= mean(as.numeric(c(Ts, Ts_10)), na.rm = TRUE ),
                    tsoil_deep= mean(as.numeric(Ts_20), na.rm = TRUE),
                    soil_moisture= mean(as.numeric(c(SWC, SWC_10)), na.rm = TRUE),
-                   Fc = mean(as.numeric(Fc), na.rm = TRUE))
+                   Fc = as.numeric(mean(as.numeric(Fc)), na.rm = TRUE))
 #add column for year and month
 asiadat$year <- asiadat$Year
 asiadat$month <- month(as.Date(paste(asiadat$year, asiadat$DOY, sep = "-"), format = "%Y-%j"))
@@ -61,8 +61,8 @@ asiadat.monthly <- asiadat.monthly %>% dplyr::filter(!site_id== "RU-TUR")
 
 #### 1/17/2023 load gapfilled data#####-------------------------------------------------------
 
-setwd("/Users/iwargowsky/Desktop/gapfill and partitioning/data")
-path <- "/Users/iwargowsky/Desktop/gapfill and partitioning/data"
+setwd("/Users/iwargowsky/Desktop/Asiaflux gapfilling/gapfill and partitioning/data")
+path <- "/Users/iwargowsky/Desktop/Asiaflux gapfilling/gapfill and partitioning/data"
 files <- list.files(path = path,pattern = '*gapfilled_clean',all.files = T,recursive = T)
 df <- files %>%
   setNames(nm = .) %>% 
