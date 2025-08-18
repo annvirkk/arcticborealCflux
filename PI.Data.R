@@ -161,7 +161,9 @@ tallidart.ch <- read_csv("ABCfluxv5_CA-BOU_chamber.csv")%>%
   mutate(site_reference= str_split(site_id, "Bouleau_") %>% sapply(`[`, 2)) %>%
   mutate(chamber_nr_measurement_days_co2= chamber_nr_measurement_days)%>%
   dplyr::rename("chamber_nr_measurement_days_ch4"="chamber_nr_measurement_days" ) %>%
-  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
+  dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")%>%
+  mutate(gpp= gpp*-1)
+  
 
 
 tallidart.ec$data_usage <- "Tier 2"
@@ -184,7 +186,6 @@ sullivan.ec <- read_csv("ABCfluxv2.vars_Sullivan.csv", na= "NA")
 
 ###Geert Hensgens####-----------------------------------------------------------
 hensgens.ec <- read_csv("ABCfluxv2_New.KYT.csv") %>%
-  mutate(gpp=  gpp *-1) %>% #fixing because gpp is not negative 
   dplyr::rename("gap_fill_perc_ch4"= "gap_fill_perc_CH4",
                 "gap_fill_perc_nee"= "gap_fill_perc_NEE")
 
@@ -319,10 +320,7 @@ arndt.ec.iq <- read_csv("ABCfluxv2.vars_IQ1.csv")%>%
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 ### Hannu Nykanen ###-----------------------------------------------------------
-nykanen.ch <- read_csv("Kevo-ABCfluxv_Nykänen_231120.csv")%>%
-  mutate(chamber_nr_measurement_days_co2= ifelse(is.na(ch4_flux_total), chamber_nr_measurement_days, NA)) %>%
-  mutate(chamber_nr_measurement_days_ch4= ifelse(is.na(nee), chamber_nr_measurement_days, NA)) %>%
-  mutate(chamber_nr_measurement_days = NULL)
+nykanen.ch <- read_csv("Kevo-ABCfluxv_Nykänen_231120.csv")
 
 
 ### Maija E. Marushchak ###-----------------------------------------------------
@@ -344,6 +342,7 @@ webb.ch$reco_0 <- NULL
 webb.ch$ch4_flux_total_0 <- NULL
 
 webb.ch <- webb.ch %>%
+  mutate(tsoil_surface= ifelse(tsoil_surface>40, NA, tsoil_surface)) %>% #removing because soil temperature of >40 is unrealistic
   group_by(site_name, site_reference, year, month, longitude, latitude, site_id) %>%
   dplyr::summarise(across(where(is.numeric),list(mean = ~ mean(.x, na.rm = TRUE)) ),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
@@ -365,7 +364,8 @@ olefeldt.ch <- read_csv("ABCflux.kashakempton.lutose.2023.csv")%>%
 
 ### Anatoly Prokushkin ###------------------------------------------------------
 prokushkin.ch <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.chamber.csv") %>%
-  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days")
+  dplyr::rename("chamber_nr_measurement_days_co2"= "chamber_nr_measurement_days") %>%
+  mutate(gpp= gpp * -1)
 
 prokushkin.ec <- read_csv("Data basr ABC flux_KJA_ver 19-01-23.tower.csv") %>%
   dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
