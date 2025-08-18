@@ -150,9 +150,7 @@ fluxnetALL$GPP_CUT_REF <- fluxnetALL$GPP_CUT_REF *days_in_month(as.yearmon(paste
 fluxnetALL$GPP_CUT_REF <- fluxnetALL$GPP_CUT_REF*-1 #reverse signs
 fluxnetALL$P_F <- fluxnetALL$P_F *days_in_month(as.yearmon(paste(fluxnetALL$year,fluxnetALL$month,sep = '-')))
 ##adding data usage policies according to https://fluxnet.org/data/data-policy/
-fluxnetALL <- fluxnetALL %>% 
-  mutate(data_usage= ifelse(site_id %in% c('RU-Sam','RU-SkP','RU-Tks','RU-Vrk','SE-St1'), "Tier 2", "Tier 1"))
-
+fluxnetALL$data_usage <- "Tier2"
 
 #####final df #####--------------------------------------------------------------
 setwd("/Users/iwargowsky/Desktop/Fluxnet2015")
