@@ -75,7 +75,7 @@ magnani.permonth$data_contributor_or_author <- "Marta Magnani; Ilaria Baneschi; 
 magnani.permonth$site_id <- paste("Magnani_NyÅlesund_", magnani.permonth$site_reference, "_agg", sep="")
 magnani.permonth$latitude <- "78.923806"
 magnani.permonth$longitude <- "11.8915"
-magnani.permonth$email <- "marta.magnani@edu.unito.it"
+magnani.permonth$email <- "marta.magnani@cnr.it; mariasilvia.giamberini@cnr.it"
 magnani.permonth$extraction_source <- "Zenodo/Publication"
 magnani.permonth$citation <- "Marta Magnani, Ilaria Baneschi, Mariasilvia Giamberini, Brunella Raco, & Antonello Provenzale. (2022). CO2 NEE and ER + air and soil meteorological and climate parameters in Arctic tundra, Ny Ålesund (Svalbard, NO) - summer 2019 [Data set]. Zenodo. https://doi.org/10.5281/zenodo.5815579; https://doi.org/10.1038/s41598-021-04728-0"
 magnani.permonth$country <- "Norway"
@@ -86,10 +86,28 @@ magnani.permonth$flux_method_detail <- "non-steady state, closed dynamic flux ch
 magnani.permonth$flux_method_description <- "Fluxes were measured by the non-steady state, closed dynamic flux chamber method80 using a LI-COR LI-840 IRGA (InfraRed Gas Analyser) spectrophotometer and a circular stainless- steel collar (661 cm2 area, well within the range used for this site40,41,45) inserted into the soil just prior to the measurement (to a depth of about 2 cm) where to place the transparent chamber (10 cm height)."
 magnani.permonth$instrumentation <- "LI-COR LI-840 IRGA spectrophotometer"
 magnani.permonth$gap_fill <- "Average"
+magnani.permonth$dec_shrub <- "Present"
+magnani.permonth$ev_shrub <- "Present"
+magnani.permonth$soil_moisture_class <- "Dry"
+magnani.permonth$diurnal_coverage <- "Day and Night"
+magnani.permonth$partition_method <- "GPP= Reco-NEE"
+magnani.permonth$tsoil_surface_depth <- 10
+magnani.permonth$moisture_depth <- 5
+magnani.permonth$data_version <- "V1"
 magnani.permonth$veg_detail <- "The vegetation cover is heterogeneous, typical of the bioclimate subzone B-C77 with vascular plants constellating the matrix of mosses and lichens, and can be classified as prostrate dwarf-shrub and herbs tundra "
 #adjusting units from mol/m2/day to g C /m2/month
 magnani.permonth$nee <- magnani.permonth$nee *12.01*days_in_month(as.yearmon(paste(magnani.permonth$year,magnani.permonth$month,sep = '-')))
 magnani.permonth$reco <- magnani.permonth$reco *12.01*days_in_month(as.yearmon(paste(magnani.permonth$year,magnani.permonth$month,sep = '-')))
+
+#change the number of significant digits per MariaSilvia's email on 7/14/25
+magnani.permonth <- magnani.permonth %>%
+  mutate( nee = signif(nee, 3),
+    reco = signif(reco, 3),
+    tsoil_surface = signif(tsoil_surface, 3),
+    tair = signif(tair, 6),
+    soil_moisture = signif(soil_moisture, 3))
+
+magnani.permonth$notes <- "Data has been independently quality checked with a calibration and verification procedure and represents only best quality data from this site, this dataset has been used to build a GPP and Reco model in https://www.nature.com/articles/s41598-021-04728-0, 2021-2024 data is available upon request to mariasilvia.giamberini@cnr.it"
 
 dat2 <- magnani.permonth
 #####dat 3  ###----------------------------------------------------
@@ -97,6 +115,7 @@ dat2 <- magnani.permonth
 
 Zenodo.ch <- rbindlist(list(dat1, dat2), fill = TRUE)
 Zenodo.ch$data_usage <- "Tier 1"
+Zenodo.ch$dataentry_person <- "Wargowsky"
 
 
 Zenodo.ch <- Zenodo.ch %>% 
@@ -110,4 +129,6 @@ Zenodo.ch <- Zenodo.ch %>%
 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
+
+
 write_csv(Zenodo.ch, "Zenodo.ch.csv")
