@@ -701,13 +701,7 @@ base.monthly$ts <- NULL
 base.monthly2 <- base.monthly %>%
   dplyr::filter(if_any(c("NEE", "GPP", "RECO","FCH4"), ~ !is.na(.)))
 #adding data usage policies
-base.monthly2  <- base.monthly2  %>% 
-  mutate(data_usage= ifelse(site_id %in% c("CA-NS8","CA-Ojp","CA-Qc2","CA-SJ3","CA-WP1","CA-WP2","CA-WP3",
-                                           "US-Atq","US-Beo","US-Bes","US-Bn1","US-Bn2","US-Bn3","US-Brw",
-                                           "US-HVa","US-Ivo","US-Upa"), "Tier 2", "Tier 1")) %>%
-  mutate(data_usage_ch4= ifelse(site_id %in% c("CA-NS8","CA-Ojp","CA-Qc2","CA-SJ3","CA-WP1","CA-WP2","CA-WP3",
-                                           "US-Atq","US-Beo","US-Bes","US-Bn1","US-Bn2","US-Bn3","US-Brw",
-                                           "US-HVa","US-Ivo","US-Upa"), "Tier 2", "Tier 1"))
+base.monthly2$data_usage <- "Tier 2"
 ### Adding in other variables
 setwd("/Users/iwargowsky/Desktop/Ameriflux/AMF-BASE")
 meta <- read_xlsx("AMF_AA-Net_BIF_LEGACY_20221208.xlsx")
@@ -724,9 +718,9 @@ base.ALL <- left_join(base.monthly2, meta.bysite)
 
 #add gap_fill and extraction source and citation
 base.ALL <- base.ALL %>% 
-  mutate(gap_fill = ifelse(gap_fill_perc_nee== 0, "Monthly Averages from gapfilled data","Monthly Averages from non-gapfilled data" )) %>%
-  mutate(gap_fill_ch4= ifelse(gap_fill_perc_ch4== 0, "Monthly Averages from gapfilled data","Monthly Averages from non-gapfilled data" )) %>%
-  mutate(gap_fill = ifelse(is.na(NEE), NA , gap_fill)) %>%
+  mutate(gap_fill = ifelse(gap_fill_perc_nee %in% 0, "Monthly Averages from gapfilled data","Monthly Averages from non-gapfilled data" )) %>%
+  mutate(gap_fill_ch4= ifelse(gap_fill_perc_ch4%in% 0, "Monthly Averages from gapfilled data","Monthly Averages from non-gapfilled data" )) %>%
+  mutate(gap_fill = ifelse(is.na(NEE) & is.na(GPP) & is.na(RECO), NA , gap_fill)) %>%
   mutate(gap_fill_ch4= ifelse(is.na(FCH4), NA, gap_fill_ch4 ))
 
 base.ALL <- base.ALL %>% 
