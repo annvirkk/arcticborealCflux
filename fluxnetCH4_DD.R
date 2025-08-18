@@ -118,9 +118,7 @@ meta.3 <- meta.2 %>% select(SITE_ID, COUNTRY, sphagnum_cover, other_moss_cover, 
 meta.3<- meta.3 %>% dplyr::rename(site_id= SITE_ID)
 CH4fluxnetALL <- left_join(CH4fluxnet.permonth, meta.3)
 #fix data usage to match ABCFlux v2
-CH4fluxnetALL <- CH4fluxnetALL %>%
-  mutate('FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="CCBY4.0","Tier 1",`FLUXNET-CH4_DATA_POLICY`),
-         'FLUXNET-CH4_DATA_POLICY'= ifelse(`FLUXNET-CH4_DATA_POLICY`=="TIER2","Tier 2",`FLUXNET-CH4_DATA_POLICY`))
+CH4fluxnetALL$`FLUXNET-CH4_DATA_POLICY`<- "Tier 2"
 #adding FLUXNET-CH4 citation
 CH4fluxnetALL$citation <- "https://doi.org/10.5194/essd-13-3607-2021"
 #adding gap fill method
