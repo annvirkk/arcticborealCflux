@@ -1,6 +1,7 @@
 ##This script it meant to convert data from ABCflux V1 format to ABCflux V2 format
 library(dplyr)
 library(readr)
+library(data.table)
 #Load data you are trying to convert
 setwd("/Users/iwargowsky/Desktop/ABC flux v1")
 dat <- read_csv("Arctic_Boreal_CO2_Flux.csv", na =c("NA", "-9999")) 
@@ -83,8 +84,11 @@ dat.v2 <- dat.v2 %>%
   mutate(site_name= ifelse(site_reference == "US-ICh", "Imnavait Creek Watershed Heath Tundra", site_name) )%>%
   mutate(site_name= ifelse(site_reference == "US-ICs", "Imnavait Creek Watershed Wet Sedge Tundra", site_name) )%>%
   mutate(site_name= ifelse(site_reference == "US-ICt", "Imnavait Creek Watershed Tussock Tundra", site_name) )
-#removing RU-Murk since this data was given to us by Aleksandr Sabrekov
-dat.v2 <- dat.v2 %>% dplyr::filter(!site_reference %in% "RU-Murk")
+#RU-Murk to RU-Muh
+dat.v2 <- dat.v2 %>%
+  mutate(site_name = ifelse(site_reference %in% "RU-Murk", "Mukhrino field station, Khanty-Mansiysk, Russia", site_name),
+         site_reference= ifelse(site_reference %in% "RU-Murk", "RU-Muh", site_reference))
+
 #Zackenberg specifying names
 dat.v2 <- dat.v2 %>% 
   mutate(site_name= ifelse(site_reference == "GL-ZaH", "Zackenberg Heath", site_name) )%>%
@@ -159,6 +163,10 @@ dat.v2 <- dat.v2 %>%
 dat.v2 <- dat.v2 %>% 
   dplyr::filter(!data_contributor_or_author%in% "Maija E. Marushchak")
 
+#removing Mikhail Mastepanov Zackenberg measurements since he provided us with updated values
+dat.v2 <- dat.v2 %>% 
+  dplyr::filter(!data_contributor_or_author%in% "Mikhail Mastepanov")
+
 #removing Eugenies second tower according to emails between Sue and Anna 2.12.24
 #now not removing per discussion with Anna 10/31/24
 # dat.v2 <- dat.v2 %>%
@@ -168,6 +176,12 @@ dat.v2 <- dat.v2 %>%
   mutate(site_name= ifelse(site_id %in% "Euskirchen_RU-Eusk_cher1_tower1", "Cherskii ecotone", site_name)) %>%
   mutate(site_name= ifelse(site_id %in% "Euskirchen_RU-Eusk_cher2_tower2", "Cherskii disturbed forest", site_name)) 
   
+#7/31/25 Fixing partition method for sites
+dat.v2 <- dat.v2 %>%
+  mutate(partition_method = ifelse(site_name %in% c("Bonanza Creek Thermokarst Bog",
+                          "Bonanza Creek Black Spruce",
+                          "Bonanza Creek Rich Fen"), "Reichstein", partition_method)) %>%
+  mutate(partition_method = ifelse(site_name %in% "Lake Hazen, Ellesmere Island", "Reichstein et al. 2013", partition_method))
 
 
 #fixing name of Euskirchen_US-TFBS_tower1 to US-BZS
@@ -282,10 +296,17 @@ dat.v2 <- dat.v2 %>%
   mutate(site_name = ifelse(site_id %in% "Larsen_Abisko1_Ch01", "Abisko", site_name)) %>%
   mutate(site_name = ifelse(site_id %in% "Maanavilja_Kaamanen_Ch01", "Kaamanen", site_name)) %>%
   mutate(site_name = ifelse(site_id %in% "Uchida_Svalbard_Ch01", "Svalbard", site_name))
+  
 
 #aggregate dupes
 dat.v2.ch <- dat.v2 %>%
   dplyr::filter(flux_method %in% "Chamber") %>%
+  mutate(nee= as.numeric(nee),
+         gpp= as.numeric(gpp),
+         reco= as.numeric(reco),
+         tsoil_surface= as.numeric(tsoil_surface),
+         water_table_depth= as.numeric(water_table_depth),
+         snow_depth= as.numeric(snow_depth))%>%
   group_by(site_name, site_reference, year, month, longitude, latitude) %>%
   dplyr::summarise(across(where(is.numeric), list(mean = mean)),
                    across(where(is.character), list(unique = ~toString(unique(.[!is.na(.)]))))) %>%
@@ -301,7 +322,13 @@ dat.v2.ec$na_count <- rowSums(is.na(dat.v2.ec))
 dat.v2.ec <- dat.v2.ec %>%
   arrange(na_count) %>%
   distinct(site_name, site_reference, partition_method, year, month, .keep_all = TRUE) %>% #Yakutsk Spasskaya Pad larch and US-bes are the only sites with dupes
-  mutate(na_count = NULL)
+  mutate(na_count = NULL)%>%
+  mutate(nee= as.numeric(nee),
+         gpp= as.numeric(gpp),
+         reco= as.numeric(reco),
+         tsoil_surface= as.numeric(tsoil_surface),
+         water_table_depth= as.numeric(water_table_depth),
+         snow_depth= as.numeric(snow_depth))
   
 dat.v2 <- rbind(dat.v2.ch, dat.v2.ec)  
 #double check
