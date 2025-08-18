@@ -420,8 +420,7 @@ wilkman.soilmonthly$Depth <- NULL
 wilkman.soilmonthly$tsoil <- NULL
 #summarise flux by month 
 wilkman.monthly <- wilkman %>% group_by(year, month) %>%
-  dplyr::summarise(nee= mean(CO2_flx_gC_d, na.rm = TRUE),
-            percent_na_nee = (sum(is.na(CO2_flx_gC_d))/n()*100))
+  dplyr::summarise(nee= mean(CO2_flx_gC_d, na.rm = TRUE))
 #merge together
 wilkman.monthly <- merge(wilkman.monthly, wilkman.soilmonthly, by= c("year", "month"))
 #convert units
@@ -474,9 +473,7 @@ zona.dat <- zona.dat %>%
          air_temperature= ifelse(as.numeric(air_temperature) >500, NA, air_temperature))
 #monthly means
 zona.monthly <- group_by(zona.dat, year, month, site_id) %>% 
-  dplyr::summarise( percent_na_ch4 = (sum(is.na(ch4_flux))/n()*100),
-                    percent_na_nee = (sum(is.na(co2_flux))/n()*100),
-                    nee = mean(as.numeric(co2_flux), na.rm = TRUE),
+  dplyr::summarise(nee = mean(as.numeric(co2_flux), na.rm = TRUE),
                     ch4_flux_total = mean(as.numeric(ch4_flux), na.rm = TRUE),
                     percent_na_tair = (sum(is.na(air_temperature))/n()*100),
                     tair = mean(as.numeric(air_temperature), na.rm = TRUE))
@@ -578,10 +575,10 @@ meteo <- rbindlist(list(ATQ, BES, BEO, CMDL, IVO), fill= TRUE)
 
 #remove outliers
 meteo <- meteo %>%
-  mutate(tsoil_surface= ifelse(as.numeric(tsoil_surface)< -20, NA, tsoil_surface)) %>%
-  mutate(tsoil_surface= ifelse(as.numeric(tsoil_surface)> 30, NA, tsoil_surface)) %>%  
-  mutate(tsoil_deep= ifelse(as.numeric(tsoil_deep)< -20, NA, tsoil_deep)) %>%
-  mutate(tsoil_deep= ifelse(as.numeric(tsoil_deep)> 30, NA, tsoil_deep)) %>% 
+  mutate(tsoil_surface= ifelse(as.numeric(tsoil_surface)< -40, NA, tsoil_surface)) %>%
+  mutate(tsoil_surface= ifelse(as.numeric(tsoil_surface)> 40, NA, tsoil_surface)) %>%  
+  mutate(tsoil_deep= ifelse(as.numeric(tsoil_deep)< -40, NA, tsoil_deep)) %>%
+  mutate(tsoil_deep= ifelse(as.numeric(tsoil_deep)> 40, NA, tsoil_deep)) %>% 
   mutate(soil_moisture= ifelse(as.numeric(soil_moisture) <0, NA, soil_moisture)) %>% 
   mutate(snow_depth= ifelse(as.numeric(snow_depth) <0, NA, snow_depth))
   
