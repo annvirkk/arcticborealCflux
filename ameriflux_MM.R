@@ -190,12 +190,7 @@ ameriflux.fluxnetall <- alldat.wdupes %>%
   arrange(desc(source)) %>%  #give preference to amerifluxdf
   distinct(site_id , year, month, partition_method, .keep_all = TRUE)
 #adding data usage policies
-ameriflux.fluxnetall <- ameriflux.fluxnetall %>% 
-  mutate(data_usage= ifelse(site_id %in% c("CA-NS8", "CA-Ojp", "CA-Qc2", "CA-SJ3",
-                                           "CA-WP1", "CA-WP2", "CA-WP3", "US-Atq",
-                                           "US-Beo", "US-Bes", "US-Bn1", "US-Bn2", 
-                                           "US-Bn3", "US-Brw", "US-Hva", "US-Ivo",
-                                           "US-SJ1", "US-SJ2", "US-Upa"), "Tier 2", "Tier 1"))
+ameriflux.fluxnetall$data_usage <- "Tier 2"
 
 
 
