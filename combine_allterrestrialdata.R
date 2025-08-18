@@ -53,6 +53,52 @@ ABC.ec <- ABC.ec %>%
 
 #check to make sure there are no dupes
 dupes.ec <-ABC.ec %>% get_dupes(site_name, site_reference, year, month, partition_method) 
+
+
+#4/17/25 adding in some data from European Fluxes Database Cluster that I missed 
+setwd("/Users/iwargowsky/Desktop/Euroflux")
+euro.co2 <- read_csv("euroflux.no.gf.monthly.co2.csv") %>% 
+  mutate(year= as.integer(year)) %>% 
+  mutate(month= as.integer(month))
+euro.ch4 <- read_csv("euroflux.no.gf.monthly.ch4.csv")%>% 
+  mutate(year= as.integer(year)) %>% 
+  mutate(month= as.integer(month)) %>%
+  dplyr::select(site_name,site_reference, year, month, ch4_flux_total, extraction_source_ch4, gap_fill_ch4, data_usage_ch4, data_version_ch4)
+
+#merge co2 fluxes with dataframe and check for dupes
+ABC.ec.co2euro <- rbindlist(list(euro.co2, ABC.ec), fill = TRUE)
+
+#remove dupes from EuroFlux cause theyre not gapfilled
+dupes <- ABC.ec.co2euro %>% get_dupes(site_name, site_reference, year, month) 
+
+to.remove <- dupes %>% dplyr::filter(extraction_source_co2 == "European Fluxes Database Cluster" &
+                  gap_fill==  "Monthly Averages from non-gapfilled data") %>%
+  dplyr::filter(!site_reference %in% "IS-Gun") # this site is unusual because EuroFlux has NEE and v1 only has gpp and reco so we want NEE
+
+ABC.ec <- ABC.ec %>% dplyr::filter(!site_reference %in% "IS-Gun") #removing gpp and reco to replace with NEE
+
+ABC.ec <- anti_join(ABC.ec.co2euro, to.remove, by = c("year", "month", "site_reference", "extraction_source_co2"))
+
+dupes.ec <-ABC.ec %>% get_dupes(site_name, site_reference, year, month, partition_method) 
+
+#merge ch4 fluxes with dataframe and check for dupes
+x <- left_join(ABC.ec, euro.ch4, by= c('site_reference', 'site_name', 'year', 'month'))
+
+colnames(x) 
+
+y <- x %>%
+  mutate(ch4_flux_total= ifelse(is.na(ch4_flux_total.x), ch4_flux_total.y, ch4_flux_total.x)) %>%
+  mutate(extraction_source_ch4= ifelse(is.na(ch4_flux_total.x), extraction_source_ch4.y, extraction_source_ch4.x)) %>%
+  mutate(gap_fill= ifelse((is.na(ch4_flux_total.x) & !is.na(ch4_flux_total.y)),paste(gap_fill, gap_fill_ch4), gap_fill)) %>%
+  mutate(data_usage= ifelse((is.na(ch4_flux_total.x) & !is.na(ch4_flux_total.y)),paste(data_usage, data_usage_ch4), data_usage)) %>%
+  mutate(data_version= ifelse((is.na(ch4_flux_total.x) & !is.na(ch4_flux_total.y)),paste(data_version, data_version_ch4), data_version)) 
+  
+ABC.ec <- y %>% select(-c(ch4_flux_total.x, ch4_flux_total.y, extraction_source_ch4.x, extraction_source_ch4.y,
+                      gap_fill_ch4, data_usage_ch4, data_version_ch4))
+
+
+dupes.ec <-ABC.ec %>% get_dupes(site_name, site_reference, year, month, partition_method) 
+
 #save
 #setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 #towersites <- as.data.frame(unique(ABC.ec$site_reference) )
@@ -92,16 +138,16 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
   
 ####################Combining EC and chamber data ################################
 
-ABC.v2.mar25 <- rbindlist(list(ABC.ch, ABC.ec), fill = TRUE) 
+ABC.v2.jun25 <- rbindlist(list(ABC.ch, ABC.ec), fill = TRUE) 
 #removing rows without any flux data
-ABC.v2.mar25<- ABC.v2.mar25 %>% dplyr::select(-starts_with("...")) %>%  #unnecessary columns 
+ABC.v2.jun25<- ABC.v2.jun25 %>% dplyr::select(-starts_with("...")) %>%  #unnecessary columns 
                                 dplyr::filter(!site_name== "") %>%
                                  dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 #check if there are any duplicates
-dupes <- ABC.v2.mar25 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
+dupes <- ABC.v2.jun25 %>% get_dupes(site_name, site_reference, site_id, year, month, partition_method, flux_method) 
 
 ###preliminary cleaning of site names to remove special characters
-ABC.v2.mar25 <- ABC.v2.mar25 %>% 
+ABC.v2.jun25 <- ABC.v2.jun25 %>% 
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik", "Utqiaġvik"),"Utqiagvik" , site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik North", "Utqiaġvik North"), "Utqiagvik North", site_name) ) %>%
   mutate(site_name= ifelse(site_name %in% c("Utqia?vik South", "Utqiaġvik South"), "Utqiagvik South", site_name) ) %>%
@@ -122,7 +168,7 @@ ABC.v2.mar25 <- ABC.v2.mar25 %>%
   mutate(site_name= ifelse(site_name == "Värriö", "Varrio", site_name) ) %>%
   mutate(site_name= ifelse(site_name == "Iškoras", "Iskoras", site_name) ) 
 
-ABC.v2.mar25 <- ABC.v2.mar25 %>% 
+ABC.v2.jun25 <- ABC.v2.jun25 %>% 
   mutate(site_reference= ifelse(site_reference == "Värriö_Grazed", "Varrio_Grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_non-grazed", "Varrio_non-grazed" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Värriö_Fire45", "Varrio_Fire45" , site_reference) ) %>%
@@ -132,12 +178,12 @@ ABC.v2.mar25 <- ABC.v2.mar25 %>%
   mutate(site_reference= ifelse(site_name == "Svalbard", "Bjornedalen" , site_reference) ) %>%
   mutate(site_reference= ifelse(site_reference == "Utqiaġvik plots aggregated", "Utqiagvik plots aggregated" , site_reference) ) 
   
-ABC.v2.mar25 <- ABC.v2.mar25 %>% 
+ABC.v2.jun25 <- ABC.v2.jun25 %>% 
   dplyr::filter(!site_name %in% c("Site name as specified in data source. E.g. Hyytiälä", "site_name"))
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-write_csv(ABC.v2.mar25, "ABC.v2.mar25.csv")
+write_csv(ABC.v2.jun25, "ABC.v2.jun25.csv")
 
 
 
@@ -150,7 +196,7 @@ write_csv(ABC.v2.mar25, "ABC.v2.mar25.csv")
 
   
 ####extract list of sites and dates covered##
-ECsites.datescovered <- ABC.v2.mar25 %>% 
+ECsites.datescovered <- ABC.v2.jun25 %>% 
   filter(flux_method== "EC" ) %>%
   mutate(ts= as.yearmon(paste(year, month,sep = '-'))) %>%
   group_by(site_name, site_reference) %>% 
