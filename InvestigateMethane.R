@@ -7,7 +7,7 @@ library(ggplot2)
 
 
 setwd("/Users/iwargowsky/Desktop/arcticborealCflux") 
-abc <- read_csv("ABC.v2.aug24.cleanish.nodupes.csv")
+abc <- read_csv("ABC.v2.jun25.cleanish.nodupes.csv")
 
 abc.ch4 <- abc %>% filter(!is.na(ch4_flux_total)) #filter for rows with methane fluxs
 
@@ -177,5 +177,36 @@ x<- abc.ch4.ch %>%
 
 
 
+ivo <- abc.ch4.ec %>% filter(site_reference %in% "Ivotuk_US-Ivo_tower")
+
+fy2 <- abc.ch4.ec %>% filter(site_reference %in% "Fyodorovskoye2_RU-Fy2_tower")
+
+
+
+
+x <- abc.ch4.ec %>%
+  filter(!str_detect(site_reference, "North Star")) %>%
+  group_by(site_reference, month) %>% 
+  summarise(ch4_flux_total= mean (ch4_flux_total, na.rm= T))
+
+fy2 <- x %>% filter(site_reference %in% "Fyodorovskoye2_RU-Fy2_tower")
+
+ivo <- x %>% filter(site_reference %in% "Ivotuk_US-Ivo_tower")
+
+ggplot() +
+  geom_line(data = x, aes(x = month, y = ch4_flux_total, group = site_reference)) +
+  geom_line(data = ivo, aes(x = month, y = ch4_flux_total), color = "red", size= 2) +
+  labs(title = "Average monthly CH4 by site, Ivotuk in red",
+       x = "Date",
+       y = "CH4 g C m² month¹") +
+  theme_minimal()
+
+ggplot() +
+  geom_line(data = x, aes(x = month, y = ch4_flux_total, group = site_reference)) +
+  geom_line(data = fy2, aes(x = month, y = ch4_flux_total), color = "blue", size= 2) +
+  labs(title = "Average monthly CH4 by site, Fyodorovskoye2 in blue",
+       x = "Date",
+       y = "CH4 g C m² month¹") +
+  theme_minimal()
 
 

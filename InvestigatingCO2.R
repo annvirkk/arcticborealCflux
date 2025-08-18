@@ -6,15 +6,16 @@ library(zoo)
 library(ggplot2)
 
 
-setwd("/Users/iwargowsky/Desktop/arcticborealCflux")  
-abc <- read_csv("ABC.v2.oct24.cleanish.nodupes.csv") %>%
+setwd("/Users/iwargowsky/Desktop/arcticborealCflux")   
+abc <- read_csv("ABCFluxv2.ter.aq.csv")%>%
   mutate(nee= as.numeric(nee),
          gpp= as.numeric(gpp),
-         reco= as.numeric(reco))
+         reco= as.numeric(reco),
+         gap_fill_perc_co2= as.numeric(gap_fill_perc_co2))
 
 ###looking at just CO2
 abc.co2 <- abc %>% 
-  dplyr::filter(!if_all(c(nee, gpp, reco, nee_seasonal, co2_flux_storage, co2_flux_storage_bubble), ~ is.na(.)))
+  dplyr::filter(!if_all(c(nee, gpp, reco, co2_flux), ~ is.na(.)))
 # 
 # 
 # ###Land cover by site_name and site_reference
@@ -54,8 +55,8 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 abc.co2.ec.x <- abc.co2.ec %>% dplyr::filter(!is.na(nee))
 lapply(unique(abc.co2.ec.x$site_name), function(site) {
   p <- ggplot(subset(abc.co2.ec.x, site_name == site)) +
-    geom_line( aes(x = ts, y = nee, color = gap_fill_perc_nee)) +
-    geom_point(aes(x = ts, y = nee, color = gap_fill_perc_nee))+
+    geom_line( aes(x = ts, y = nee, color = gap_fill_perc_co2)) +
+    geom_point(aes(x = ts, y = nee, color = gap_fill_perc_co2))+
     theme(legend.position = "bottom") +
     geom_hline(yintercept = 0)+   
     labs(title = paste("EC ", site),
@@ -63,7 +64,7 @@ lapply(unique(abc.co2.ec.x$site_name), function(site) {
          y = "g C m-2 month-1")
   
   #Save the plot to a file
-  ggsave(filename = paste("CO2_EC.gapfillperc3/NEE", site, ".jpeg"),
+  ggsave(filename = paste("CO2_EC/NEE", site, ".jpeg"),
          plot = p, width = 10, height = 6)
 
   return(p)
@@ -76,8 +77,8 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 abc.co2.ec.x <- abc.co2.ec %>% dplyr::filter(!is.na(gpp))
 lapply(unique(abc.co2.ec.x$site_name), function(site) {
   p <- ggplot(subset(abc.co2.ec.x, site_name == site)) +
-    geom_line( aes(x = ts, y = gpp, color = extraction_source)) +
-    geom_point(aes(x = ts, y = gpp, color = extraction_source))+
+    geom_line( aes(x = ts, y = gpp, color = partition_method)) +
+    geom_point(aes(x = ts, y = gpp, color = partition_method))+
     theme(legend.position = "bottom") +
     geom_hline(yintercept = 0)+   
     labs(title = paste("EC GPP ", site),
@@ -85,7 +86,7 @@ lapply(unique(abc.co2.ec.x$site_name), function(site) {
          y = "g C m-2 month-1")
   
   #Save the plot to a file
-  ggsave(filename = paste("CO2_EC.gapfillperc3/GPP", site, ".jpeg"),
+  ggsave(filename = paste("CO2_EC/GPP", site, ".jpeg"),
          plot = p, width = 10, height = 6)
   
   return(p)
@@ -97,8 +98,8 @@ setwd("/Users/iwargowsky/Desktop/ABCFlux v2")
 abc.co2.ec.x <- abc.co2.ec %>% dplyr::filter(!is.na(reco))
 lapply(unique(abc.co2.ec.x$site_name), function(site) {
   p <- ggplot(subset(abc.co2.ec.x, site_name == site)) +
-    geom_line( aes(x = ts, y = reco, color = extraction_source)) +
-    geom_point(aes(x = ts, y = reco, color = extraction_source))+
+    geom_line( aes(x = ts, y = reco, color = partition_method)) +
+    geom_point(aes(x = ts, y = reco, color = partition_method))+
     theme(legend.position = "bottom") +
     geom_hline(yintercept = 0)+   
     labs(title = paste("EC RECO ", site),
@@ -106,7 +107,7 @@ lapply(unique(abc.co2.ec.x$site_name), function(site) {
          y = "g C m-2 month-1")
   
   #Save the plot to a file
-  ggsave(filename = paste("CO2_EC.gapfillperc3/RECO", site, ".jpeg"),
+  ggsave(filename = paste("CO2_EC/RECO", site, ".jpeg"),
          plot = p, width = 10, height = 6)
   
   return(p)
