@@ -376,6 +376,8 @@ ru.sam <- ru.sam %>%
   mutate(year= year(as.Date(Date.Time.local..Timestamp.referring.to.end.of...., format= "%Y-%m-%dT%H:%M")),
          month= month(as.Date(Date.Time.local..Timestamp.referring.to.end.of...., format= "%Y-%m-%dT%H:%M")))
 
+#date range covered by data we already have
+
 
 
 #BAWLD -------------------------------------------------------------------------
