@@ -100,10 +100,9 @@ euroflux <- read_csv("eurofluxdata.csv")
 euroflux$extraction_source_co2 <- "European Fluxes Database Cluster"
 euroflux$year <- as.integer(euroflux$year)
 euroflux$month <- as.integer(euroflux$month)
-euroflux.renamed <- euroflux %>% dplyr::rename("gap_fill_perc_nee"= "gap_fill_perc")
 
 #merging with what we have so far
-icos.fluxnet.AMF.euro.wdupes <- bind_rows(icos.fluxnet.AMF, euroflux.renamed)
+icos.fluxnet.AMF.euro.wdupes <- bind_rows(icos.fluxnet.AMF)
 
 #check if there are duplicates
 dupes<- icos.fluxnet.AMF.euro.wdupes %>% get_dupes(site_reference, year, month, partition_method)  
@@ -130,17 +129,25 @@ CH4fluxnet.renamed <- CH4fluxnet %>% dplyr::rename("site_reference"="site_id",
                                                    "nee"= "NEE_F",
                                                    "data_usage_ch4"="FLUXNET.CH4_DATA_POLICY",
                                                    "citation_ch4"= "citation",
-                                                   "data_version_ch4"= "data_version")
+                                                   "data_version_ch4"= "data_version",
+                                                   "gap_fill_ch4"= "gap_fill")
 CH4fluxnet.renamed$data_usage<- CH4fluxnet.renamed$data_usage_ch4
 CH4fluxnet.renamed$citation_co2 <- CH4fluxnet.renamed$citation_ch4
 CH4fluxnet.renamed$data_version <- CH4fluxnet.renamed$data_version_ch4
+CH4fluxnet.renamed$gap_fill <- CH4fluxnet.renamed$gap_fill_ch4
+
+CH4fluxnet.renamed <- CH4fluxnet.renamed %>%
+  mutate(gap_fill_ch4 = ifelse(is.na(ch4_flux_total), NA, gap_fill_ch4)) 
+
 #have to convert month column from character
 CH4fluxnet.renamed$year <- as.integer(CH4fluxnet.renamed$year)
 CH4fluxnet.renamed$month <- as.integer(CH4fluxnet.renamed$month)
 #some sites have ch4 flux along with nee, gpp, and reco so we'll separate ch4 fluxes and merge them with our df first
 CH4fluxnet.renamedCH4 <- CH4fluxnet.renamed %>%
   dplyr::select (year, month, site_reference, ch4_flux_total, data_usage_ch4, data_version_ch4, 
-          citation_ch4, extraction_source_ch4)
+          citation_ch4, extraction_source_ch4, gap_fill_ch4)
+#remove rows that do not contain flux data
+CH4fluxnet.renamedCH4 <- CH4fluxnet.renamedCH4 %>%dplyr::filter(!is.na(ch4_flux_total))
 #merge methane fluxes with dataframe
 icos.fluxnet.AMF.euro.CH4 <- left_join(icos.fluxnet.AMF.euro, CH4fluxnet.renamedCH4,
                                    by= c('site_reference', 'year', 'month'))
@@ -210,8 +217,7 @@ ADC <- read_csv("ADC.ec.csv")
 ADC$year <- as.integer(ADC$year)
 ADC$month <- as.integer(ADC$month)
 colnames(ADC)
-ADC.renamed <- ADC  %>% dplyr::rename("gap_fill_perc_nee"= "percent_na_nee",
-                                      "gap_fill_perc_ch4"= "percent_na_ch4")
+ADC.renamed <- ADC 
 icos.fluxnet.AMF.euro.CH4.base.asia.ADC.wdupes <- rbindlist(list(icos.fluxnet.AMF.euro.CH4.base.asia, ADC.renamed), fill = TRUE) 
 
 #check if there are duplicates
