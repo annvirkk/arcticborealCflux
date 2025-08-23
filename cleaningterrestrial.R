@@ -2023,7 +2023,7 @@ dupes <- abc.nodupes %>% get_dupes(site_reference, year, month)
 #already inspected time series for visual outliers but will check 1st and 99th percentiles
 # Compute 99 and 1st thresholds
 percentiles <- abc.nodupes %>%
-  mutate(flux_method = ifelse(flux_method %in% c("Other", "Chamber"), "Non-EC", flux_method)) %>%
+  mutate(flux_method = ifelse(flux_method %in% c("Other", "Chamber", "Snow diffusion"), "Non-EC", flux_method)) %>%
   group_by(month, biome, flux_method) %>%
   reframe(lower.nee_99 = quantile(nee, .01, na.rm=T),
           upper.nee_99 = quantile(nee, .99, na.rm=T),
@@ -2036,9 +2036,9 @@ percentiles <- abc.nodupes %>%
   dplyr::filter(!biome== "Temperate") 
 
 setwd("/Users/iwargowsky/Desktop/ABCFlux v2") 
-#percentiles$lower.gpp_99 <- percentiles$lower.gpp_99* -1
-#percentiles$upper.gpp_99 <- percentiles$upper.gpp_99* -1
-#write_csv(percentiles, "ter.percentiles.csv")
+percentiles$lower.gpp_99 <- percentiles$lower.gpp_99* -1
+percentiles$upper.gpp_99 <- percentiles$upper.gpp_99* -1
+write_csv(percentiles, "ter.percentiles.csv")
 
 
 # Join quantiles with abc.nodupes and add QC columns 
